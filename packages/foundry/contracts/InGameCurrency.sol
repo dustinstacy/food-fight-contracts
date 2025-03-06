@@ -11,6 +11,13 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice This contract is an ERC20 token for in-game currency.
 contract InGameCurrency is ERC20, Ownable {
     ///////////////////////////////////////////////////////////
+    ///                      ERRORS                         ///
+    ///////////////////////////////////////////////////////////
+
+    /// Emitted when an owner tries to withdraw funds from the contract and the transfer fails.
+    error InGameCurrencyWithdrawalFailed(address to, uint256 amount);
+
+    ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
@@ -39,5 +46,20 @@ contract InGameCurrency is ERC20, Ownable {
     /// @dev Need to implement balance checking.
     function burn(uint256 value) public virtual {
         _burn(_msgSender(), value);
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                    OWNER FUNCTIONS                  ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Withdraws the balance of the contract to the owner.
+    /// @dev Update to allow withdrawal to a different address.
+    /// @dev Update to allow withdrawal of a specific amount.
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success,) = owner().call{ value: balance }("");
+        if (!success) {
+            revert InGameCurrencyWithdrawalFailed(owner(), balance);
+        }
     }
 }
