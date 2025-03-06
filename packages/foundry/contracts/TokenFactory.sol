@@ -19,6 +19,19 @@ contract TokenFactory is ERC1155, Ownable {
     error TokenFactoryWithdrawalFailed(address to, uint256 amount);
 
     ///////////////////////////////////////////////////////////
+    ///                     EVENTS                          ///
+    ///////////////////////////////////////////////////////////
+
+    /// Emitted when the URI of the metadata for a token is set.
+    event URISet(string uri, uint256 id);
+
+    /// Emitted when the price of a token is set.
+    event TokenPriceSet(uint256 id, uint256 price);
+
+    /// Emitted when the custom ERC20 token used for payments is set.
+    event PaymentTokenSet(address paymentToken);
+
+    ///////////////////////////////////////////////////////////
     ///                     VARIABLES                       ///
     ///////////////////////////////////////////////////////////
 
@@ -141,6 +154,8 @@ contract TokenFactory is ERC1155, Ownable {
     /// @param uri URI of the metadata for the token.
     function setTokenURI(uint256 id, string memory uri) external onlyOwner {
         tokenURIs[id] = uri;
+
+        emit URISet(uri, id);
     }
 
     /// @notice Sets the price of a given token.
@@ -148,12 +163,16 @@ contract TokenFactory is ERC1155, Ownable {
     /// @param price Price of the token.
     function setTokenPrice(uint256 id, uint256 price) external onlyOwner {
         tokenPrices[id] = price;
+
+        emit TokenPriceSet(id, price);
     }
 
     /// @notice Sets the custom ERC20 token to use for payments.
     /// @param _paymentToken The address of the custom ERC20 token to use for payments.
     function setPaymentToken(address _paymentToken) external onlyOwner {
         paymentToken = IERC20(_paymentToken);
+
+        emit PaymentTokenSet(_paymentToken);
     }
 
     /// @notice Withdraws the balance of the contract to the owner.
