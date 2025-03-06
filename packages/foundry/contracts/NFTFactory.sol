@@ -11,6 +11,13 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice This contract is a factory for creating ERC1155 tokens.
 contract NFTFactory is ERC1155, Ownable {
     ///////////////////////////////////////////////////////////
+    ///                      ERRORS                         ///
+    ///////////////////////////////////////////////////////////
+
+    /// Emitted when an owner tries to withdraw funds from the contract and the transfer fails.
+    error NFTFactoryWithdrawalFailed(address to, uint256 amount);
+
+    ///////////////////////////////////////////////////////////
     ///                     VARIABLES                       ///
     ///////////////////////////////////////////////////////////
 
@@ -102,5 +109,16 @@ contract NFTFactory is ERC1155, Ownable {
     /// @param uri URI of the metadata for the token.
     function setTokenURI(uint256 id, string memory uri) external onlyOwner {
         _tokenURIs[id] = uri;
+    }
+
+    /// @notice Withdraws the balance of the contract to the owner.
+    /// @dev Update to allow withdrawal to a different address.
+    /// @dev Update to allow withdrawal of a specific amount.
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success,) = owner().call{ value: balance }("");
+        if (!success) {
+            revert NFTFactoryWithdrawalFailed(owner(), balance);
+        }
     }
 }
