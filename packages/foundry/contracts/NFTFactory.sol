@@ -11,6 +11,13 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice This contract is a factory for creating ERC1155 tokens.
 contract NFTFactory is ERC1155, Ownable {
     ///////////////////////////////////////////////////////////
+    ///                     VARIABLES                       ///
+    ///////////////////////////////////////////////////////////
+
+    /// Mapping of the token ID to the URI of the metadata.
+    mapping(uint256 tokenID => string uri) private _tokenURIs;
+
+    ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
@@ -84,5 +91,16 @@ contract NFTFactory is ERC1155, Ownable {
         // If not, revert with an error.
         // If the account has enough balance, burn the tokens.
         _burnBatch(account, ids, values);
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                    OWNER FUNCTIONS                  ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Sets the URI of the metadata for a given token ID.
+    /// @param id ID of the token to set the URI for.
+    /// @param uri URI of the metadata for the token.
+    function setTokenURI(uint256 id, string memory uri) external onlyOwner {
+        _tokenURIs[id] = uri;
     }
 }
