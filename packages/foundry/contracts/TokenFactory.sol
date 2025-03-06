@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 import "forge-std/console.sol";
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title TokenFactory
@@ -27,14 +28,20 @@ contract TokenFactory is ERC1155, Ownable {
     /// Mapping of the token ID to the price of the token.
     mapping(uint256 tokenID => uint256 price) private tokenPrices;
 
+    /// Custom ERC20 token to use for payments.
+    IERC20 private paymentToken;
+
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Initializes the contract with the provided owner.
     /// @param _owner The address that will be set as the owner of the contract.
+    /// @param _paymentToken The address of the custom ERC20 token to use for payments.
     /// @dev The ERC1155 constructor is an empty string as we will be using a URI mapping instead of ID substitution.
-    constructor(address _owner) ERC1155("") Ownable(_owner) { }
+    constructor(address _owner, address _paymentToken) ERC1155("") Ownable(_owner) {
+        paymentToken = IERC20(_paymentToken);
+    }
 
     ///////////////////////////////////////////////////////////
     ///                    CORE FUNCTIONS                   ///
@@ -50,7 +57,7 @@ contract TokenFactory is ERC1155, Ownable {
         uint256 price = tokenPrices[id];
         uint256 totalPrice = price * amount;
 
-        // Transfer custom ERC20 from user to contract.
+        paymentToken.transferFrom(_msgSender(), address(this), totalPrice);
 
         _mint(account, id, amount, data);
     }
@@ -77,7 +84,7 @@ contract TokenFactory is ERC1155, Ownable {
             totalPrice += price * amount;
         }
 
-        // Transfer custom ERC20 from user to contract.
+        paymentToken.transferFrom(_msgSender(), address(this), totalPrice);
 
         _mintBatch(to, ids, amounts, data);
     }
@@ -131,6 +138,12 @@ contract TokenFactory is ERC1155, Ownable {
         tokenPrices[id] = price;
     }
 
+    /// @notice Sets the custom ERC20 token to use for payments.
+    /// @param _paymentToken The address of the custom ERC20 token to use for payments.
+    function setPaymentToken(address _paymentToken) external onlyOwner {
+        paymentToken = IERC20(_paymentToken);
+    }
+
     /// @notice Withdraws the balance of the contract to the owner.
     /// @dev Update to allow withdrawal to a different address.
     /// @dev Update to allow withdrawal of a specific amount.
@@ -158,5 +171,11 @@ contract TokenFactory is ERC1155, Ownable {
     /// @return The price of the token.
     function getTokenPrice(uint256 id) public view returns (uint256) {
         return tokenPrices[id];
+    }
+
+    /// @notice Gets the custom ERC20 token used for payments.
+    /// @return The address of the custom ERC20 token used for payments.
+    function getPaymentToken() public view returns (address) {
+        return address(paymentToken);
     }
 }
