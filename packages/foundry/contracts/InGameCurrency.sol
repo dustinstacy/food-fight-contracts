@@ -32,7 +32,7 @@ contract InGameCurrency is ERC20, Ownable {
     ///////////////////////////////////////////////////////////
 
     /// @notice The price of the token.
-    uint256 public price;
+    uint256 private price;
 
     /// @notice The number of decimals for the token.
     uint256 constant WAD = 10 ** 18;
@@ -66,6 +66,12 @@ contract InGameCurrency is ERC20, Ownable {
     ///                    OWNER FUNCTIONS                  ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Sets the price of the token.
+    /// @param _price The new price of the token.
+    function setPrice(uint256 _price) external onlyOwner {
+        price = _price;
+    }
+
     /// @notice Withdraws the balance of the contract to the owner.
     /// @param to The address to send the funds to.
     /// @param amount The amount of funds to send.
@@ -87,5 +93,15 @@ contract InGameCurrency is ERC20, Ownable {
         }
 
         emit Withdrawal(to, amount);
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                    VIEW FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Gets the price of the token.
+    /// @return The price of the token.
+    function getPrice() external view returns (uint256) {
+        return price;
     }
 }
