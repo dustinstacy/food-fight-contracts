@@ -52,11 +52,12 @@ contract TokenFactory is ERC1155, Ownable {
     /// @param id ID of the token to mint.
     /// @param amount Amount of the token to mint.
     /// @param data Custom data to pass to the receiver on the mint.
-    /// @dev Need to implement pricing and payment logic.
+    /// @dev Simple placehold pricing model. Needs to be updated.
     function mint(address account, uint256 id, uint256 amount, bytes memory data) external {
         uint256 price = tokenPrices[id];
         uint256 totalPrice = price * amount;
 
+        //!! Approval needed from ERC20 contract
         paymentToken.transferFrom(_msgSender(), address(this), totalPrice);
 
         _mint(account, id, amount, data);
@@ -68,7 +69,7 @@ contract TokenFactory is ERC1155, Ownable {
     /// @param amounts Amounts of the tokens to mint.
     /// @param data Custom data to pass to the receiver on the mint.
     /// @dev The IDs and amounts arrays must be the same length.
-    /// @dev Need to implement pricing and payment logic.
+    /// @dev Simple placehold pricing model. Needs to be updated.
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external {
         if (ids.length != amounts.length) {
             revert ERC1155InvalidArrayLength(ids.length, amounts.length);
@@ -84,6 +85,7 @@ contract TokenFactory is ERC1155, Ownable {
             totalPrice += price * amount;
         }
 
+        //!! Approval needed from ERC20 contract
         paymentToken.transferFrom(_msgSender(), address(this), totalPrice);
 
         _mintBatch(to, ids, amounts, data);
@@ -92,32 +94,42 @@ contract TokenFactory is ERC1155, Ownable {
     /// @notice Burns a given amount of a token.
     /// @param account Address to burn the token from.
     /// @param id ID of the token to burn.
-    /// @param value Amount of the token to burn.
+    /// @param amount Amount of the token to burn.
     /// @dev Need to implement balance checking.
-    function burn(address account, uint256 id, uint256 value) external {
+    function burn(address account, uint256 id, uint256 amount) external {
         if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
 
-        // Check if the account has enough balance to burn the token.
-        // If not, revert with an error.
-        // If the account has enough balance, burn the token.
-        _burn(account, id, value);
+        uint256 balance = balanceOf(account, id);
+
+        if (balance < amount) {
+            revert ERC1155InsufficientBalance(account, balance, amount, id);
+        }
+
+        _burn(account, id, amount);
     }
 
     /// @notice Burns given amounts of multiple tokens.
     /// @param account Address to burn the tokens from.
     /// @param ids IDs of the tokens to burn.
-    /// @param values Amounts of the tokens to burn.
-    function burnBatch(address account, uint256[] memory ids, uint256[] memory values) external {
+    /// @param amounts Amounts of the tokens to burn.
+    function burnBatch(address account, uint256[] memory ids, uint256[] memory amounts) external {
         if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
 
-        // Check if the account has enough balance to burn the tokens.
-        // If not, revert with an error.
-        // If the account has enough balance, burn the tokens.
-        _burnBatch(account, ids, values);
+        for (uint256 i = 0; i < ids.length; i++) {
+            uint256 id = ids[i];
+            uint256 amount = amounts[i];
+            uint256 balance = balanceOf(account, id);
+
+            if (balance < amount) {
+                revert ERC1155InsufficientBalance(account, balance, amount, id);
+            }
+        }
+
+        _burnBatch(account, ids, amounts);
     }
 
     ///////////////////////////////////////////////////////////
