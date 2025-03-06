@@ -2,19 +2,19 @@
 pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
-import "../contracts/NFTFactory.sol";
+import "../contracts/TokenFactory.sol";
 
 /**
- * @notice Deploy script for NFTFactory contract
+ * @notice Deploy script for TokenFactory contract
  * @dev Inherits ScaffoldETHDeploy which:
  *      - Includes forge-std/Script.sol for deployment
  *      - Includes ScaffoldEthDeployerRunner modifier
  *      - Provides `deployer` variable
  * Example:
- * yarn deploy --file DeployNFTFactory.s.sol  # local anvil chain
- * yarn deploy --file DeployNFTFactory.s.sol --network optimism # live network (requires keystore)
+ * yarn deploy --file DeployTokenFactory.s.sol  # local anvil chain
+ * yarn deploy --file DeployTokenFactory.s.sol --network optimism # live network (requires keystore)
  */
-contract DeployNFTFactory is ScaffoldETHDeploy {
+contract DeployTokenFactory is ScaffoldETHDeploy {
     /**
      * @dev Deployer setup based on `ETH_KEYSTORE_ACCOUNT` in `.env`:
      *      - "scaffold-eth-default": Uses Anvil's account #9 (0xa0Ee7A142d267C1f36714E4a8F75612F20a79720), no password prompt
@@ -25,6 +25,6 @@ contract DeployNFTFactory is ScaffoldETHDeploy {
      *      - Export contract addresses & ABIs to `nextjs` packages
      */
     function run() external ScaffoldEthDeployerRunner {
-        new NFTFactory(deployer);
+        new TokenFactory(deployer);
     }
 }
