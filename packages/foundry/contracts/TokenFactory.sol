@@ -15,6 +15,9 @@ contract TokenFactory is ERC1155, Ownable {
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
 
+    /// Emitted when an owner tries to withdraw more funds than the contract balance.
+    error TokenFactoryWithdrawalExceedsBalance(uint256 amount, uint256 balance);
+
     /// Emitted when an owner tries to withdraw funds from the contract and the transfer fails.
     error TokenFactoryWithdrawalFailed(address to, uint256 amount);
 
@@ -30,6 +33,9 @@ contract TokenFactory is ERC1155, Ownable {
 
     /// Emitted when the custom ERC20 token used for payments is set.
     event PaymentTokenSet(address paymentToken);
+
+    /// Emitted when an owner withdraws funds from the contract.
+    event Withdrawal(address indexed to, uint256 amount);
 
     ///////////////////////////////////////////////////////////
     ///                     VARIABLES                       ///
@@ -176,14 +182,26 @@ contract TokenFactory is ERC1155, Ownable {
     }
 
     /// @notice Withdraws the balance of the contract to the owner.
-    /// @dev Update to allow withdrawal to a different address.
-    /// @dev Update to allow withdrawal of a specific amount.
-    function withdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        (bool success,) = owner().call{ value: balance }("");
-        if (!success) {
-            revert TokenFactoryWithdrawalFailed(owner(), balance);
+    /// @param to The address to send the funds to.
+    /// @param amount The amount of funds to send.
+    function withdraw(address to, uint256 amount) external onlyOwner {
+        // If no address is provided, send the funds to the owner.
+        if (to == address(0)) {
+            to = owner();
         }
+
+        uint256 balance = address(this).balance;
+
+        if (amount > balance) {
+            revert TokenFactoryWithdrawalExceedsBalance(amount, balance);
+        }
+
+        (bool success,) = to.call{ value: amount }("");
+        if (!success) {
+            revert TokenFactoryWithdrawalFailed(to, amount);
+        }
+
+        emit Withdrawal(to, amount);
     }
 
     ///////////////////////////////////////////////////////////
