@@ -18,4 +18,71 @@ contract NFTFactory is ERC1155, Ownable {
     /// @param initialOwner The address that will be set as the owner of the contract.
     /// @dev The ERC1155 constructor is an empty string as we will be using a URI mapping instead of ID substitution.
     constructor(address initialOwner) ERC1155("") Ownable(initialOwner) { }
+
+    ///////////////////////////////////////////////////////////
+    ///                    CORE FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Mints a given amount of a token.
+    /// @param account Address to mint the token to.
+    /// @param id ID of the token to mint.
+    /// @param amount Amount of the token to mint.
+    /// @param data Custom data to pass to the receiver on the mint.
+    /// @dev Need to implement pricing and payment logic.
+    function mint(address account, uint256 id, uint256 amount, bytes memory data) external payable {
+        // Get the price of the token.
+        // Check if the msg.value is equal to the price of the token.
+        // If not, revert with an error.
+        // If the price is correct, mint the token.
+        _mint(account, id, amount, data);
+    }
+
+    /// @notice Mints given amounts of multiple tokens.
+    /// @param to Address to mint the tokens to.
+    /// @param ids IDs of the tokens to mint.
+    /// @param amounts Amounts of the tokens to mint.
+    /// @param data Custom data to pass to the receiver on the mint.
+    /// @dev The IDs and amounts arrays must be the same length.
+    /// @dev Need to implement pricing and payment logic.
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        external
+        payable
+    {
+        // Get the price of the tokens.
+        // Check if the msg.value is equal to the price of the tokens.
+        // If not, revert with an error.
+        // If the price is correct, mint the tokens.
+        _mintBatch(to, ids, amounts, data);
+    }
+
+    /// @notice Burns a given amount of a token.
+    /// @param account Address to burn the token from.
+    /// @param id ID of the token to burn.
+    /// @param value Amount of the token to burn.
+    /// @dev Need to implement balance checking.
+    function burn(address account, uint256 id, uint256 value) external {
+        if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
+            revert ERC1155MissingApprovalForAll(_msgSender(), account);
+        }
+
+        // Check if the account has enough balance to burn the token.
+        // If not, revert with an error.
+        // If the account has enough balance, burn the token.
+        _burn(account, id, value);
+    }
+
+    /// @notice Burns given amounts of multiple tokens.
+    /// @param account Address to burn the tokens from.
+    /// @param ids IDs of the tokens to burn.
+    /// @param values Amounts of the tokens to burn.
+    function burnBatch(address account, uint256[] memory ids, uint256[] memory values) external {
+        if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
+            revert ERC1155MissingApprovalForAll(_msgSender(), account);
+        }
+
+        // Check if the account has enough balance to burn the tokens.
+        // If not, revert with an error.
+        // If the account has enough balance, burn the tokens.
+        _burnBatch(account, ids, values);
+    }
 }
