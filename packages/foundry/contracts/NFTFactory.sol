@@ -121,4 +121,15 @@ contract NFTFactory is ERC1155, Ownable {
             revert NFTFactoryWithdrawalFailed(owner(), balance);
         }
     }
+
+    ///////////////////////////////////////////////////////////
+    ///                    VIEW FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Gets the URI of the metadata for a given token ID.
+    /// @param id ID of the token to get the URI for.
+    /// @return The URI of the metadata for the token.
+    function getTokenURI(uint256 id) public view returns (string memory) {
+        return _tokenURIs[id];
+    }
 }
