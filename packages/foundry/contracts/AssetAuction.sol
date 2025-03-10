@@ -178,6 +178,33 @@ contract AssetAuction {
         auction.winningBidder = auction.highestBidder;
     }
 
+    /// @notice Allows a seller to cancel an auction
+    /// @param auctionId The ID of the auction
+    function cancelAuction(uint256 auctionId) external {
+        Auction storage auction = auctions[auctionId];
+
+        // Check if the auction is open
+        if (auction.status != Status.Open) {
+            revert("Auction is not open");
+        }
+
+        // Check if the deadline has passed
+        if (block.timestamp >= auction.deadline) {
+            revert("Auction has passed the deadline");
+        }
+
+        // Check if the caller is the seller
+        if (auction.seller != msg.sender) {
+            revert("You are not the seller");
+        }
+
+        // Update the auction status
+        auction.status = Status.Cancelled;
+
+        // Update the seller assetBalances
+        assetBalances[auction.seller][auction.assetTokenId] += 1;
+    }
+
     /// @notice Allows a user to claim the asset they won in an auction
     /// @param auctionId The ID of the auction
     function claimAsset(uint256 auctionId) external {
