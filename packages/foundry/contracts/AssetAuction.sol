@@ -177,4 +177,32 @@ contract AssetAuction {
         auction.winningBid = auction.highestBid;
         auction.winningBidder = auction.highestBidder;
     }
+
+    /// @notice Allows a user to claim the asset they won in an auction
+    /// @param auctionId The ID of the auction
+    function claimAsset(uint256 auctionId) external {
+        Auction storage auction = auctions[auctionId];
+
+        // Check if the has ended
+        if (auction.status != Status.Ended) {
+            revert("Auction is not ended");
+        }
+
+        // Check if the caller is the winning bidder
+        if (auction.winningBidder != msg.sender) {
+            revert("You are not the winning bidder");
+        }
+
+        // Check the IGC balance of the bidder
+        if (igcBalances[msg.sender] < auction.winningBid) {
+            // depositIGC()
+        }
+
+        // update the igcBalances
+        igcBalances[msg.sender] -= auction.winningBid;
+        igcBalances[auction.seller] += auction.winningBid;
+
+        // Transfer the asset to the winning bidder
+        assetsContract.safeTransferFrom(address(this), msg.sender, auction.assetTokenId, 1, "");
+    }
 }
