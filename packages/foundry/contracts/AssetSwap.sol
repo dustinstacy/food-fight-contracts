@@ -68,7 +68,7 @@ contract AssetSwap {
     }
 
     ///////////////////////////////////////////////////////////
-    ///                 STORAGE VARIABLES                   ///
+    ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
     mapping(uint256 proposalId => Proposal) private proposals;
