@@ -38,7 +38,7 @@ contract TokenFactory is ERC1155, Ownable {
     event Withdrawal(address indexed to, uint256 amount);
 
     ///////////////////////////////////////////////////////////
-    ///                     VARIABLES                       ///
+    ///                 STORAGE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
     /// Mapping of the token ID to the URI of the metadata.

@@ -71,8 +71,8 @@ contract AssetSwap {
     ///                 STORAGE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
-    mapping(uint256 proposalId => Proposal) public proposals;
-    mapping(address owner => mapping(uint256 tokenId => uint256 balance)) public balances;
+    mapping(uint256 proposalId => Proposal) private proposals;
+    mapping(address owner => mapping(uint256 tokenId => uint256 balance)) private balances;
 
     uint256 private proposalCount;
 
