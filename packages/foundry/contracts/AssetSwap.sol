@@ -3,6 +3,12 @@ pragma solidity ^0.8.28;
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
+/// @title AssetSwap
+/// @notice This contract allows users to swap ERC1155 assets with each other.
+/// @dev Potential improvements:
+/// 1. Proposal Execution
+/// 2. Proposal Expiry
+
 contract AssetSwap {
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
@@ -229,6 +235,13 @@ contract AssetSwap {
         address from = address(this);
         address to = msg.sender;
         bytes memory data = "";
+
+        // Check for sufficient balance
+        for (uint256 i = 0; i < length; i++) {
+            if (balances[to][tokenIds[i]] < amounts[i]) {
+                revert AssetSwapInsufficientBalance(to, balances[to][tokenIds[i]], amounts[i], tokenIds[i]);
+            }
+        }
 
         // Transfer the assets to the caller
         assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
