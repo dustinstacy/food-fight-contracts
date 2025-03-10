@@ -20,6 +20,9 @@ contract AssetSwap {
     /// Emitted when the caller tries to withdraw more assets than they own.
     error AssetSwapInsufficientBalance(address owner, uint256 balance, uint256 amount, uint256 tokenId);
 
+    /// Emitted when the token IDs and amounts arrays have different lengths.
+    error AssetSwapArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -65,16 +68,20 @@ contract AssetSwap {
 
     /// @notice Create a proposal to swap two assets
     /// @param owner2 The address of the owner to swap with
-    /// @param asset1TokenId The token ID of the first NFT
-    /// @param asset2TokenId The token ID of the second NFT
+    /// @param asset1TokenId The token ID of the first asset
+    /// @param asset2TokenId The token ID of the second asset
     function createProposal(address owner2, uint256 asset1TokenId, uint256 asset2TokenId) external {
-        // Make sure the caller has a balance of NFT1
-        if (assetsContract.balanceOf(msg.sender, asset1TokenId) == 0) {
-            revert AssetSwapAssetNotOwned(asset1TokenId);
-        }
+        // Check if the caller has any of the asset1 deposited
+        if (balances[msg.sender][asset1TokenId] == 0) {
+            // Deposit the asset1
+            uint256[] memory tokenIds = new uint256[](1);
+            uint256[] memory amounts = new uint256[](1);
 
-        // Deposit NFT1 into the contract
-        assetsContract.safeTransferFrom(msg.sender, address(this), asset1TokenId, 1, "");
+            tokenIds[0] = asset1TokenId;
+            amounts[0] = 1;
+
+            depositAssets(tokenIds, amounts);
+        }
 
         proposalCount++;
 
@@ -104,8 +111,14 @@ contract AssetSwap {
             revert AssetSwapNotOwner2(proposal.owner2, msg.sender);
         }
 
-        // Deposit NFT2 into the contract
-        assetsContract.safeTransferFrom(msg.sender, address(this), proposal.asset2TokenId, 1, "");
+        // Deposit asset2 into the contract
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = proposal.asset2TokenId;
+        amounts[0] = 1;
+
+        depositAssets(tokenIds, amounts);
 
         // Update the user balances
         balances[proposal.owner1][proposal.asset1TokenId] -= 1;
@@ -161,5 +174,22 @@ contract AssetSwap {
 
         // Transfer the asset to the caller
         assetsContract.safeTransferFrom(address(this), msg.sender, tokenId, amount, "");
+    }
+
+    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
+        if (tokenIds.length != amounts.length) {
+            revert AssetSwapArraysLengthMismatch(tokenIds.length, amounts.length);
+        }
+
+        uint256 length = tokenIds.length;
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        for (uint256 i = 0; i < length; i++) {
+            balances[from][tokenIds[i]] += amounts[i];
+        }
     }
 }
