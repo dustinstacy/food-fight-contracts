@@ -113,4 +113,33 @@ contract AssetAuction {
 
         emit AuctionCreated(auctionCount, assetTokenId, reservePrice, deadline, style);
     }
+
+    /// @notice Allows a user to bid on an auction
+    /// @param auctionId The ID of the auction
+    /// @param amount The amount to bid
+    function bid(uint256 auctionId, uint256 amount) external {
+        Auction storage auction = auctions[auctionId];
+
+        // Check if the auction is open
+        if (auction.status != Status.Open) {
+            revert("Auction is not open");
+        }
+
+        // Check if the auction has ended
+        if (block.timestamp >= auction.deadline) {
+            revert("Auction has ended");
+        }
+
+        // Check if the bid is higher than the highest bid
+        if (amount <= auction.highestBid) {
+            revert("Bid must be higher than the highest bid");
+        }
+
+        // Update the highest bid and highest bidder
+        auction.highestBid = amount;
+        auction.highestBidder = msg.sender;
+
+        // Add the bid to the bids array
+        auction.bids.push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
+    }
 }
