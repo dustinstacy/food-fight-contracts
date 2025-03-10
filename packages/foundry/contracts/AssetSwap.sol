@@ -25,7 +25,8 @@ contract AssetSwap {
         Pending,
         Approved,
         Rejected,
-        Executed
+        Executed,
+        Canceled
     }
 
     ///////////////////////////////////////////////////////////
@@ -35,8 +36,8 @@ contract AssetSwap {
     struct Proposal {
         address owner1;
         address owner2;
-        uint256 nft1TokenId;
-        uint256 nft2TokenId;
+        uint256 asset1TokenId;
+        uint256 asset2TokenId;
         ProposalStatus status;
     }
 
@@ -45,6 +46,7 @@ contract AssetSwap {
     ///////////////////////////////////////////////////////////
 
     mapping(uint256 proposalId => Proposal) public proposals;
+    mapping(address owner => mapping(uint256 tokenId => uint256 balance)) public balances;
 
     uint256 private proposalCount;
     IERC1155 private assetsContract;
@@ -60,17 +62,16 @@ contract AssetSwap {
 
     /// @notice Create a proposal to swap two assets
     /// @param owner2 The address of the owner to swap with
-    /// @param nft1TokenId The token ID of the first NFT
-    /// @param nft2TokenId The token ID of the second NFT
-    /// @param timeToExecute The time in seconds for how long owner2 has to execute the swap after approval
-    function createProposal(address owner2, uint256 nft1TokenId, uint256 nft2TokenId, uint256 timeToExecute) external {
+    /// @param asset1TokenId The token ID of the first NFT
+    /// @param asset2TokenId The token ID of the second NFT
+    function createProposal(address owner2, uint256 asset1TokenId, uint256 asset2TokenId) external {
         // Make sure the caller has a balance of NFT1
-        if (assetsContract.balanceOf(msg.sender, nft1TokenId) == 0) {
-            revert AssetSwapAssetNotOwned(nft1TokenId);
+        if (assetsContract.balanceOf(msg.sender, asset1TokenId) == 0) {
+            revert AssetSwapAssetNotOwned(asset1TokenId);
         }
 
         // Deposit NFT1 into the contract
-        assetsContract.safeTransferFrom(msg.sender, address(this), nft1TokenId, 1, "");
+        assetsContract.safeTransferFrom(msg.sender, address(this), asset1TokenId, 1, "");
 
         proposalCount++;
 
@@ -78,10 +79,13 @@ contract AssetSwap {
         proposals[proposalCount] = Proposal({
             owner1: msg.sender,
             owner2: owner2,
-            nft1TokenId: nft1TokenId,
-            nft2TokenId: nft2TokenId,
+            asset1TokenId: asset1TokenId,
+            asset2TokenId: asset2TokenId,
             status: ProposalStatus.Pending
         });
+
+        // Update the user balances
+        balances[msg.sender][asset1TokenId] += 1;
     }
 
     function approveProposal(uint256 proposalId) external {
@@ -98,7 +102,12 @@ contract AssetSwap {
         }
 
         // Deposit NFT2 into the contract
-        assetsContract.safeTransferFrom(msg.sender, address(this), proposal.nft2TokenId, 1, "");
+        assetsContract.safeTransferFrom(msg.sender, address(this), proposal.asset2TokenId, 1, "");
+
+        // Update the user balances
+        balances[proposal.owner1][proposal.asset1TokenId] -= 1;
+        balances[proposal.owner1][proposal.asset2TokenId] += 1;
+        balances[proposal.owner2][proposal.asset1TokenId] += 1;
 
         // Update the proposal status
         proposal.status = ProposalStatus.Approved;
@@ -119,5 +128,26 @@ contract AssetSwap {
 
         // Update the proposal status
         proposal.status = ProposalStatus.Rejected;
+    }
+
+    function cancelProposal(uint256 proposalId, bool withdraw) external {
+        Proposal storage proposal = proposals[proposalId];
+
+        // Check if the proposal is pending
+        if (proposal.status != ProposalStatus.Pending) {
+            revert AssetSwapProposalNotPending(proposal.status);
+        }
+
+        // Check if the caller is the owner1
+        if (proposal.owner1 != msg.sender) {
+            revert AssetSwapNotOwner2(proposal.owner1, msg.sender);
+        }
+
+        if (withdraw && balances[msg.sender][proposal.asset1TokenId] > 0) {
+            // Withdraw NFT1 from the contract
+        }
+
+        // Update the proposal status
+        proposal.status = ProposalStatus.Canceled;
     }
 }
