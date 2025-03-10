@@ -163,17 +163,21 @@ contract AssetSwap {
         proposal.status = ProposalStatus.Canceled;
     }
 
-    function withdrawAsset(uint256 tokenId, uint256 amount) external {
-        // Check if the caller has enough of the asset
-        if (balances[msg.sender][tokenId] < amount) {
-            revert AssetSwapInsufficientBalance(msg.sender, balances[msg.sender][tokenId], amount, tokenId);
+    function withdrawAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
+        if (tokenIds.length != amounts.length) {
+            revert AssetSwapArraysLengthMismatch(tokenIds.length, amounts.length);
         }
 
-        // Update the user balances
-        balances[msg.sender][tokenId] -= amount;
+        uint256 length = tokenIds.length;
+        address from = address(this);
+        address to = msg.sender;
+        bytes memory data = "";
 
-        // Transfer the asset to the caller
-        assetsContract.safeTransferFrom(address(this), msg.sender, tokenId, amount, "");
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        for (uint256 i = 0; i < length; i++) {
+            balances[to][tokenIds[i]] -= amounts[i];
+        }
     }
 
     function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
