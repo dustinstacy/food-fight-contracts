@@ -239,13 +239,13 @@ contract AssetSwap {
             }
         }
 
-        // Transfer the assets to the caller
-        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
-
         // Update the user balances
         for (uint256 i = 0; i < length; i++) {
             balances[to][tokenIds[i]] -= amounts[i];
         }
+
+        // Transfer the assets to the caller
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
 
         emit AssetsWithdrawn(to, tokenIds, amounts);
     }
