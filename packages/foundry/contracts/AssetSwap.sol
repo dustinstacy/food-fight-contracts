@@ -85,6 +85,10 @@ contract AssetSwap {
         assetsContract = IERC1155(_assetsContractAddress);
     }
 
+    ///////////////////////////////////////////////////////////
+    ///                    CORE FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
     /// @notice Create a proposal to swap two assets
     /// @param owner2 The address of the owner to swap with
     /// @param asset1TokenId The token ID of the first asset
@@ -122,6 +126,8 @@ contract AssetSwap {
         emit ProposalCreated(proposalCount);
     }
 
+    // @notice Approve a proposal to swap two assets
+    /// @param proposalId The ID of the proposal to approve
     function approveProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
 
@@ -157,6 +163,8 @@ contract AssetSwap {
         emit ProposalApproved(proposalId);
     }
 
+    // @notice Reject a proposal to swap two assets
+    /// @param proposalId The ID of the proposal to reject
     function rejectProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
 
@@ -179,6 +187,8 @@ contract AssetSwap {
         emit ProposalRejected(proposalId);
     }
 
+    // @notice Cancel a proposal to swap two assets
+    /// @param proposalId The ID of the proposal to cancel
     function cancelProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
 
@@ -201,6 +211,13 @@ contract AssetSwap {
         emit ProposalCanceled(proposalId);
     }
 
+    ///////////////////////////////////////////////////////////
+    ///                  ASSETS FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Withdraw assets from the contract
+    /// @param tokenIds The token IDs of the assets to withdraw
+    /// @param amounts The amounts of the assets to withdraw
     function withdrawAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
         // Check if the token IDs and amounts arrays have the same length
         if (tokenIds.length != amounts.length) {
@@ -224,6 +241,9 @@ contract AssetSwap {
         emit AssetsWithdrawn(to, tokenIds, amounts);
     }
 
+    /// @notice Deposit assets into the contract
+    /// @param tokenIds The token IDs of the assets to deposit
+    /// @param amounts The amounts of the assets to deposit
     function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
         // Check if the token IDs and amounts arrays have the same length
         if (tokenIds.length != amounts.length) {
@@ -245,5 +265,71 @@ contract AssetSwap {
         }
 
         emit AssetsDeposited(from, tokenIds, amounts);
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                    VIEW FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Get the balance of a user for a specific token
+    /// @param owner The address of the user
+    /// @param tokenId The ID of the token
+    /// @return balance The balance of the user for the token
+    function getBalance(address owner, uint256 tokenId) public view returns (uint256 balance) {
+        return balances[owner][tokenId];
+    }
+
+    /// @notice Get an existing proposal
+    /// @param proposalId The ID of the proposal
+    /// @return proposal The proposal object
+    function getProposal(uint256 proposalId) public view returns (Proposal memory proposal) {
+        return proposals[proposalId];
+    }
+
+    /// @notice Get the status of a proposal
+    /// @param proposalId The ID of the proposal
+    /// @return status The status of the proposal
+    function getProposalStatus(uint256 proposalId) public view returns (ProposalStatus status) {
+        return proposals[proposalId].status;
+    }
+
+    /// @notice Get the owner1 of a proposal
+    /// @param proposalId The ID of the proposal
+    /// @return owner1 The address of the owner1
+    function getProposalOwner1(uint256 proposalId) public view returns (address owner1) {
+        return proposals[proposalId].owner1;
+    }
+
+    /// @notice Get the owner2 of a proposal
+    /// @param proposalId The ID of the proposal
+    /// @return owner2 The address of the owner2
+    function getProposalOwner2(uint256 proposalId) public view returns (address owner2) {
+        return proposals[proposalId].owner2;
+    }
+
+    /// @notice Get the asset1 token ID of a proposal
+    /// @param proposalId The ID of the proposal
+    /// @return asset1TokenId The token ID of the asset1
+    function getProposalAsset1TokenId(uint256 proposalId) public view returns (uint256 asset1TokenId) {
+        return proposals[proposalId].asset1TokenId;
+    }
+
+    /// @notice Get the asset2 token ID of a proposal
+    /// @param proposalId The ID of the proposal
+    /// @return asset2TokenId The token ID of the asset2
+    function getProposalAsset2TokenId(uint256 proposalId) public view returns (uint256 asset2TokenId) {
+        return proposals[proposalId].asset2TokenId;
+    }
+
+    /// @notice Get the number of proposals
+    /// @return proposalCount The number of proposals
+    function getProposalCount() public view returns (uint256) {
+        return proposalCount;
+    }
+
+    /// @notice Get the address of the ERC1155 contract
+    /// @return assetsContract The address of the ERC1155 contract
+    function getAssetsContract() public view returns (address) {
+        return address(assetsContract);
     }
 }
