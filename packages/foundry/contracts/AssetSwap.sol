@@ -17,6 +17,9 @@ contract AssetSwap {
     /// Emitted when the caller tries to approve a proposal that is not the owner2.
     error AssetSwapNotOwner2(address owner2, address caller);
 
+    /// Emitted when the caller tries to withdraw more assets than they own.
+    error AssetSwapInsufficientBalance(address owner, uint256 balance, uint256 amount, uint256 tokenId);
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -130,7 +133,7 @@ contract AssetSwap {
         proposal.status = ProposalStatus.Rejected;
     }
 
-    function cancelProposal(uint256 proposalId, bool withdraw) external {
+    function cancelProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
 
         // Check if the proposal is pending
@@ -143,11 +146,20 @@ contract AssetSwap {
             revert AssetSwapNotOwner2(proposal.owner1, msg.sender);
         }
 
-        if (withdraw && balances[msg.sender][proposal.asset1TokenId] > 0) {
-            // Withdraw NFT1 from the contract
-        }
-
         // Update the proposal status
         proposal.status = ProposalStatus.Canceled;
+    }
+
+    function withdrawAsset(uint256 tokenId, uint256 amount) external {
+        // Check if the caller has enough of the asset
+        if (balances[msg.sender][tokenId] < amount) {
+            revert AssetSwapInsufficientBalance(msg.sender, balances[msg.sender][tokenId], amount, tokenId);
+        }
+
+        // Update the user balances
+        balances[msg.sender][tokenId] -= amount;
+
+        // Transfer the asset to the caller
+        assetsContract.safeTransferFrom(address(this), msg.sender, tokenId, amount, "");
     }
 }
