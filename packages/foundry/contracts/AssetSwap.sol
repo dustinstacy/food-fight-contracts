@@ -9,13 +9,13 @@ contract AssetSwap {
     ///////////////////////////////////////////////////////////
 
     /// Emitted when the caller tries to create a proposal for an asset they do not own.
-    error AssetSwapAssetNotOwned();
+    error AssetSwapAssetNotOwned(uint256 requiredAssetId);
 
     /// Emitted when the caller tries to approve a proposal that is not pending.
-    error AssetSwapProposalNotPending();
+    error AssetSwapProposalNotPending(ProposalStatus status);
 
     /// Emitted when the caller tries to approve a proposal that is not the owner2.
-    error AssetSwapNotOwner2();
+    error AssetSwapNotOwner2(address owner2, address caller);
 
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
@@ -66,7 +66,7 @@ contract AssetSwap {
     function createProposal(address owner2, uint256 nft1TokenId, uint256 nft2TokenId, uint256 timeToExecute) external {
         // Make sure the caller has a balance of NFT1
         if (assetsContract.balanceOf(msg.sender, nft1TokenId) == 0) {
-            revert AssetSwapAssetNotOwned();
+            revert AssetSwapAssetNotOwned(nft1TokenId);
         }
 
         // Deposit NFT1 into the contract
@@ -89,12 +89,12 @@ contract AssetSwap {
 
         // Check if the proposal is pending
         if (proposal.status != ProposalStatus.Pending) {
-            revert AssetSwapProposalNotPending();
+            revert AssetSwapProposalNotPending(proposal.status);
         }
 
         // Check if the caller is the owner2
         if (proposal.owner2 != msg.sender) {
-            revert AssetSwapNotOwner2();
+            revert AssetSwapNotOwner2(proposal.owner2, msg.sender);
         }
 
         // Deposit NFT2 into the contract
@@ -102,5 +102,22 @@ contract AssetSwap {
 
         // Update the proposal status
         proposal.status = ProposalStatus.Approved;
+    }
+
+    function rejectProposal(uint256 proposalId) external {
+        Proposal storage proposal = proposals[proposalId];
+
+        // Check if the proposal is pending
+        if (proposal.status != ProposalStatus.Pending) {
+            revert AssetSwapProposalNotPending(proposal.status);
+        }
+
+        // Check if the caller is the owner1
+        if (proposal.owner2 != msg.sender) {
+            revert AssetSwapNotOwner2(proposal.owner2, msg.sender);
+        }
+
+        // Update the proposal status
+        proposal.status = ProposalStatus.Rejected;
     }
 }
