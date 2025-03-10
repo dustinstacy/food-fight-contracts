@@ -237,9 +237,61 @@ contract AssetAuction {
         // update the igcBalances
         igcBalances[msg.sender] -= auction.winningBid;
         igcBalances[auction.seller] += auction.winningBid;
+    }
 
-        // Transfer the asset to the winning bidder
-        assetsContract.safeTransferFrom(address(this), msg.sender, auction.assetTokenId, 1, "");
+    ///////////////////////////////////////////////////////////
+    ///                  ASSETS FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Withdraw assets from the contract
+    /// @param tokenIds The token IDs of the assets to withdraw
+    /// @param amounts The amounts of the assets to withdraw
+    function withdrawAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
+        // Check if the token IDs and amounts arrays have the same length
+        if (tokenIds.length != amounts.length) {
+            revert("Arrays length mismatch");
+        }
+
+        // Store the necessary variables for the safeBatchTransferFrom function
+        uint256 length = tokenIds.length;
+        address from = address(this);
+        address to = msg.sender;
+        bytes memory data = "";
+
+        for (uint256 i = 0; i < length; i++) {
+            // Check if the user has enough balance
+            if (assetBalances[from][tokenIds[i]] < amounts[i]) {
+                revert("Insufficient balance");
+            }
+        }
+
+        // Update the user balances
+        for (uint256 i = 0; i < length; i++) {
+            assetBalances[from][tokenIds[i]] -= amounts[i];
+        }
+
+        // Transfer the assets to the user
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+    }
+
+    /// @notice Withdraw IGC from the contract
+    /// @param amount The amount of IGC to withdraw
+    function withdrawIGC(uint256 amount) external {
+        // Check if the user has enough balance
+        if (igcBalances[msg.sender] < amount) {
+            revert("Insufficient balance");
+        }
+
+        // Store the necessary variables for the safeTransferFrom function
+        address from = address(this);
+        address to = msg.sender;
+        bytes memory data = "";
+
+        // Update the user balance
+        igcBalances[msg.sender] -= amount;
+
+        // Transfer the IGC to the user
+        assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
     }
 
     /// @notice Deposit assets into the contract
