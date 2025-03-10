@@ -407,4 +407,125 @@ contract AssetAuction {
 
         emit IGCDeposited(from, amount);
     }
+
+    ///////////////////////////////////////////////////////////
+    ///                  VIEW FUNCTIONS                     ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Get the details of an auction
+    /// @param auctionId The ID of the auction
+    /// @return auction The details of the auction
+    function getAuction(uint256 auctionId) public view returns (Auction memory auction) {
+        return auctions[auctionId];
+    }
+
+    /// @notice Get the seller of an auction
+    /// @param auctionId The ID of the auction
+    /// @return seller The address of the seller
+    function getAuctionSeller(uint256 auctionId) public view returns (address seller) {
+        return auctions[auctionId].seller;
+    }
+
+    /// @notice Get the highest bidder of an auction
+    /// @param auctionId The ID of the auction
+    /// @return highestBidder The address of the highest bidder
+    function getAuctionHighestBidder(uint256 auctionId) public view returns (address highestBidder) {
+        return auctions[auctionId].highestBidder;
+    }
+
+    /// @notice Get the winning bidder of an auction
+    /// @param auctionId The ID of the auction
+    /// @return winningBidder The address of the winning bidder
+    function getAuctionWinningBidder(uint256 auctionId) public view returns (address winningBidder) {
+        return auctions[auctionId].winningBidder;
+    }
+
+    /// @notice Get the asset token ID of an auction
+    /// @param auctionId The ID of the auction
+    /// @return assetTokenId The asset token ID
+    function getAuctionAssetTokenId(uint256 auctionId) public view returns (uint256 assetTokenId) {
+        return auctions[auctionId].assetTokenId;
+    }
+
+    /// @notice Get the reserve price of an auction
+    /// @param auctionId The ID of the auction
+    /// @return reservePrice The reserve price
+    function getAuctionReservePrice(uint256 auctionId) public view returns (uint256 reservePrice) {
+        return auctions[auctionId].reservePrice;
+    }
+
+    /// @notice Get the deadline of an auction
+    /// @param auctionId The ID of the auction
+    /// @return deadline The deadline
+    function getAuctionDeadline(uint256 auctionId) public view returns (uint256 deadline) {
+        return auctions[auctionId].deadline;
+    }
+
+    /// @notice Get the highest bid of an auction
+    /// @param auctionId The ID of the auction
+    /// @return highestBid The highest bid
+    function getAuctionHighestBid(uint256 auctionId) public view returns (uint256 highestBid) {
+        return auctions[auctionId].highestBid;
+    }
+
+    /// @notice Get the winning bid of an auction
+    /// @param auctionId The ID of the auction
+    /// @return winningBid The winning bid
+    function getAuctionWinningBid(uint256 auctionId) public view returns (uint256 winningBid) {
+        return auctions[auctionId].winningBid;
+    }
+
+    /// @notice Get the status of an auction
+    /// @param auctionId The ID of the auction
+    /// @return status The status of the auction
+    function getAuctionStatus(uint256 auctionId) public view returns (Status status) {
+        return auctions[auctionId].status;
+    }
+
+    /// @notice Get the style of an auction
+    /// @param auctionId The ID of the auction
+    /// @return style The style of the auction
+    function getAuctionStyle(uint256 auctionId) public view returns (Style style) {
+        return auctions[auctionId].style;
+    }
+
+    /// @notice Get the bids of an auction
+    /// @param auctionId The ID of the auction
+    /// @return bids The bids of the auction
+    function getAuctionBids(uint256 auctionId) public view returns (Bid[] memory bids) {
+        return auctions[auctionId].bids;
+    }
+
+    /// @notice Get the balance of an asset for a user
+    /// @param user The address of the user
+    /// @param assetId The ID of the asset
+    /// @return balance The balance of the asset
+    function getAssetBalance(address user, uint256 assetId) public view returns (uint256 balance) {
+        return assetBalances[user][assetId];
+    }
+
+    /// @notice Get the balance of IGC for a user
+    /// @param user The address of the user
+    /// @return balance The balance of IGC
+    function getIGCBalance(address user) public view returns (uint256 balance) {
+        return igcBalances[user];
+    }
+
+    /// @notice Get the auction count
+    /// @return count The auction count
+    function getAuctionCount() public view returns (uint256 count) {
+        return auctionCount;
+    }
+
+    /// @notice Get the IGC token ID
+    /// @return tokenId The IGC token ID
+    function getIGCTokenId() public view returns (uint8 tokenId) {
+        return igcTokenId;
+    }
+
+    /// @notice Get the assets contract address
+    /// @return address The address of the assets contract
+    function getAssetsContract() public view returns (address) {
+        return address(assetsContract);
+    }
 }
