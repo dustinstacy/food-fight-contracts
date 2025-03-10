@@ -19,7 +19,8 @@ contract AssetAuction {
     enum Status {
         Open,
         Cancelled,
-        Ended
+        Ended,
+        ReserveNotMet
     }
 
     enum Style {
@@ -57,10 +58,12 @@ contract AssetAuction {
     ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
-    mapping(uint256 auctionId => Auction) public auctions;
-    mapping(address => mapping(uint256 => uint256)) public balances;
+    mapping(uint256 auctionId => Auction) private auctions;
+    mapping(address user => mapping(uint256 assetId => uint256 assetBalance)) private assetBalances;
+    mapping(address user => uint256 igcBalance) private igcBalances;
 
     uint256 private auctionCount;
+    uint8 private igcTokenId = 0;
 
     IERC1155 private assetsContract;
 
@@ -83,7 +86,7 @@ contract AssetAuction {
     /// @param style The style of the auction
     function createAuction(uint256 assetTokenId, uint256 reservePrice, uint256 deadline, Style style) public {
         // Check if the caller has any of the assetTokenId deposited
-        if (balances[msg.sender][assetTokenId] == 0) {
+        if (assetBalances[msg.sender][assetTokenId] == 0) {
             // depositAssets()
         }
 
@@ -108,8 +111,8 @@ contract AssetAuction {
             bids: bids
         });
 
-        // Update the user balances
-        balances[msg.sender][assetTokenId] -= 1;
+        // Update the user assetBalances
+        assetBalances[msg.sender][assetTokenId] -= 1;
 
         emit AuctionCreated(auctionCount, assetTokenId, reservePrice, deadline, style);
     }
@@ -141,5 +144,37 @@ contract AssetAuction {
 
         // Add the bid to the bids array
         auction.bids.push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
+    }
+
+    /// @notice Allows a seller to complete an auction
+    /// @param auctionId The ID of the auction
+    function completeAuction(uint256 auctionId) external {
+        Auction storage auction = auctions[auctionId];
+
+        // Check if the auction is open
+        if (auction.status != Status.Open) {
+            revert("Auction is not open");
+        }
+
+        // Check if the deadline has passed
+        if (block.timestamp < auction.deadline) {
+            revert("Auction has not passed the deadline");
+        }
+
+        // Check if the reserve price has been met
+        if (auction.highestBid < auction.reservePrice) {
+            // Update the auction status
+            auction.status = Status.ReserveNotMet;
+            // Update the seller assetBalances
+            assetBalances[auction.seller][auction.assetTokenId] += 1;
+            return;
+        }
+
+        // Update the auction status
+        auction.status = Status.Ended;
+
+        // Update the winning bid and winning bidder
+        auction.winningBid = auction.highestBid;
+        auction.winningBidder = auction.highestBidder;
     }
 }
