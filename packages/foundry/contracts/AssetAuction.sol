@@ -38,7 +38,35 @@ contract AssetAuction {
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
 
+    // Emitted when an auction is created
     event AuctionCreated(uint256 auctionId, uint256 assetTokenId, uint256 reservePrice, uint256 deadline, Style style);
+
+    // Emitted when a bid is placed
+    event BidPlaced(uint256 auctionId, address user, uint256 amount);
+
+    // Emitted when an auction is ended
+    event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
+
+    // Emitted when an auction is cancelled
+    event AuctionCancelled(uint256 auctionId);
+
+    // Emitted when the reserve price is not met
+    event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
+
+    // Emitted when an asset is claimed
+    event AssetClaimed(uint256 auctionId, address seller, address winningBidder, uint256 winningBid);
+
+    // Emitted when assets are deposited
+    event AssetsDeposited(address user, uint256[] tokenIds, uint256[] amounts);
+
+    // Emitted when assets are withdrawn
+    event AssetsWithdrawn(address user, uint256[] tokenIds, uint256[] amounts);
+
+    // Emitted when IGC is deposited
+    event IGCDeposited(address user, uint256 amount);
+
+    // Emitted when IGC is withdrawn
+    event IGCWithdrawn(address user, uint256 amount);
 
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
@@ -181,6 +209,8 @@ contract AssetAuction {
 
         // Add the bid to the bids array
         auction.bids.push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
+
+        emit BidPlaced(auctionId, msg.sender, amount);
     }
 
     /// @notice Allows a seller to complete an auction
@@ -204,6 +234,9 @@ contract AssetAuction {
             auction.status = Status.ReserveNotMet;
             // Update the seller assetBalances
             assetBalances[auction.seller][auction.assetTokenId] += 1;
+
+            emit AuctionReserveNotMet(auctionId, auction.reservePrice, auction.highestBid);
+
             return;
         }
 
@@ -213,6 +246,8 @@ contract AssetAuction {
         // Update the winning bid and winning bidder
         auction.winningBid = auction.highestBid;
         auction.winningBidder = auction.highestBidder;
+
+        emit AuctionEnded(auctionId, auction.winningBidder, auction.winningBid);
     }
 
     /// @notice Allows a seller to cancel an auction
@@ -240,6 +275,8 @@ contract AssetAuction {
 
         // Update the seller assetBalances
         assetBalances[auction.seller][auction.assetTokenId] += 1;
+
+        emit AuctionCancelled(auctionId);
     }
 
     /// @notice Allows a user to claim the asset they won in an auction
@@ -265,6 +302,8 @@ contract AssetAuction {
         // update the igcBalances
         igcBalances[msg.sender] -= auction.winningBid;
         igcBalances[auction.seller] += auction.winningBid;
+
+        emit AssetClaimed(auctionId, msg.sender, auction.winningBidder, auction.winningBid);
     }
 
     ///////////////////////////////////////////////////////////
@@ -300,6 +339,8 @@ contract AssetAuction {
 
         // Transfer the assets to the user
         assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        emit AssetsWithdrawn(to, tokenIds, amounts);
     }
 
     /// @notice Withdraw IGC from the contract
@@ -320,6 +361,8 @@ contract AssetAuction {
 
         // Transfer the IGC to the user
         assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
+
+        emit IGCWithdrawn(to, amount);
     }
 
     /// @notice Deposit assets into the contract
@@ -344,6 +387,8 @@ contract AssetAuction {
         for (uint256 i = 0; i < length; i++) {
             assetBalances[from][tokenIds[i]] += amounts[i];
         }
+
+        emit AssetsDeposited(from, tokenIds, amounts);
     }
 
     /// @notice Deposit IGC into the contract
@@ -359,5 +404,7 @@ contract AssetAuction {
 
         // Update the user balance
         igcBalances[from] += amount;
+
+        emit IGCDeposited(from, amount);
     }
 }
