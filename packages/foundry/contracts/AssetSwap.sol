@@ -5,10 +5,6 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 /// @title AssetSwap
 /// @notice This contract allows users to swap ERC1155 assets with each other.
-/// @dev Potential improvements:
-/// 1. Proposal Execution
-/// 2. Proposal Expiry
-
 contract AssetSwap {
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
