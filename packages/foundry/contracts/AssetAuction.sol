@@ -7,6 +7,34 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 /// @notice Auction contract where users can put their NFTs up for auction and other users can bid on them.
 contract AssetAuction {
     ///////////////////////////////////////////////////////////
+    ///                     ERRORS                          ///
+    ///////////////////////////////////////////////////////////
+
+    // Emitted when the auction is not open
+    error AssetAuctionAuctionIsNotOpen(Status status);
+
+    // Emitted when the deadline has passed
+    error AssetAuctionDeadlineHasPassed(uint256 deadline);
+
+    // Emitted when the bid is not higher than the highest bid
+    error AssetAuctionBidNotHigherThanHighestBid(uint256 highestBid, uint256 amount);
+
+    // Emitted when the auction has not ended
+    error AssetAuctionAuctionHasNotEnded(Status status);
+
+    // Emitted when the user is not the seller
+    error AssetAuctionYouAreNotTheSeller(address seller, address user);
+
+    // Emitted when the user is not the winning bidder
+    error AssetAuctionYouAreNotTheWinningBidder(address winningBidder, address user);
+
+    // Emitted when the arrays length mismatch
+    error AssetAuctionArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
+
+    // Emitted when the user has insufficient balance
+    error AssetAuctionInsufficientBalance(uint256 balance, uint256 amount);
+
+    ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
 
@@ -134,17 +162,17 @@ contract AssetAuction {
 
         // Check if the auction is open
         if (auction.status != Status.Open) {
-            revert("Auction is not open");
+            revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
         // Check if the auction has ended
         if (block.timestamp >= auction.deadline) {
-            revert("Auction has ended");
+            revert AssetAuctionDeadlineHasPassed(auction.deadline);
         }
 
         // Check if the bid is higher than the highest bid
         if (amount <= auction.highestBid) {
-            revert("Bid must be higher than the highest bid");
+            revert AssetAuctionBidNotHigherThanHighestBid(auction.highestBid, amount);
         }
 
         // Update the highest bid and highest bidder
@@ -162,12 +190,12 @@ contract AssetAuction {
 
         // Check if the auction is open
         if (auction.status != Status.Open) {
-            revert("Auction is not open");
+            revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
         // Check if the deadline has passed
         if (block.timestamp < auction.deadline) {
-            revert("Auction has not passed the deadline");
+            revert AssetAuctionDeadlineHasPassed(auction.deadline);
         }
 
         // Check if the reserve price has been met
@@ -194,17 +222,17 @@ contract AssetAuction {
 
         // Check if the auction is open
         if (auction.status != Status.Open) {
-            revert("Auction is not open");
+            revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
         // Check if the deadline has passed
         if (block.timestamp >= auction.deadline) {
-            revert("Auction has passed the deadline");
+            revert AssetAuctionDeadlineHasPassed(auction.deadline);
         }
 
         // Check if the caller is the seller
         if (auction.seller != msg.sender) {
-            revert("You are not the seller");
+            revert AssetAuctionYouAreNotTheSeller(auction.seller, msg.sender);
         }
 
         // Update the auction status
@@ -221,12 +249,12 @@ contract AssetAuction {
 
         // Check if the has ended
         if (auction.status != Status.Ended) {
-            revert("Auction is not ended");
+            revert AssetAuctionAuctionHasNotEnded(auction.status);
         }
 
         // Check if the caller is the winning bidder
         if (auction.winningBidder != msg.sender) {
-            revert("You are not the winning bidder");
+            revert AssetAuctionYouAreNotTheWinningBidder(auction.winningBidder, msg.sender);
         }
 
         // Check the IGC balance of the bidder
@@ -249,7 +277,7 @@ contract AssetAuction {
     function withdrawAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
         // Check if the token IDs and amounts arrays have the same length
         if (tokenIds.length != amounts.length) {
-            revert("Arrays length mismatch");
+            revert AssetAuctionArraysLengthMismatch(tokenIds.length, amounts.length);
         }
 
         // Store the necessary variables for the safeBatchTransferFrom function
@@ -261,7 +289,7 @@ contract AssetAuction {
         for (uint256 i = 0; i < length; i++) {
             // Check if the user has enough balance
             if (assetBalances[from][tokenIds[i]] < amounts[i]) {
-                revert("Insufficient balance");
+                revert AssetAuctionInsufficientBalance(assetBalances[from][tokenIds[i]], amounts[i]);
             }
         }
 
@@ -279,7 +307,7 @@ contract AssetAuction {
     function withdrawIGC(uint256 amount) external {
         // Check if the user has enough balance
         if (igcBalances[msg.sender] < amount) {
-            revert("Insufficient balance");
+            revert AssetAuctionInsufficientBalance(igcBalances[msg.sender], amount);
         }
 
         // Store the necessary variables for the safeTransferFrom function
@@ -300,7 +328,7 @@ contract AssetAuction {
     function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
         // Check if the token IDs and amounts arrays have the same length
         if (tokenIds.length != amounts.length) {
-            revert("Arrays length mismatch");
+            revert AssetAuctionArraysLengthMismatch(tokenIds.length, amounts.length);
         }
 
         // Store the necessary variables for the safeBatchTransferFrom function
