@@ -11,6 +11,12 @@ contract AssetSwap {
     /// Emitted when the caller tries to create a proposal for an asset they do not own.
     error AssetSwapAssetNotOwned();
 
+    /// Emitted when the caller tries to approve a proposal that is not pending.
+    error AssetSwapProposalNotPending();
+
+    /// Emitted when the caller tries to approve a proposal that is not the owner2.
+    error AssetSwapNotOwner2();
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -31,9 +37,6 @@ contract AssetSwap {
         address owner2;
         uint256 nft1TokenId;
         uint256 nft2TokenId;
-        uint256 creationTime;
-        uint256 timeToExecute;
-        uint256 executionDealine;
         ProposalStatus status;
     }
 
@@ -60,7 +63,7 @@ contract AssetSwap {
     /// @param nft1TokenId The token ID of the first NFT
     /// @param nft2TokenId The token ID of the second NFT
     /// @param timeToExecute The time in seconds for how long owner2 has to execute the swap after approval
-    function createProposal(address owner2, uint256 nft1TokenId, uint256 nft2TokenId, uint256 timeToExecute) public {
+    function createProposal(address owner2, uint256 nft1TokenId, uint256 nft2TokenId, uint256 timeToExecute) external {
         // Make sure the caller has a balance of NFT1
         if (assetsContract.balanceOf(msg.sender, nft1TokenId) == 0) {
             revert AssetSwapAssetNotOwned();
@@ -77,10 +80,27 @@ contract AssetSwap {
             owner2: owner2,
             nft1TokenId: nft1TokenId,
             nft2TokenId: nft2TokenId,
-            creationTime: block.timestamp,
-            timeToExecute: timeToExecute,
-            executionDealine: 0,
             status: ProposalStatus.Pending
         });
+    }
+
+    function approveProposal(uint256 proposalId) external {
+        Proposal storage proposal = proposals[proposalId];
+
+        // Check if the proposal is pending
+        if (proposal.status != ProposalStatus.Pending) {
+            revert AssetSwapProposalNotPending();
+        }
+
+        // Check if the caller is the owner2
+        if (proposal.owner2 != msg.sender) {
+            revert AssetSwapNotOwner2();
+        }
+
+        // Deposit NFT2 into the contract
+        assetsContract.safeTransferFrom(msg.sender, address(this), proposal.nft2TokenId, 1, "");
+
+        // Update the proposal status
+        proposal.status = ProposalStatus.Approved;
     }
 }
