@@ -87,7 +87,16 @@ contract AssetAuction {
     function createAuction(uint256 assetTokenId, uint256 reservePrice, uint256 deadline, Style style) public {
         // Check if the caller has any of the assetTokenId deposited
         if (assetBalances[msg.sender][assetTokenId] == 0) {
-            // depositAssets()
+            // Create empty arrays for the depositAssets function
+            uint256[] memory tokenIds = new uint256[](1);
+            uint256[] memory amounts = new uint256[](1);
+
+            // Store the assetTokenId and amount in the arrays
+            tokenIds[0] = assetTokenId;
+            amounts[0] = 1;
+
+            // Deposit the asset
+            depositAssets(tokenIds, amounts);
         }
 
         // Increment the auction count
@@ -222,7 +231,7 @@ contract AssetAuction {
 
         // Check the IGC balance of the bidder
         if (igcBalances[msg.sender] < auction.winningBid) {
-            // depositIGC()
+            depositIGC(auction.winningBid - igcBalances[msg.sender]);
         }
 
         // update the igcBalances
@@ -231,5 +240,44 @@ contract AssetAuction {
 
         // Transfer the asset to the winning bidder
         assetsContract.safeTransferFrom(address(this), msg.sender, auction.assetTokenId, 1, "");
+    }
+
+    /// @notice Deposit assets into the contract
+    /// @param tokenIds The token IDs of the assets to deposit
+    /// @param amounts The amounts of the assets to deposit
+    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
+        // Check if the token IDs and amounts arrays have the same length
+        if (tokenIds.length != amounts.length) {
+            revert("Arrays length mismatch");
+        }
+
+        // Store the necessary variables for the safeBatchTransferFrom function
+        uint256 length = tokenIds.length;
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the assets to the contract
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        // Update the user balances
+        for (uint256 i = 0; i < length; i++) {
+            assetBalances[from][tokenIds[i]] += amounts[i];
+        }
+    }
+
+    /// @notice Deposit IGC into the contract
+    /// @param amount The amount of IGC to deposit
+    function depositIGC(uint256 amount) public {
+        // Store the necessary variables for the safeTransferFrom function
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the IGC to the contract
+        assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
+
+        // Update the user balance
+        igcBalances[from] += amount;
     }
 }
