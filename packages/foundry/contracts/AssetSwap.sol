@@ -282,26 +282,11 @@ contract AssetSwap {
     ///                    VIEW FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Get the balance of a user for a specific token
-    /// @param owner The address of the user
-    /// @param tokenId The ID of the token
-    /// @return balance The balance of the user for the token
-    function getBalance(address owner, uint256 tokenId) public view returns (uint256 balance) {
-        return balances[owner][tokenId];
-    }
-
     /// @notice Get an existing proposal
     /// @param proposalId The ID of the proposal
     /// @return proposal The proposal object
     function getProposal(uint256 proposalId) public view returns (Proposal memory proposal) {
         return proposals[proposalId];
-    }
-
-    /// @notice Get the status of a proposal
-    /// @param proposalId The ID of the proposal
-    /// @return status The status of the proposal
-    function getProposalStatus(uint256 proposalId) public view returns (ProposalStatus status) {
-        return proposals[proposalId].status;
     }
 
     /// @notice Get the owner1 of a proposal
@@ -330,6 +315,21 @@ contract AssetSwap {
     /// @return asset2TokenId The token ID of the asset2
     function getProposalAsset2TokenId(uint256 proposalId) public view returns (uint256 asset2TokenId) {
         return proposals[proposalId].asset2TokenId;
+    }
+
+    /// @notice Get the status of a proposal
+    /// @param proposalId The ID of the proposal
+    /// @return status The status of the proposal
+    function getProposalStatus(uint256 proposalId) public view returns (ProposalStatus status) {
+        return proposals[proposalId].status;
+    }
+
+    /// @notice Get the balance of a user for a specific token
+    /// @param owner The address of the user
+    /// @param tokenId The ID of the token
+    /// @return balance The balance of the user for the token
+    function getBalance(address owner, uint256 tokenId) public view returns (uint256 balance) {
+        return balances[owner][tokenId];
     }
 
     /// @notice Get the number of proposals
