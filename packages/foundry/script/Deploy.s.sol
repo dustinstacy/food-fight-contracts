@@ -2,8 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
-import { DeployInGameCurrency } from "./DeployInGameCurrency.s.sol";
-import { DeployNFTFactory } from "./DeployNFTFactory.s.sol";
+import { DeployAssetFactory } from "./DeployAssetFactory.s.sol";
 
 /**
  * @notice Main deployment script for all contracts
@@ -13,10 +12,7 @@ import { DeployNFTFactory } from "./DeployNFTFactory.s.sol";
  */
 contract DeployScript is ScaffoldETHDeploy {
     function run() external {
-        DeployInGameCurrency deployInGameCurrency = new DeployInGameCurrency();
-        deployInGameCurrency.run();
-
-        DeployNFTFactory deployNFTFactory = new DeployNFTFactory();
-        deployNFTFactory.run();
+        DeployAssetFactory deployAssetFactory = new DeployAssetFactory();
+        deployAssetFactory.run();
     }
 }
