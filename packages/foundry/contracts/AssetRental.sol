@@ -183,7 +183,7 @@ contract AssetRental {
         emit RentalCancelled(rental.owner, rental.renter, rentalId, block.timestamp);
     }
 
-    function returnNft(uint256 rentalId) external {
+    function returnAsset(uint256 rentalId) external {
         RentalAsset memory rental = rentals[rentalId];
 
         // Check if the rental is being rented
@@ -202,7 +202,7 @@ contract AssetRental {
             igcBalances[rental.renter] += rental.deposit;
         }
 
-        // Return the NFT
+        // Return the asset
         rental.status = RentalStatus.Available;
 
         // Remove the rental from the renter's tokens
