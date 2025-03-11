@@ -13,6 +13,9 @@ contract AssetRental {
     // Emitted when an asset is posted for rent.
     event RentalAssetPosted(address rentalOwner, uint256 tokenId, uint256 rentalPrice, uint256 rentalDuration);
 
+    // Emitted when an asset is rented.
+    event RentalAssetRented(address renter, uint256 rentalId, uint256 rentalPrice, uint256 rentalDuration);
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -47,6 +50,8 @@ contract AssetRental {
 
     mapping(uint256 rentalId => RentalAsset) private rentals;
     mapping(address owner => mapping(uint256 tokenId => uint256 balance)) private assetBalances;
+    mapping(address user => uint256 igcBalance) private igcBalances;
+    mapping(address user => mapping(uint256 rentalTokenId => uint256 balance)) private renterTokens;
 
     uint256 private rentalCount;
 
@@ -100,5 +105,35 @@ contract AssetRental {
         assetBalances[msg.sender][tokenId] -= 1;
 
         emit RentalAssetPosted(msg.sender, tokenId, price, duration);
+    }
+
+    /// @notice Rent an asset.
+    /// @param rentalId The ID of the rental asset.
+    function rentAsset(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the rental is available
+        if (rental.status != RentalStatus.Available) {
+            revert("AssetRental: Rental not available");
+        }
+
+        // Check if the caller has enough funds to rent the asset
+        if (igcBalances[msg.sender] < rental.price + rental.deposit) {
+            revert("AssetRental: Insufficient funds");
+        }
+
+        // Rent the asset
+        igcBalances[msg.sender] -= rental.price + rental.deposit;
+        igcBalances[rental.owner] += rental.price + rental.deposit;
+        renterTokens[msg.sender][rental.tokenId] += 1;
+
+        // Update the rental
+        rental.renter = msg.sender;
+        rental.expiration = block.timestamp + rental.duration;
+        rental.depositExpiration = rental.expiration + rental.returnTime;
+        rental.status = RentalStatus.Rented;
+
+        // Emit an event
+        emit RentalAssetRented(msg.sender, rentalId, rental.price, rental.duration);
     }
 }
