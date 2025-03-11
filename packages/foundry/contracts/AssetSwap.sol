@@ -96,7 +96,7 @@ contract AssetSwap {
     /// @param asset1TokenId The token ID of the first asset
     /// @param asset2TokenId The token ID of the second asset
     function createProposal(address owner2, uint256 asset1TokenId, uint256 asset2TokenId) external {
-        // Check if the caller has any of the asset1 deposited
+        // Check if the caller has any of the asset1TokenId deposited
         if (balances[msg.sender][asset1TokenId] == 0) {
             // Create empty arrays for the depositAssets function
             uint256[] memory tokenIds = new uint256[](1);
@@ -122,7 +122,7 @@ contract AssetSwap {
             status: ProposalStatus.Pending
         });
 
-        // Update the user balances
+        // Update the balances
         balances[msg.sender][asset1TokenId] -= 1;
 
         emit ProposalCreated(proposalCount);
