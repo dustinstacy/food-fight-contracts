@@ -40,7 +40,20 @@ contract AssetFactorySetAssetsHelper is Test { }
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
 ///////////////////////////////////////////////////////////
-contract AssetFactoryConstructorTest is Test { }
+contract AssetFactoryConstructorTest is Test {
+    AssetFactory factory;
+    address public owner;
+
+    function setUp() public {
+        owner = address(1);
+        factory = new AssetFactory(owner);
+    }
+
+    function test_constructor() public view {
+        // Check the owner was set correctly
+        assertEq(factory.owner(), owner);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                  SET ASSETS TESTS                   ///
