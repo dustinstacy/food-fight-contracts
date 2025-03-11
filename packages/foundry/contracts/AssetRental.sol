@@ -21,6 +21,9 @@ contract AssetRental {
     // Emitted when an asset rental is cancelled.
     event RentalCancelled(address rentalOwner, address renter, uint256 rentalId, uint256 timeCancelled);
 
+    // Emitted when an asset rental is returned.
+    event RentalReturned(address renter, uint256 rentalId, uint256 timeReturned);
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -57,6 +60,7 @@ contract AssetRental {
     mapping(address owner => mapping(uint256 tokenId => uint256 balance)) private assetBalances;
     mapping(address user => uint256 igcBalance) private igcBalances;
     mapping(address user => mapping(uint256 rentalTokenId => uint256 balance)) private renterTokens;
+    mapping(address user => uint256 amountOwed) private unreturnedDeposits;
 
     uint256 private rentalCount;
 
@@ -177,5 +181,43 @@ contract AssetRental {
 
         // Emit an event
         emit RentalCancelled(rental.owner, rental.renter, rentalId, block.timestamp);
+    }
+
+    function returnNft(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the rental is being rented
+        if (rental.status != RentalStatus.Rented) {
+            revert("AssetRental: Rental not currently rented");
+        }
+
+        // Check if the caller is the renter
+        if (rental.renter != msg.sender) {
+            revert("AssetRental: Not the renter of the rental");
+        }
+
+        // Check if the rental has expired
+        if (block.timestamp < rental.expiration + rental.depositExpiration) {
+            // Return the deposit
+            igcBalances[rental.renter] += rental.deposit;
+        }
+
+        // Return the NFT
+        rental.status = RentalStatus.Available;
+
+        // Remove the rental from the renter's tokens
+        renterTokens[rental.renter][rental.tokenId] -= 1;
+
+        // Check if the owner has enough funds to refund the deposit
+        if (igcBalances[rental.owner] < rental.deposit) {
+            // Add the deposit to the unreturned deposits
+            unreturnedDeposits[rental.owner] += rental.deposit;
+            return;
+        }
+
+        // Update the owner igc balance
+        igcBalances[rental.owner] -= rental.deposit;
+
+        emit RentalReturned(rental.renter, rentalId, block.timestamp);
     }
 }
