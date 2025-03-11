@@ -13,11 +13,14 @@ contract AssetSwap {
     /// Emitted when the caller tries to approve a proposal that is not pending.
     error AssetSwapProposalNotPending(ProposalStatus status);
 
+    /// Emitted when the caller tries to cancel a proposal that is not the owner1.
+    error AssetSwapNotOwner1(address caller, address owner1);
+
     /// Emitted when the caller tries to approve a proposal that is not the owner2.
-    error AssetSwapNotOwner2(address owner2, address caller);
+    error AssetSwapNotOwner2(address caller, address owner2);
 
     /// Emitted when the caller tries to withdraw more assets than they own.
-    error AssetSwapInsufficientBalance(address owner, uint256 balance, uint256 amount, uint256 tokenId);
+    error AssetSwapInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
 
     /// Emitted when the token IDs and amounts arrays have different lengths.
     error AssetSwapArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
@@ -140,7 +143,7 @@ contract AssetSwap {
 
         // Check if the caller is the owner2
         if (proposal.owner2 != msg.sender) {
-            revert AssetSwapNotOwner2(proposal.owner2, msg.sender);
+            revert AssetSwapNotOwner2(msg.sender, proposal.owner2);
         }
 
         // Create empty arrays for the depositAssets function
@@ -177,7 +180,7 @@ contract AssetSwap {
 
         // Check if the caller is the owner2
         if (proposal.owner2 != msg.sender) {
-            revert AssetSwapNotOwner2(proposal.owner2, msg.sender);
+            revert AssetSwapNotOwner2(msg.sender, proposal.owner2);
         }
 
         // Update the proposal status
@@ -201,7 +204,7 @@ contract AssetSwap {
 
         // Check if the caller is the owner1
         if (proposal.owner1 != msg.sender) {
-            revert AssetSwapNotOwner2(proposal.owner1, msg.sender);
+            revert AssetSwapNotOwner1(msg.sender, proposal.owner1);
         }
 
         // Update the proposal status

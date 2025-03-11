@@ -23,10 +23,10 @@ contract AssetAuction {
     error AssetAuctionAuctionHasNotEnded(AuctionStatus status);
 
     // Emitted when the user is not the seller
-    error AssetAuctionYouAreNotTheSeller(address seller, address user);
+    error AssetAuctionYouAreNotTheSeller(address caller, address seller);
 
     // Emitted when the user is not the winning bidder
-    error AssetAuctionYouAreNotTheWinningBidder(address winningBidder, address user);
+    error AssetAuctionYouAreNotTheWinningBidder(address caller, address winningBidder);
 
     // Emitted when the arrays length mismatch
     error AssetAuctionArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
@@ -39,10 +39,12 @@ contract AssetAuction {
     ///////////////////////////////////////////////////////////
 
     // Emitted when an auction is created
-    event AuctionCreated(uint256 auctionId, uint256 assetTokenId, uint256 reservePrice, uint256 deadline, Style style);
+    event AuctionCreated(
+        address seller, uint256 auctionId, uint256 assetTokenId, uint256 reservePrice, uint256 deadline, Style style
+    );
 
     // Emitted when a bid is placed
-    event BidPlaced(uint256 auctionId, address user, uint256 amount);
+    event BidPlaced(address bidder, uint256 auctionId, uint256 amount);
 
     // Emitted when an auction is ended
     event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
@@ -54,7 +56,7 @@ contract AssetAuction {
     event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
 
     // Emitted when an asset is claimed
-    event AssetClaimed(uint256 auctionId, address seller, address winningBidder, uint256 winningBid);
+    event AssetClaimed(address winningBidder, uint256 auctionId, uint256 assetClaimedTokenId, uint256 winningBid);
 
     // Emitted when assets are deposited
     event AssetsDeposited(address user, uint256[] tokenIds, uint256[] amounts);
@@ -180,7 +182,7 @@ contract AssetAuction {
         // Update the asset balances
         assetBalances[msg.sender][assetTokenId] -= 1;
 
-        emit AuctionCreated(auctionCount, assetTokenId, reservePrice, deadline, style);
+        emit AuctionCreated(msg.sender, auctionCount, assetTokenId, reservePrice, deadline, style);
     }
 
     /// @notice Allows a user to bid on an auction
@@ -211,7 +213,7 @@ contract AssetAuction {
         // Add the bid to the bids array
         auction.bids.push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
 
-        emit BidPlaced(auctionId, msg.sender, amount);
+        emit BidPlaced(msg.sender, auctionId, amount);
     }
 
     /// @notice Allows a seller to complete an auction
@@ -268,7 +270,7 @@ contract AssetAuction {
 
         // Check if the caller is the seller
         if (auction.seller != msg.sender) {
-            revert AssetAuctionYouAreNotTheSeller(auction.seller, msg.sender);
+            revert AssetAuctionYouAreNotTheSeller(msg.sender, auction.seller);
         }
 
         // Update the auction status
@@ -292,7 +294,7 @@ contract AssetAuction {
 
         // Check if the caller is the winning bidder
         if (auction.winningBidder != msg.sender) {
-            revert AssetAuctionYouAreNotTheWinningBidder(auction.winningBidder, msg.sender);
+            revert AssetAuctionYouAreNotTheWinningBidder(msg.sender, auction.winningBidder);
         }
 
         // Check the IGC balance of the bidder
@@ -304,7 +306,7 @@ contract AssetAuction {
         igcBalances[msg.sender] -= auction.winningBid;
         igcBalances[auction.seller] += auction.winningBid;
 
-        emit AssetClaimed(auctionId, msg.sender, auction.winningBidder, auction.winningBid);
+        emit AssetClaimed(auction.winningBidder, auctionId, auction.assetTokenId, auction.winningBid);
     }
 
     ///////////////////////////////////////////////////////////
