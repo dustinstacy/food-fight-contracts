@@ -250,4 +250,24 @@ contract AssetRental {
 
         emit RentalRetrieved(rental.owner, rental.renter, rentalId, block.timestamp);
     }
+
+    function unlistAsset(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the caller is the owner of the rental
+        if (rental.owner != msg.sender) {
+            revert("AssetRental: Not the owner of the rental");
+        }
+
+        // Check if the rental is being rented
+        if (rental.status == RentalStatus.Rented) {
+            revert("AssetRental: Rental is currently being rented");
+        }
+
+        // Remove the rental
+        rental.status = RentalStatus.Removed;
+
+        // Update the asset balances
+        assetBalances[msg.sender][rental.tokenId] += 1;
+    }
 }
