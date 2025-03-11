@@ -5,11 +5,12 @@ pragma solidity ^0.8.20;
 import "forge-std/console.sol";
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title AssetFactory
 /// @notice This contract is a factory for creating ERC1155 assets.
-contract AssetFactory is ERC1155, Ownable {
+contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
@@ -25,10 +26,13 @@ contract AssetFactory is ERC1155, Ownable {
     ///////////////////////////////////////////////////////////
 
     /// Emitted when the URI of the metadata for a asset is set.
-    event URISet(string uri, uint256 id);
+    event AssetURISet(string uri, uint256 id);
 
     /// Emitted when the price of a asset is set.
     event AssetPriceSet(uint256 id, uint256 price);
+
+    /// Emitted when an assets URI and price are set.
+    event AssetDataSet(string uri, uint256 id, uint256 price);
 
     /// Emitted when an owner withdraws funds from the contract.
     event Withdrawal(address indexed to, uint256 amount);
@@ -59,6 +63,10 @@ contract AssetFactory is ERC1155, Ownable {
     ///                    CORE FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Mints a given amount of IGC.
+    /// @param account Address to mint the IGC to.
+    /// @param amount Amount of IGC to mint.
+    /// @dev Simple placehold pricing model. Needs to be updated.
     function mintIGC(address account, uint256 amount) external payable {
         _mint(account, 0, amount, "");
     }
@@ -71,7 +79,9 @@ contract AssetFactory is ERC1155, Ownable {
     /// @dev Simple placehold pricing model. Needs to be updated.
     function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external {
         uint256 price = assetPrices[id];
+        console.log("price: %d", price);
         uint256 totalPrice = price * amount;
+        console.log("totalPrice: %d", totalPrice);
 
         safeTransferFrom(_msgSender(), address(this), igcTokenId, totalPrice, "");
 
@@ -150,25 +160,13 @@ contract AssetFactory is ERC1155, Ownable {
     ///                    OWNER FUNCTIONS                  ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Sets the URI of the metadata and the price for a given asset ID.
-    /// @param id ID of the asset to set the URI and price for.
-    /// @param uri URI of the metadata for the asset.
-    /// @param price Price of the asset.
-    function setAssetData(uint256 id, string memory uri, uint256 price) external onlyOwner {
-        assetURIs[id] = uri;
-        assetPrices[id] = price;
-
-        emit URISet(uri, id);
-        emit AssetPriceSet(id, price);
-    }
-
     /// @notice Sets the URI of the metadata for a given asset ID.
     /// @param id ID of the asset to set the URI for.
     /// @param uri URI of the metadata for the asset.
     function setAssetURI(uint256 id, string memory uri) external onlyOwner {
         assetURIs[id] = uri;
 
-        emit URISet(uri, id);
+        emit AssetURISet(uri, id);
     }
 
     /// @notice Sets the price of a given asset.
@@ -178,6 +176,17 @@ contract AssetFactory is ERC1155, Ownable {
         assetPrices[id] = price;
 
         emit AssetPriceSet(id, price);
+    }
+
+    /// @notice Sets the URI of the metadata and the price for a given asset ID.
+    /// @param id ID of the asset to set the URI and price for.
+    /// @param uri URI of the metadata for the asset.
+    /// @param price Price of the asset.
+    function setAssetData(uint256 id, string memory uri, uint256 price) external onlyOwner {
+        assetURIs[id] = uri;
+        assetPrices[id] = price;
+
+        emit AssetDataSet(uri, id, price);
     }
 
     /// @notice Withdraws the balance of the contract to the owner.
@@ -219,5 +228,31 @@ contract AssetFactory is ERC1155, Ownable {
     /// @return The price of the asset.
     function getAssetPrice(uint256 id) public view returns (uint256) {
         return assetPrices[id];
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               ERC1155 RECEIVER FUNCTIONS              ///
+    /////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155Received(
+        address, /*operator*/
+        address, /*from*/
+        uint256, /*id*/
+        uint256, /*value*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155BatchReceived(
+        address, /*operator*/
+        address, /*from*/
+        uint256[] memory, /*ids*/
+        uint256[] memory, /*values*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 }
