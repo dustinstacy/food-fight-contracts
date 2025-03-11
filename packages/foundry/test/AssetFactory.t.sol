@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { Test, console } from "forge-std/Test.sol";
 import { AssetFactory } from "@contracts/AssetFactory.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 ///////////////////////////////////////////////////////////
 ///                      ERRORS                         ///
@@ -59,7 +60,45 @@ contract AssetFactoryConstructorTest is Test {
 ///                  SET ASSETS TESTS                   ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactorySetAssetsTest is Test { }
+contract AssetFactorySetAssetsTest is Test {
+    AssetFactory factory;
+    address public owner;
+    address public user;
+
+    function setUp() public {
+        owner = address(1);
+        user = address(2);
+        factory = new AssetFactory(owner);
+    }
+
+    function test_setAssetURI_RevertIf_NotTheOwner() public {
+        // Store new URI
+        string memory newURI = "ipfs://asset1NewURI";
+
+        // Set user as the caller
+        vm.prank(user);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user));
+        factory.setAssetURI(1, newURI);
+    }
+
+    function test_setAssetURI() public {
+        // Store new URI
+        string memory newURI = "ipfs://asset1NewURI";
+
+        // Set owner as the caller
+        vm.prank(owner);
+
+        // Check for the URISet event when setting the new URI
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetURISet(newURI, 1);
+        factory.setAssetURI(1, newURI);
+
+        // Check the URI was set correctly
+        assertEq(factory.getAssetURI(1), newURI);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                     IGC TESTS                       ///
