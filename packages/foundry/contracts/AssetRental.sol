@@ -22,6 +22,9 @@ contract AssetRental {
     // Emitted when the rental has not exceeded the deadline
     error AssetRentalRentalHasNotExceededDeadline(uint256 deadline, uint256 currentTime);
 
+    // Emitted when the owner needs to return the deposits before unlisting the asset
+    error AssetRentalNeedToReturnDepositsBeforeUnlisting(address owner, uint256 amountOwed);
+
     // Emitted when the caller is not the owner of the rental
     error AssetRentalNotTheOwner(address caller, address owner);
 
@@ -310,6 +313,17 @@ contract AssetRental {
         // Check if the caller is the owner of the rental
         if (rental.owner != msg.sender) {
             revert AssetRentalNotTheOwner(msg.sender, rental.owner);
+        }
+
+        if (unreturnedDeposits[msg.sender] > 0) {
+            // Check if the owner has enough funds to refund the deposit
+            if (igcBalances[msg.sender] < unreturnedDeposits[msg.sender]) {
+                revert AssetRentalNeedToReturnDepositsBeforeUnlisting(msg.sender, unreturnedDeposits[msg.sender]);
+            }
+
+            // Refund the deposit
+            igcBalances[msg.sender] -= unreturnedDeposits[msg.sender];
+            unreturnedDeposits[msg.sender] = 0;
         }
 
         // Check if the rental is being rented
