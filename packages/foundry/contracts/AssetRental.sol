@@ -7,6 +7,34 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 /// @notice A contract that allows users to put their assets up for rent and allows other users to rent them.
 contract AssetRental {
     ///////////////////////////////////////////////////////////
+    ///                     ERRORS                          ///
+    ///////////////////////////////////////////////////////////
+
+    // Emitted when the rental is not available
+    error AssetRentalRentalIsNotAvailable(RentalStatus status);
+
+    // Emitted when the rental is not currently rented
+    error AssetRentalRentalIsNotCurrentlyRented(RentalStatus status);
+
+    // Emitted when the rental is currently rented
+    error AssetRentalRentalIsCurrentlyRented(RentalStatus status);
+
+    // Emitted when the rental has not exceeded the deadline
+    error AssetRentalRentalHasNotExceededDeadline(uint256 deadline, uint256 currentTime);
+
+    // Emitted when the caller is not the owner of the rental
+    error AssetRentalNotTheOwner(address caller, address owner);
+
+    // Emitted when the caller is not the renter
+    error AssetRentalNotTheRenter(address caller, address renter);
+
+    /// Emitted when the token IDs and amounts arrays have different lengths.
+    error AssetRentalArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
+
+    /// Emitted when the caller tries to withdraw more assets than they own.
+    error AssetRentalInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
+
+    ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
 
@@ -147,7 +175,7 @@ contract AssetRental {
 
         // Check if the rental is available
         if (rental.status != RentalStatus.Available) {
-            revert("AssetRental: Rental not available");
+            revert AssetRentalRentalIsNotAvailable(rental.status);
         }
 
         // Check if the caller has enough funds to rent the asset
@@ -175,18 +203,20 @@ contract AssetRental {
 
         // Check if the rental is being rented
         if (rental.status != RentalStatus.Rented) {
-            revert("AssetRental: Rental not currently rented");
+            revert AssetRentalRentalIsNotCurrentlyRented(rental.status);
         }
 
         // Check if the caller is the owner of the rental
         if (rental.owner != msg.sender) {
-            revert("AssetRental: Not the owner of the rental");
+            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
         }
 
         if (block.timestamp < rental.expiration) {
             // Check if the owner has enough funds to refund the renter
             if (igcBalances[rental.owner] < rental.price + rental.deposit) {
-                revert("AssetRental: Insufficient funds to refund the renter");
+                revert AssetRentalInsufficientBalance(
+                    rental.owner, igcBalances[rental.owner], rental.price + rental.deposit, igcTokenId
+                );
             }
 
             // Refund the renter
@@ -212,12 +242,12 @@ contract AssetRental {
 
         // Check if the rental is being rented
         if (rental.status != RentalStatus.Rented) {
-            revert("AssetRental: Rental not currently rented");
+            revert AssetRentalRentalIsNotCurrentlyRented(rental.status);
         }
 
         // Check if the caller is the renter
         if (rental.renter != msg.sender) {
-            revert("AssetRental: Not the renter of the rental");
+            revert AssetRentalNotTheRenter(msg.sender, rental.renter);
         }
 
         // Check if the rental has expired
@@ -250,17 +280,19 @@ contract AssetRental {
 
         // Check if the rental is being rented
         if (rental.status != RentalStatus.Rented) {
-            revert("AssetRental: Rental not being rented");
+            revert AssetRentalRentalIsNotCurrentlyRented(rental.status);
         }
 
         // Check if the caller is the owner of the rental
         if (rental.owner != msg.sender) {
-            revert("AssetRental: Not the owner of the rental");
+            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
         }
 
         // Check if the rental has passed the return deadline
         if (block.timestamp < rental.expiration + rental.depositExpiration) {
-            revert("AssetRental: Rental has not passed the return deadline");
+            revert AssetRentalRentalHasNotExceededDeadline(
+                rental.expiration + rental.depositExpiration, block.timestamp
+            );
         }
 
         // Update the renter's tokens
@@ -277,12 +309,12 @@ contract AssetRental {
 
         // Check if the caller is the owner of the rental
         if (rental.owner != msg.sender) {
-            revert("AssetRental: Not the owner of the rental");
+            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
         }
 
         // Check if the rental is being rented
         if (rental.status == RentalStatus.Rented) {
-            revert("AssetRental: Rental is currently being rented");
+            revert AssetRentalRentalIsCurrentlyRented(rental.status);
         }
 
         // Remove the rental
@@ -302,7 +334,7 @@ contract AssetRental {
     function withdrawAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
         // Check if the token IDs and amounts arrays have the same length
         if (tokenIds.length != amounts.length) {
-            revert("AssetRental: Arrays length mismatch");
+            revert AssetRentalArraysLengthMismatch(tokenIds.length, amounts.length);
         }
 
         // Store the necessary variables for the safeBatchTransferFrom function
@@ -314,7 +346,7 @@ contract AssetRental {
         for (uint256 i = 0; i < length; i++) {
             // Check if the user has enough balance
             if (assetBalances[from][tokenIds[i]] < amounts[i]) {
-                revert("AssetRental: Insufficient balance");
+                revert AssetRentalInsufficientBalance(from, assetBalances[from][tokenIds[i]], amounts[i], tokenIds[i]);
             }
         }
 
@@ -334,7 +366,7 @@ contract AssetRental {
     function withdrawIGC(uint256 amount) external {
         // Check if the user has enough balance
         if (igcBalances[msg.sender] < amount) {
-            revert("AssetRental: Insufficient balance");
+            revert AssetRentalInsufficientBalance(msg.sender, igcBalances[msg.sender], amount, igcTokenId);
         }
 
         // Store the necessary variables for the safeTransferFrom function
@@ -357,7 +389,7 @@ contract AssetRental {
     function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
         // Check if the token IDs and amounts arrays have the same length
         if (tokenIds.length != amounts.length) {
-            revert("AssetRental: Arrays length mismatch");
+            revert AssetRentalArraysLengthMismatch(tokenIds.length, amounts.length);
         }
 
         // Store the necessary variables for the safeBatchTransferFrom function
