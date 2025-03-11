@@ -77,7 +77,6 @@ contract AssetRental {
     enum RentalStatus {
         Available,
         Rented,
-        Cancelled,
         Removed
     }
 
@@ -224,17 +223,14 @@ contract AssetRental {
 
             // Refund the renter
             igcBalances[rental.owner] -= rental.price;
-            igcBalances[rental.renter] += rental.price;
+            igcBalances[rental.renter] += rental.price + rental.deposit;
         }
 
         // Cancel the rental
-        rental.status = RentalStatus.Cancelled;
+        rental.status = RentalStatus.Available;
 
         // Remove the rental from the renter's tokens
         renterTokens[rental.renter][rental.tokenId] -= 1;
-
-        // Refund the deposit
-        igcBalances[rental.renter] += rental.deposit;
 
         // Emit an event
         emit RentalCancelled(rental.owner, rental.renter, rentalId, block.timestamp);
@@ -278,7 +274,7 @@ contract AssetRental {
         emit RentalReturned(rental.renter, rentalId, block.timestamp);
     }
 
-    function retrieveAsset(uint256 rentalId) external {
+    function relistAsset(uint256 rentalId) external {
         RentalAsset memory rental = rentals[rentalId];
 
         // Check if the rental is being rented
