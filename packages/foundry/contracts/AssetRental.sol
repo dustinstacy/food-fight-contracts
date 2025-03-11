@@ -439,4 +439,133 @@ contract AssetRental {
 
         emit IGCDeposited(from, amount);
     }
+
+    ///////////////////////////////////////////////////////////
+    ///                  VIEW FUNCTIONS                     ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Get the rental asset details.
+    /// @param rentalId The ID of the rental asset.
+    /// @return rentalAsset The rental asset details.
+    function getRentalAsset(uint256 rentalId) external view returns (RentalAsset memory rentalAsset) {
+        return rentals[rentalId];
+    }
+
+    /// @notice Get the rental owner.
+    /// @param rentalId The ID of the rental asset.
+    /// @return owner The rental owner.
+    function getRentalOwner(uint256 rentalId) external view returns (address owner) {
+        return rentals[rentalId].owner;
+    }
+
+    /// @notice Get the rental renter.
+    /// @param rentalId The ID of the rental asset.
+    /// @return renter The rental renter.
+    function getRentalRenter(uint256 rentalId) external view returns (address renter) {
+        return rentals[rentalId].renter;
+    }
+
+    /// @notice Get the rental token ID.
+    /// @param rentalId The ID of the rental asset.
+    /// @return tokenId The rental token ID.
+    function getRentalTokenId(uint256 rentalId) external view returns (uint256 tokenId) {
+        return rentals[rentalId].tokenId;
+    }
+
+    /// @notice Get the rental price.
+    /// @param rentalId The ID of the rental asset.
+    /// @return price The rental price.
+    function getRentalPrice(uint256 rentalId) external view returns (uint256 price) {
+        return rentals[rentalId].price;
+    }
+
+    /// @notice Get the rental deposit.
+    /// @param rentalId The ID of the rental asset.
+    /// @return deposit The rental deposit.
+    function getRentalDeposit(uint256 rentalId) external view returns (uint256 deposit) {
+        return rentals[rentalId].deposit;
+    }
+
+    /// @notice Get the rental duration.
+    /// @param rentalId The ID of the rental asset.
+    /// @return duration The rental duration.
+    function getRentalDuration(uint256 rentalId) external view returns (uint256 duration) {
+        return rentals[rentalId].duration;
+    }
+
+    /// @notice Get the rental return time.
+    /// @param rentalId The ID of the rental asset.
+    /// @return returnTime The rental return time.
+    function getRentalReturnTime(uint256 rentalId) external view returns (uint256 returnTime) {
+        return rentals[rentalId].returnTime;
+    }
+
+    /// @notice Get the rental expiration.
+    /// @param rentalId The ID of the rental asset.
+    /// @return expiration The rental expiration.
+    function getRentalExpiration(uint256 rentalId) external view returns (uint256 expiration) {
+        return rentals[rentalId].expiration;
+    }
+
+    /// @notice Get the rental deposit expiration.
+    /// @param rentalId The ID of the rental asset.
+    /// @return depositExpiration The rental deposit expiration.
+    function getRentalDepositExpiration(uint256 rentalId) external view returns (uint256 depositExpiration) {
+        return rentals[rentalId].depositExpiration;
+    }
+
+    /// @notice Get the rental status.
+    /// @param rentalId The ID of the rental asset.
+    /// @return status The rental status.
+    function getRentalStatus(uint256 rentalId) external view returns (RentalStatus status) {
+        return rentals[rentalId].status;
+    }
+
+    /// @notice Get the balance of the user for the specified token ID.
+    /// @param user The address of the user.
+    /// @param tokenId The ID of the token.
+    /// @return balance The balance of the user for the specified token ID.
+    function getAssetBalance(address user, uint256 tokenId) external view returns (uint256 balance) {
+        return assetBalances[user][tokenId];
+    }
+
+    /// @notice Get the balance of the user for the IGC token.
+    /// @param user The address of the user.
+    /// @return balance The balance of the user for the IGC token.
+    function getIGCBalance(address user) external view returns (uint256 balance) {
+        return igcBalances[user];
+    }
+
+    /// @notice Get the balance of the user for the specified rental token ID.
+    /// @param user The address of the user.
+    /// @param rentalTokenId The ID of the rental token.
+    /// @return balance The balance of the user for the specified rental token ID.
+    function getRenterTokenBalance(address user, uint256 rentalTokenId) external view returns (uint256 balance) {
+        return renterTokens[user][rentalTokenId];
+    }
+
+    /// @notice Get the amount owed by the user.
+    /// @param user The address of the user.
+    /// @return amount The amount owed by the user.
+    function getAmountOwed(address user) external view returns (uint256 amount) {
+        return unreturnedDeposits[user];
+    }
+
+    /// @notice Get the rental count.
+    /// @return count The rental count.
+    function getRentalCount() external view returns (uint256 count) {
+        return rentalCount;
+    }
+
+    /// @notice Get the IGC token ID.
+    /// @return tokenId The IGC token ID.
+    function getIGCTokenId() external view returns (uint8 tokenId) {
+        return igcTokenId;
+    }
+
+    /// @notice Get the assets contract address.
+    /// @return address The assets contract address.
+    function getAssetsContractAddress() external view returns (address) {
+        return address(assetsContract);
+    }
 }
