@@ -150,6 +150,18 @@ contract AssetFactory is ERC1155, Ownable {
     ///                    OWNER FUNCTIONS                  ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Sets the URI of the metadata and the price for a given asset ID.
+    /// @param id ID of the asset to set the URI and price for.
+    /// @param uri URI of the metadata for the asset.
+    /// @param price Price of the asset.
+    function setAssetData(uint256 id, string memory uri, uint256 price) external onlyOwner {
+        assetURIs[id] = uri;
+        assetPrices[id] = price;
+
+        emit URISet(uri, id);
+        emit AssetPriceSet(id, price);
+    }
+
     /// @notice Sets the URI of the metadata for a given asset ID.
     /// @param id ID of the asset to set the URI for.
     /// @param uri URI of the metadata for the asset.
