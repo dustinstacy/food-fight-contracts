@@ -24,6 +24,9 @@ contract AssetRental {
     // Emitted when an asset rental is returned.
     event RentalReturned(address renter, uint256 rentalId, uint256 timeReturned);
 
+    // Emitted when an asset rental is retrieved.
+    event RentalRetrieved(address rentalOwner, address renter, uint256 rentalId, uint256 timeRetrieved);
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -219,5 +222,32 @@ contract AssetRental {
         igcBalances[rental.owner] -= rental.deposit;
 
         emit RentalReturned(rental.renter, rentalId, block.timestamp);
+    }
+
+    function retrieveAsset(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the rental is being rented
+        if (rental.status != RentalStatus.Rented) {
+            revert("AssetRental: Rental not being rented");
+        }
+
+        // Check if the caller is the owner of the rental
+        if (rental.owner != msg.sender) {
+            revert("AssetRental: Not the owner of the rental");
+        }
+
+        // Check if the rental has passed the return deadline
+        if (block.timestamp < rental.expiration + rental.depositExpiration) {
+            revert("AssetRental: Rental has not passed the return deadline");
+        }
+
+        // Update the renter's tokens
+        renterTokens[rental.renter][rental.tokenId] -= 1;
+
+        // Make the asset available for rent
+        rental.status = RentalStatus.Available;
+
+        emit RentalRetrieved(rental.owner, rental.renter, rentalId, block.timestamp);
     }
 }
