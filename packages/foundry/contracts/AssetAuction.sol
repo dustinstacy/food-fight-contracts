@@ -11,7 +11,7 @@ contract AssetAuction {
     ///////////////////////////////////////////////////////////
 
     // Emitted when the auction is not open
-    error AssetAuctionAuctionIsNotOpen(Status status);
+    error AssetAuctionAuctionIsNotOpen(AuctionStatus status);
 
     // Emitted when the deadline has passed
     error AssetAuctionDeadlineHasPassed(uint256 deadline);
@@ -20,7 +20,7 @@ contract AssetAuction {
     error AssetAuctionBidNotHigherThanHighestBid(uint256 highestBid, uint256 amount);
 
     // Emitted when the auction has not ended
-    error AssetAuctionAuctionHasNotEnded(Status status);
+    error AssetAuctionAuctionHasNotEnded(AuctionStatus status);
 
     // Emitted when the user is not the seller
     error AssetAuctionYouAreNotTheSeller(address seller, address user);
@@ -72,7 +72,7 @@ contract AssetAuction {
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
 
-    enum Status {
+    enum AuctionStatus {
         Open,
         Cancelled,
         Ended,
@@ -99,7 +99,7 @@ contract AssetAuction {
         uint256 deadline;
         uint256 highestBid;
         uint256 winningBid;
-        Status status;
+        AuctionStatus status;
         Style style;
         Bid[] bids;
     }
@@ -127,6 +127,7 @@ contract AssetAuction {
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
+    /// @param _assetsContractAddress The address of the ERC1155 contract.
     constructor(address _assetsContractAddress) {
         assetsContract = IERC1155(_assetsContractAddress);
     }
@@ -163,20 +164,20 @@ contract AssetAuction {
 
         // Create the auction and store it in the auctions mapping
         auctions[auctionCount] = Auction({
-            assetTokenId: assetTokenId,
             seller: msg.sender,
+            assetTokenId: assetTokenId,
             reservePrice: reservePrice,
             deadline: deadline,
             highestBid: 0,
             highestBidder: address(0),
             winningBid: 0,
             winningBidder: address(0),
-            status: Status.Open,
+            status: AuctionStatus.Open,
             style: style,
             bids: bids
         });
 
-        // Update the user assetBalances
+        // Update the asset balances
         assetBalances[msg.sender][assetTokenId] -= 1;
 
         emit AuctionCreated(auctionCount, assetTokenId, reservePrice, deadline, style);
@@ -189,7 +190,7 @@ contract AssetAuction {
         Auction storage auction = auctions[auctionId];
 
         // Check if the auction is open
-        if (auction.status != Status.Open) {
+        if (auction.status != AuctionStatus.Open) {
             revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
@@ -219,7 +220,7 @@ contract AssetAuction {
         Auction storage auction = auctions[auctionId];
 
         // Check if the auction is open
-        if (auction.status != Status.Open) {
+        if (auction.status != AuctionStatus.Open) {
             revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
@@ -231,7 +232,7 @@ contract AssetAuction {
         // Check if the reserve price has been met
         if (auction.highestBid < auction.reservePrice) {
             // Update the auction status
-            auction.status = Status.ReserveNotMet;
+            auction.status = AuctionStatus.ReserveNotMet;
             // Update the seller assetBalances
             assetBalances[auction.seller][auction.assetTokenId] += 1;
 
@@ -241,7 +242,7 @@ contract AssetAuction {
         }
 
         // Update the auction status
-        auction.status = Status.Ended;
+        auction.status = AuctionStatus.Ended;
 
         // Update the winning bid and winning bidder
         auction.winningBid = auction.highestBid;
@@ -256,7 +257,7 @@ contract AssetAuction {
         Auction storage auction = auctions[auctionId];
 
         // Check if the auction is open
-        if (auction.status != Status.Open) {
+        if (auction.status != AuctionStatus.Open) {
             revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
@@ -271,7 +272,7 @@ contract AssetAuction {
         }
 
         // Update the auction status
-        auction.status = Status.Cancelled;
+        auction.status = AuctionStatus.Cancelled;
 
         // Update the seller assetBalances
         assetBalances[auction.seller][auction.assetTokenId] += 1;
@@ -285,7 +286,7 @@ contract AssetAuction {
         Auction storage auction = auctions[auctionId];
 
         // Check if the has ended
-        if (auction.status != Status.Ended) {
+        if (auction.status != AuctionStatus.Ended) {
             revert AssetAuctionAuctionHasNotEnded(auction.status);
         }
 
@@ -478,7 +479,7 @@ contract AssetAuction {
     /// @notice Get the status of an auction
     /// @param auctionId The ID of the auction
     /// @return status The status of the auction
-    function getAuctionStatus(uint256 auctionId) public view returns (Status status) {
+    function getAuctionAuctionStatus(uint256 auctionId) public view returns (AuctionStatus status) {
         return auctions[auctionId].status;
     }
 
