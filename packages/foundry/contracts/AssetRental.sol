@@ -14,7 +14,12 @@ contract AssetRental {
     event RentalAssetPosted(address rentalOwner, uint256 tokenId, uint256 rentalPrice, uint256 rentalDuration);
 
     // Emitted when an asset is rented.
-    event RentalAssetRented(address renter, uint256 rentalId, uint256 rentalPrice, uint256 rentalDuration);
+    event RentalAssetRented(
+        address renter, uint256 rentalId, uint256 rentalPrice, uint256 rentalDuration, uint256 timeRented
+    );
+
+    // Emitted when an asset rental is cancelled.
+    event RentalCancelled(address rentalOwner, address renter, uint256 rentalId, uint256 timeCancelled);
 
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
@@ -134,6 +139,43 @@ contract AssetRental {
         rental.status = RentalStatus.Rented;
 
         // Emit an event
-        emit RentalAssetRented(msg.sender, rentalId, rental.price, rental.duration);
+        emit RentalAssetRented(msg.sender, rentalId, rental.price, rental.duration, block.timestamp);
+    }
+
+    function cancelRental(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the rental is being rented
+        if (rental.status != RentalStatus.Rented) {
+            revert("AssetRental: Rental not currently rented");
+        }
+
+        // Check if the caller is the owner of the rental
+        if (rental.owner != msg.sender) {
+            revert("AssetRental: Not the owner of the rental");
+        }
+
+        if (block.timestamp < rental.expiration) {
+            // Check if the owner has enough funds to refund the renter
+            if (igcBalances[rental.owner] < rental.price + rental.deposit) {
+                revert("AssetRental: Insufficient funds to refund the renter");
+            }
+
+            // Refund the renter
+            igcBalances[rental.owner] -= rental.price;
+            igcBalances[rental.renter] += rental.price;
+        }
+
+        // Cancel the rental
+        rental.status = RentalStatus.Cancelled;
+
+        // Remove the rental from the renter's tokens
+        renterTokens[rental.renter][rental.tokenId] -= 1;
+
+        // Refund the deposit
+        igcBalances[rental.renter] += rental.deposit;
+
+        // Emit an event
+        emit RentalCancelled(rental.owner, rental.renter, rentalId, block.timestamp);
     }
 }
