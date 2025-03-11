@@ -36,7 +36,34 @@ event Withdrawal(address indexed to, uint256 amount);
 ///////////////////////////////////////////////////////////
 
 /// @dev Helper contract to setup assets for testing
-contract AssetFactorySetAssetsHelper is Test { }
+contract AssetFactorySetAssetsHelper is Test {
+    AssetFactory factory;
+    address public owner;
+    address public user;
+
+    // Accept arguments to set up the owner, user, and factory
+    function setUp(address _owner, address _user, AssetFactory _factory) public {
+        owner = _owner;
+        user = _user;
+        factory = _factory;
+    }
+
+    // Set up assets for testing
+    // Can update this function to set up more/different assets
+    function setUpAssets() public {
+        vm.startPrank(owner);
+        factory.setAssetData(1, "ipfs://asset1", 100);
+        factory.setAssetData(2, "ipfs://asset2", 200);
+        factory.setAssetData(3, "ipfs://asset3", 300);
+        vm.stopPrank();
+    }
+
+    // Mint initial IGC for testing
+    function mintInitialIGC(address minter, uint256 amount) public {
+        vm.prank(minter);
+        factory.mintIGC(minter, amount);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
