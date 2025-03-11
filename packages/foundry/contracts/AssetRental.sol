@@ -27,6 +27,18 @@ contract AssetRental {
     // Emitted when an asset rental is retrieved.
     event RentalRetrieved(address rentalOwner, address renter, uint256 rentalId, uint256 timeRetrieved);
 
+    // Emitted when assets are withdrawn from the contract.
+    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
+
+    // Emitted when IGC is withdrawn from the contract.
+    event IGCWithdrawn(address to, uint256 amount);
+
+    // Emitted when assets are deposited into the contract.
+    event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
+
+    // Emitted when IGC is deposited into the contract.
+    event IGCDeposited(address from, uint256 amount);
+
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
     ///////////////////////////////////////////////////////////
@@ -65,8 +77,8 @@ contract AssetRental {
     mapping(address user => mapping(uint256 rentalTokenId => uint256 balance)) private renterTokens;
     mapping(address user => uint256 amountOwed) private unreturnedDeposits;
 
+    uint8 private igcTokenId = 0;
     uint256 private rentalCount;
-
     IERC1155 private assetsContract;
 
     ///////////////////////////////////////////////////////////
@@ -93,7 +105,16 @@ contract AssetRental {
     {
         // Check if the caller has any of the tokenId deposited
         if (assetBalances[msg.sender][tokenId] == 0) {
-            // deposit the asset
+            // Create empty arrays for the depositAssets function
+            uint256[] memory tokenIds = new uint256[](1);
+            uint256[] memory amounts = new uint256[](1);
+
+            // Store the tokenId and amount in the arrays
+            tokenIds[0] = tokenId;
+            amounts[0] = 1;
+
+            // Deposit the asset
+            depositAssets(tokenIds, amounts);
         }
 
         // Increment the rental count
@@ -131,7 +152,7 @@ contract AssetRental {
 
         // Check if the caller has enough funds to rent the asset
         if (igcBalances[msg.sender] < rental.price + rental.deposit) {
-            revert("AssetRental: Insufficient funds");
+            depositIGC(rental.price + rental.deposit - igcBalances[msg.sender]);
         }
 
         // Rent the asset
@@ -269,5 +290,107 @@ contract AssetRental {
 
         // Update the asset balances
         assetBalances[msg.sender][rental.tokenId] += 1;
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                  ASSETS FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Withdraw assets from the contract
+    /// @param tokenIds The token IDs of the assets to withdraw
+    /// @param amounts The amounts of the assets to withdraw
+    function withdrawAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
+        // Check if the token IDs and amounts arrays have the same length
+        if (tokenIds.length != amounts.length) {
+            revert("AssetRental: Arrays length mismatch");
+        }
+
+        // Store the necessary variables for the safeBatchTransferFrom function
+        uint256 length = tokenIds.length;
+        address from = address(this);
+        address to = msg.sender;
+        bytes memory data = "";
+
+        for (uint256 i = 0; i < length; i++) {
+            // Check if the user has enough balance
+            if (assetBalances[from][tokenIds[i]] < amounts[i]) {
+                revert("AssetRental: Insufficient balance");
+            }
+        }
+
+        // Update the user balances
+        for (uint256 i = 0; i < length; i++) {
+            assetBalances[from][tokenIds[i]] -= amounts[i];
+        }
+
+        // Transfer the assets to the user
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        emit AssetsWithdrawn(to, tokenIds, amounts);
+    }
+
+    /// @notice Withdraw IGC from the contract
+    /// @param amount The amount of IGC to withdraw
+    function withdrawIGC(uint256 amount) external {
+        // Check if the user has enough balance
+        if (igcBalances[msg.sender] < amount) {
+            revert("AssetRental: Insufficient balance");
+        }
+
+        // Store the necessary variables for the safeTransferFrom function
+        address from = address(this);
+        address to = msg.sender;
+        bytes memory data = "";
+
+        // Update the user balance
+        igcBalances[msg.sender] -= amount;
+
+        // Transfer the IGC to the user
+        assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
+
+        emit IGCWithdrawn(to, amount);
+    }
+
+    /// @notice Deposit assets into the contract
+    /// @param tokenIds The token IDs of the assets to deposit
+    /// @param amounts The amounts of the assets to deposit
+    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
+        // Check if the token IDs and amounts arrays have the same length
+        if (tokenIds.length != amounts.length) {
+            revert("AssetRental: Arrays length mismatch");
+        }
+
+        // Store the necessary variables for the safeBatchTransferFrom function
+        uint256 length = tokenIds.length;
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the assets to the contract
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        // Update the user balances
+        for (uint256 i = 0; i < length; i++) {
+            assetBalances[from][tokenIds[i]] += amounts[i];
+        }
+
+        emit AssetsDeposited(from, tokenIds, amounts);
+    }
+
+    /// @notice Deposit IGC into the contract
+    /// @param amount The amount of IGC to deposit
+    function depositIGC(uint256 amount) public {
+        // Store the necessary variables for the safeTransferFrom function
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the IGC to the contract
+        assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
+
+        // Update the user balance
+        igcBalances[from] += amount;
+
+        emit IGCDeposited(from, amount);
     }
 }
