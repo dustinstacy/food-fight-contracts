@@ -126,6 +126,37 @@ contract AssetFactorySetAssetsTest is Test {
         // Check the price was set correctly
         assertEq(factory.getAssetPrice(1), newPrice);
     }
+
+    function test_setAssetData_RevertIf_NotTheOwner() public {
+        // Store new URI and price
+        string memory newURI = "ipfs://asset1NewURI";
+        uint256 newPrice = 1000;
+
+        // Set user as the caller
+        vm.prank(user);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user));
+        factory.setAssetData(1, newURI, newPrice);
+    }
+
+    function test_setAssetData() public {
+        // Store new URI and price
+        string memory newURI = "ipfs://asset1NewURI";
+        uint256 newPrice = 1000;
+
+        // Set owner as the caller
+        vm.prank(owner);
+
+        // Check for the AssetDataSet event when setting the new URI and price
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetDataSet(newURI, 1, newPrice);
+        factory.setAssetData(1, newURI, newPrice);
+
+        // Check the URI and price were set correctly
+        assertEq(factory.getAssetURI(1), newURI);
+        assertEq(factory.getAssetPrice(1), newPrice);
+    }
 }
 
 ///////////////////////////////////////////////////////////
