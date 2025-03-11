@@ -19,11 +19,11 @@ contract AssetSwap {
     /// Emitted when the caller tries to approve a proposal that is not the owner2.
     error AssetSwapNotOwner2(address caller, address owner2);
 
-    /// Emitted when the caller tries to withdraw more assets than they own.
-    error AssetSwapInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
-
     /// Emitted when the token IDs and amounts arrays have different lengths.
     error AssetSwapArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
+
+    /// Emitted when the caller tries to withdraw more assets than they own.
+    error AssetSwapInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
 
     ///////////////////////////////////////////////////////////
     ///                    EVENTS                           ///
@@ -41,11 +41,11 @@ contract AssetSwap {
     // Emitted when a proposal is canceled
     event ProposalCanceled(uint256 proposalId);
 
-    // Emitted when assets are deposited into the contract
-    event AssetsDeposited(address owner, uint256[] tokenIds, uint256[] amounts);
+    // Emitted when assets are withdrawn from the contract.
+    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
 
-    // Emitted when assets are withdrawn from the contract
-    event AssetsWithdrawn(address owner, uint256[] tokenIds, uint256[] amounts);
+    // Emitted when assets are deposited into the contract.
+    event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
@@ -78,7 +78,6 @@ contract AssetSwap {
     mapping(address owner => mapping(uint256 tokenId => uint256 balance)) private balances;
 
     uint256 private proposalCount;
-
     IERC1155 private assetsContract;
 
     ///////////////////////////////////////////////////////////

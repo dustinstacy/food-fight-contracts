@@ -28,11 +28,11 @@ contract AssetAuction {
     // Emitted when the user is not the winning bidder
     error AssetAuctionYouAreNotTheWinningBidder(address caller, address winningBidder);
 
-    // Emitted when the arrays length mismatch
+    /// Emitted when the token IDs and amounts arrays have different lengths.
     error AssetAuctionArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
 
-    // Emitted when the user has insufficient balance
-    error AssetAuctionInsufficientBalance(uint256 balance, uint256 amount);
+    /// Emitted when the caller tries to withdraw more assets than they own.
+    error AssetAuctionInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
 
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
@@ -58,17 +58,17 @@ contract AssetAuction {
     // Emitted when an asset is claimed
     event AssetClaimed(address winningBidder, uint256 auctionId, uint256 assetClaimedTokenId, uint256 winningBid);
 
-    // Emitted when assets are deposited
-    event AssetsDeposited(address user, uint256[] tokenIds, uint256[] amounts);
-
     // Emitted when assets are withdrawn
-    event AssetsWithdrawn(address user, uint256[] tokenIds, uint256[] amounts);
-
-    // Emitted when IGC is deposited
-    event IGCDeposited(address user, uint256 amount);
+    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
 
     // Emitted when IGC is withdrawn
-    event IGCWithdrawn(address user, uint256 amount);
+    event IGCWithdrawn(address to, uint256 amount);
+
+    // Emitted when assets are deposited
+    event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
+
+    // Emitted when IGC is deposited
+    event IGCDeposited(address from, uint256 amount);
 
     ///////////////////////////////////////////////////////////
     ///                     ENUMS                           ///
@@ -120,9 +120,8 @@ contract AssetAuction {
     mapping(address user => mapping(uint256 assetId => uint256 assetBalance)) private assetBalances;
     mapping(address user => uint256 igcBalance) private igcBalances;
 
-    uint256 private auctionCount;
     uint8 private igcTokenId = 0;
-
+    uint256 private auctionCount;
     IERC1155 private assetsContract;
 
     ///////////////////////////////////////////////////////////
@@ -331,7 +330,7 @@ contract AssetAuction {
         for (uint256 i = 0; i < length; i++) {
             // Check if the user has enough balance
             if (assetBalances[from][tokenIds[i]] < amounts[i]) {
-                revert AssetAuctionInsufficientBalance(assetBalances[from][tokenIds[i]], amounts[i]);
+                revert AssetAuctionInsufficientBalance(from, assetBalances[from][tokenIds[i]], amounts[i], tokenIds[i]);
             }
         }
 
@@ -351,7 +350,7 @@ contract AssetAuction {
     function withdrawIGC(uint256 amount) external {
         // Check if the user has enough balance
         if (igcBalances[msg.sender] < amount) {
-            revert AssetAuctionInsufficientBalance(igcBalances[msg.sender], amount);
+            revert AssetAuctionInsufficientBalance(msg.sender, igcBalances[msg.sender], amount, igcTokenId);
         }
 
         // Store the necessary variables for the safeTransferFrom function
