@@ -127,8 +127,8 @@ contract AssetAuction {
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
-    constructor(address _assetsContract) {
-        assetsContract = IERC1155(_assetsContract);
+    constructor(address _assetsContractAddress) {
+        assetsContract = IERC1155(_assetsContractAddress);
     }
 
     ///////////////////////////////////////////////////////////
