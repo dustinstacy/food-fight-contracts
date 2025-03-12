@@ -216,6 +216,15 @@ contract AssetSwapUser1Test is AssetSwapSetupHelper {
         swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
         vm.stopPrank();
     }
+
+    function test_createProposal_RevertWhen_AssetNotDepositedWithoutApproval() public {
+        vm.startPrank(user1);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, address(swap), user1)
+        );
+        swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
+        vm.stopPrank();
+    }
 }
 
 contract AssetSwapUser1CancelProposalTest is AssetSwapCreateProposalHelper {
