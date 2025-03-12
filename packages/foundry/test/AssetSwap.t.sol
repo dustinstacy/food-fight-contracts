@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { Test, console } from "forge-std/Test.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { AssetSwap } from "@contracts/AssetSwap.sol";
 import { AssetFactorySetAssetsHelper } from "./AssetFactory.t.sol";
 
@@ -788,5 +789,58 @@ contract AssetSwapViewFunctionsTest is AssetSwapCreateProposalHelper {
     function test_getProposalCount() public view {
         uint256 proposalCount = swap.getProposalCount();
         assertEq(proposalCount, 1);
+    }
+
+    function test_getAssetsContract() public view {
+        address assetsContract = swap.getAssetsContract();
+        assertEq(address(factory), assetsContract);
+    }
+}
+
+///////////////////////////////////////////////////////////
+///                ERC1155 RECEIVER TESTS               ///
+///////////////////////////////////////////////////////////
+
+contract AssetSwapERC1155ReceiverTest is AssetSwapSetupHelper {
+    function test_onERC1155Received() public view {
+        bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+        bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
+
+        assertEq(returnedSelector, expectedSelector);
+    }
+
+    function test_onERC1155BatchReceived() public view {
+        bytes4 expectedSelector = bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+        bytes4 returnedSelector =
+            factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
+
+        assertEq(returnedSelector, expectedSelector);
+    }
+}
+
+///////////////////////////////////////////////////////////
+///               ERC165 INTERFACE TESTS                ///
+///////////////////////////////////////////////////////////
+
+contract AssetSwapERC165Test is AssetSwapSetupHelper {
+    function test_supportsInterfaceIdIERC165() public view {
+        bytes4 expectedSelector = 0x01ffc9a7;
+        bool returnedSelector = swap.supportsInterface(expectedSelector);
+
+        assertEq(returnedSelector, true);
+    }
+
+    function test_supportsInterfaceIdIERC1155Receiver() public view {
+        bytes4 expectedSelector = 0x4e2312e0;
+        bool returnedSelector = swap.supportsInterface(expectedSelector);
+
+        assertEq(returnedSelector, true);
+    }
+
+    function test_supportsInterfaceBadSelector() public view {
+        bytes4 badSelector = bytes4(keccak256("badSelector"));
+        bool returnedSelector = swap.supportsInterface(badSelector);
+
+        assertEq(returnedSelector, false);
     }
 }
