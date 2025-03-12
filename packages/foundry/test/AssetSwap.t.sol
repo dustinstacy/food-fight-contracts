@@ -174,7 +174,15 @@ contract AssetSwapOwner1Test is AssetSwapSetupHelper {
         assertEq(expectedUser1AssetBalance, actualUser1AssetBalance);
     }
 
-    function test_createProposal_EmitEvent() public { }
+    function test_createProposal_EmitEvent() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
+        // Check that the ProposalCreated event was emitted
+        vm.expectEmit(false, false, false, false, address(swap));
+        emit ProposalCreated(1);
+        swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
+        vm.stopPrank();
+    }
 
     function test_cancelProposal() public { }
 }
