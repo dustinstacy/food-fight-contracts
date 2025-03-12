@@ -239,6 +239,26 @@ contract AssetSwapOwner1CancelProposalTest is AssetSwapCreateProposalHelper {
         swap.cancelProposal(1);
         vm.stopPrank();
     }
+
+    function test_cancelProposal_RevertWhen_StatusNotPending() public {
+        vm.startPrank(user1);
+        swap.cancelProposal(1);
+
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        uint256 status = uint256(proposal.status);
+
+        // Check that the call reverts when the proposal status is not pending
+        vm.expectRevert(abi.encodeWithSelector(AssetSwap.AssetSwapProposalNotPending.selector, status));
+        swap.cancelProposal(1);
+        vm.stopPrank();
+    }
+
+    function test_cancelProposal_RevertWhen_NotUser1() public {
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetSwap.AssetSwapNotUser1.selector, user2, user1));
+        swap.cancelProposal(1);
+        vm.stopPrank();
+    }
 }
 
 ///////////////////////////////////////////////////////////

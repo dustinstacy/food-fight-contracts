@@ -20,10 +20,10 @@ contract AssetSwap is IERC1155Receiver {
     error AssetSwapProposalNotPending(ProposalStatus status);
 
     /// Emitted when the caller tries to cancel a proposal that is not the user1.
-    error AssetSwapNotOwner1(address caller, address user1);
+    error AssetSwapNotUser1(address caller, address user1);
 
     /// Emitted when the caller tries to approve a proposal that is not the user2.
-    error AssetSwapNotOwner2(address caller, address user2);
+    error AssetSwapNotUser2(address caller, address user2);
 
     /// Emitted when the token IDs and amounts arrays have different lengths.
     error AssetSwapArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
@@ -148,7 +148,7 @@ contract AssetSwap is IERC1155Receiver {
 
         // Check if the caller is the user1
         if (proposal.user1 != msg.sender) {
-            revert AssetSwapNotOwner1(msg.sender, proposal.user1);
+            revert AssetSwapNotUser1(msg.sender, proposal.user1);
         }
 
         // Update the proposal status
@@ -172,7 +172,7 @@ contract AssetSwap is IERC1155Receiver {
 
         // Check if the caller is the user2
         if (proposal.user2 != msg.sender) {
-            revert AssetSwapNotOwner2(msg.sender, proposal.user2);
+            revert AssetSwapNotUser2(msg.sender, proposal.user2);
         }
 
         // Create empty arrays for the depositAssets function
@@ -209,7 +209,7 @@ contract AssetSwap is IERC1155Receiver {
 
         // Check if the caller is the user2
         if (proposal.user2 != msg.sender) {
-            revert AssetSwapNotOwner2(msg.sender, proposal.user2);
+            revert AssetSwapNotUser2(msg.sender, proposal.user2);
         }
 
         // Update the proposal status
@@ -298,14 +298,14 @@ contract AssetSwap is IERC1155Receiver {
     /// @notice Get the user1 of a proposal
     /// @param proposalId The ID of the proposal
     /// @return user1 The address of the user1
-    function getProposalOwner1(uint256 proposalId) public view returns (address user1) {
+    function getProposalUser1(uint256 proposalId) public view returns (address user1) {
         return proposals[proposalId].user1;
     }
 
     /// @notice Get the user2 of a proposal
     /// @param proposalId The ID of the proposal
     /// @return user2 The address of the user2
-    function getProposalOwner2(uint256 proposalId) public view returns (address user2) {
+    function getProposalUser2(uint256 proposalId) public view returns (address user2) {
         return proposals[proposalId].user2;
     }
 
