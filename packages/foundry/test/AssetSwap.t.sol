@@ -75,7 +75,7 @@ contract AssetSwapSetupHelper is AssetFactorySetAssetsHelper {
 }
 
 contract AssetSwapCreateProposalHelper is AssetSwapSetupHelper {
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         depositAssets();
         createProposal();
@@ -110,6 +110,38 @@ contract AssetSwapCreateProposalHelper is AssetSwapSetupHelper {
         assertEq(ASSET_TWO_ID, proposal.asset2TokenId);
         uint256 proposalStatus = uint256(proposal.status);
         assertEq(proposalStatus, pendingStatus);
+    }
+}
+
+contract AssetSwapApprovedProposalHelper is AssetSwapCreateProposalHelper {
+    function setUp() public override {
+        super.setUp();
+        approveProposal();
+    }
+
+    function approveProposal() public {
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(swap), true);
+        swap.approveProposal(1);
+        vm.stopPrank();
+
+        // Validate data for inheriting tests
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        uint256 status = uint256(proposal.status);
+        assertEq(status, approvedStatus);
+
+        uint256 user1Asset1Balance = swap.getBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = swap.getBalance(user1, ASSET_TWO_ID);
+        uint256 user2Asset1Balance = swap.getBalance(user2, ASSET_ONE_ID);
+        uint256 user2Asset2Balance = swap.getBalance(user2, ASSET_TWO_ID);
+
+        assertEq(user1Asset1Balance, 0);
+        assertEq(user1Asset2Balance, DEPOSIT_1);
+        assertEq(user2Asset1Balance, DEPOSIT_1);
+        assertEq(user2Asset2Balance, 0);
+
+        assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user1, ASSET_ONE_ID));
+        assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user2, ASSET_TWO_ID));
     }
 }
 
@@ -427,7 +459,7 @@ contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
 ///                    ASSETS TESTS                     ///
 ///////////////////////////////////////////////////////////
 
-contract AssetSwapAssetsTest is AssetSwapCreateProposalHelper {
+contract AssetSwapDepositAssetsTest is AssetSwapSetupHelper {
     function test_depositAssets() public {
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory amounts = new uint256[](1);
@@ -525,9 +557,9 @@ contract AssetSwapAssetsTest is AssetSwapCreateProposalHelper {
         swap.depositAssets(tokenIds, amounts);
         vm.stopPrank();
     }
-
-    function test_withdrawAssets() public { }
 }
+
+contract AssetSwatWithdrawAssetsTest is AssetSwapApprovedProposalHelper { }
 
 ///////////////////////////////////////////////////////////
 ///                  VIEW FUNCTION TESTS                ///
