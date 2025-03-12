@@ -332,7 +332,27 @@ contract AssetSwapOwner2Test is AssetSwapCreateProposalHelper {
         assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user2, ASSET_TWO_ID));
     }
 
-    function test_rejectProposal() public { }
+    function test_rejectProposal() public {
+        vm.startPrank(user2);
+        swap.rejectProposal(1);
+        vm.stopPrank();
+
+        // Check the proposal status was updated
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        uint256 status = uint256(proposal.status);
+        assertEq(status, rejectedStatus);
+
+        // Check that the user's asset balance was not updated
+        uint256 user1Asset1Balance = swap.getBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = swap.getBalance(user1, ASSET_TWO_ID);
+        uint256 user2Asset1Balance = swap.getBalance(user2, ASSET_ONE_ID);
+        uint256 user2Asset2Balance = swap.getBalance(user2, ASSET_TWO_ID);
+
+        assertEq(user1Asset1Balance, DEPOSIT_1);
+        assertEq(user1Asset2Balance, 0);
+        assertEq(user2Asset1Balance, 0);
+        assertEq(user2Asset2Balance, 0);
+    }
 }
 
 ///////////////////////////////////////////////////////////
