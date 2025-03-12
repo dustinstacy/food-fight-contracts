@@ -74,6 +74,13 @@ contract AssetFactorySetAssetsHelper is AssetFactorySetupHelper {
         factory.setAssetData(2, "ipfs://asset2", 200);
         factory.setAssetData(3, "ipfs://asset3", 300);
         vm.stopPrank();
+
+        assertEq(factory.getAssetURI(1), "ipfs://asset1");
+        assertEq(factory.getAssetURI(2), "ipfs://asset2");
+        assertEq(factory.getAssetURI(3), "ipfs://asset3");
+        assertEq(factory.getAssetPrice(1), 100);
+        assertEq(factory.getAssetPrice(2), 200);
+        assertEq(factory.getAssetPrice(3), 300);
     }
 
     // Mint initial IGC for testing
