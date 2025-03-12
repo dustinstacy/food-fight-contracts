@@ -187,7 +187,18 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
 ///                     IGC TESTS                       ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryIGCTest is AssetFactorySetupHelper { }
+contract AssetFactoryIGCTest is AssetFactorySetupHelper {
+    function test_mintIGC() public {
+        // Set user as the caller
+        vm.prank(user);
+
+        // Mint IGC for the user
+        factory.mintIGC(user, MINT_1000);
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                  MINTING TESTS                      ///
