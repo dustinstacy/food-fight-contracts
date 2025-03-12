@@ -265,8 +265,72 @@ contract AssetSwapOwner1CancelProposalTest is AssetSwapCreateProposalHelper {
 ///                     OWNER 2 TESTS                   ///
 ///////////////////////////////////////////////////////////
 
-contract AssetSwapOwner2Test is AssetSwapSetupHelper {
-    function test_approveProposal() public { }
+contract AssetSwapOwner2Test is AssetSwapCreateProposalHelper {
+    function test_approveProposalWithAssetDeposited() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_TWO_ID;
+        amounts[0] = DEPOSIT_1;
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(swap), true);
+        swap.depositAssets(tokenIds, amounts);
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user2AssetBalance = swap.getBalance(user2, ASSET_TWO_ID);
+        assertEq(user2AssetBalance, DEPOSIT_1);
+
+        swap.approveProposal(1);
+        vm.stopPrank();
+
+        // Check the proposal status was updated
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        uint256 status = uint256(proposal.status);
+        assertEq(status, approvedStatus);
+
+        uint256 user1Asset1Balance = swap.getBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = swap.getBalance(user1, ASSET_TWO_ID);
+        uint256 user2Asset1Balance = swap.getBalance(user2, ASSET_ONE_ID);
+        uint256 user2Asset2Balance = swap.getBalance(user2, ASSET_TWO_ID);
+
+        // Check that the assets were swapped
+        assertEq(user1Asset1Balance, 0);
+        assertEq(user1Asset2Balance, DEPOSIT_1);
+        assertEq(user2Asset1Balance, DEPOSIT_1);
+        assertEq(user2Asset2Balance, 0);
+
+        // Check the asset contract balances to ensure no extra assets were deposited
+        assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user1, ASSET_ONE_ID));
+        assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user2, ASSET_TWO_ID));
+    }
+
+    function test_approveProposalWithoutAssetDeposited() public {
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(swap), true);
+        swap.approveProposal(1);
+        vm.stopPrank();
+
+        // Check the proposal status was updated
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        uint256 status = uint256(proposal.status);
+        assertEq(status, approvedStatus);
+
+        uint256 user1Asset1Balance = swap.getBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = swap.getBalance(user1, ASSET_TWO_ID);
+        uint256 user2Asset1Balance = swap.getBalance(user2, ASSET_ONE_ID);
+        uint256 user2Asset2Balance = swap.getBalance(user2, ASSET_TWO_ID);
+
+        // Check that the assets were swapped
+        assertEq(user1Asset1Balance, 0);
+        assertEq(user1Asset2Balance, DEPOSIT_1);
+        assertEq(user2Asset1Balance, DEPOSIT_1);
+        assertEq(user2Asset2Balance, 0);
+
+        // Check the asset contract balances to ensure no extra assets were deposited
+        assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user1, ASSET_ONE_ID));
+        assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user2, ASSET_TWO_ID));
+    }
 
     function test_rejectProposal() public { }
 }
