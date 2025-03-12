@@ -35,19 +35,34 @@ event Withdrawal(address indexed to, uint256 amount);
 ///                      HELPERS                        ///
 ///////////////////////////////////////////////////////////
 
-/// @dev Helper contract to setup assets for testing
-contract AssetFactorySetAssetsHelper is Test {
+contract AssetFactorySetupHelper is Test {
     AssetFactory factory;
     address public owner;
     address public user;
 
-    // Accept arguments to set up the owner, user, and factory
-    function setUp(address _owner, address _user, AssetFactory _factory) public {
-        owner = _owner;
-        user = _user;
-        factory = _factory;
-    }
+    uint256 constant IGC_TOKEN_ID = 0;
+    uint256 constant ASSET_ONE_ID = 1;
+    uint256 constant ASSET_TWO_ID = 2;
+    uint256 constant ASSET_THREE_ID = 3;
 
+    uint256 constant ASSET_ONE_PRICE = 100;
+    uint256 constant ASSET_TWO_PRICE = 200;
+    uint256 constant ASSET_THREE_PRICE = 300;
+
+    uint256 constant MINT_1 = 1;
+    uint256 constant MINT_10 = 10;
+    uint256 constant MINT_100 = 100;
+    uint256 constant MINT_1000 = 1000;
+
+    function setUp() public {
+        owner = address(1);
+        user = address(2);
+        factory = new AssetFactory(owner);
+    }
+}
+
+/// @dev Helper contract to setup assets for testing
+contract AssetFactorySetAssetsHelper is AssetFactorySetupHelper {
     // Set up assets for testing
     // Can update this function to set up more/different assets
     function setUpAssets() public {
@@ -68,15 +83,7 @@ contract AssetFactorySetAssetsHelper is Test {
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
 ///////////////////////////////////////////////////////////
-contract AssetFactoryConstructorTest is Test {
-    AssetFactory factory;
-    address public owner;
-
-    function setUp() public {
-        owner = address(1);
-        factory = new AssetFactory(owner);
-    }
-
+contract AssetFactoryConstructorTest is AssetFactorySetupHelper {
     function test_constructor() public view {
         // Check the owner was set correctly
         assertEq(factory.owner(), owner);
@@ -87,17 +94,7 @@ contract AssetFactoryConstructorTest is Test {
 ///                  SET ASSETS TESTS                   ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactorySetAssetsTest is Test {
-    AssetFactory factory;
-    address public owner;
-    address public user;
-
-    function setUp() public {
-        owner = address(1);
-        user = address(2);
-        factory = new AssetFactory(owner);
-    }
-
+contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     function test_setAssetURI_RevertIf_NotTheOwner() public {
         // Store new URI
         string memory newURI = "ipfs://asset1NewURI";
@@ -190,7 +187,7 @@ contract AssetFactorySetAssetsTest is Test {
 ///                     IGC TESTS                       ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryIGCTest is Test { }
+contract AssetFactoryIGCTest is AssetFactorySetupHelper { }
 
 ///////////////////////////////////////////////////////////
 ///                  MINTING TESTS                      ///
