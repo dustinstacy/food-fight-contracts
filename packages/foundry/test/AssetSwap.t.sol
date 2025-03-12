@@ -126,10 +126,10 @@ contract AssetSwapConstructorTest is AssetSwapSetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                    OWNER 1 TESTS                    ///
+///                    USER 1 TESTS                     ///
 ///////////////////////////////////////////////////////////
 
-contract AssetSwapOwner1Test is AssetSwapSetupHelper {
+contract AssetSwapUser1Test is AssetSwapSetupHelper {
     function test_createProposalWithAssetDeposited() public {
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory amounts = new uint256[](1);
@@ -214,7 +214,7 @@ contract AssetSwapOwner1Test is AssetSwapSetupHelper {
     }
 }
 
-contract AssetSwapOwner1CancelProposalTest is AssetSwapCreateProposalHelper {
+contract AssetSwapUser1CancelProposalTest is AssetSwapCreateProposalHelper {
     function test_cancelProposal() public {
         vm.startPrank(user1);
         swap.cancelProposal(1);
@@ -262,10 +262,10 @@ contract AssetSwapOwner1CancelProposalTest is AssetSwapCreateProposalHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                     OWNER 2 TESTS                   ///
+///                     USER 2 TESTS                   ///
 ///////////////////////////////////////////////////////////
 
-contract AssetSwapOwner2Test is AssetSwapCreateProposalHelper {
+contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
     function test_approveProposalWithAssetDeposited() public {
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory amounts = new uint256[](1);
@@ -332,6 +332,15 @@ contract AssetSwapOwner2Test is AssetSwapCreateProposalHelper {
         assertEq(MINT_10 - DEPOSIT_1, factory.balanceOf(user2, ASSET_TWO_ID));
     }
 
+    function test_approveProposal_EmitEvent() public {
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(swap), true);
+        vm.expectEmit(false, false, false, false, address(swap));
+        emit ProposalApproved(1);
+        swap.approveProposal(1);
+        vm.stopPrank();
+    }
+
     function test_rejectProposal() public {
         vm.startPrank(user2);
         swap.rejectProposal(1);
@@ -353,6 +362,14 @@ contract AssetSwapOwner2Test is AssetSwapCreateProposalHelper {
         assertEq(user2Asset1Balance, 0);
         assertEq(user2Asset2Balance, 0);
     }
+
+    function test_rejectProposal_EmitEvent() public {
+        vm.startPrank(user2);
+        vm.expectEmit(false, false, false, false, address(swap));
+        emit ProposalRejected(1);
+        swap.rejectProposal(1);
+        vm.stopPrank();
+    }
 }
 
 ///////////////////////////////////////////////////////////
@@ -372,9 +389,9 @@ contract AssetSwapAssetsTest is AssetSwapSetupHelper {
 contract AssetSwapViewFunctionsTest is AssetSwapSetupHelper {
     function test_getProposal() public { }
 
-    function test_getProposalOwner1() public { }
+    function test_getProposalUser1() public { }
 
-    function test_getProposalOwner2() public { }
+    function test_getProposalUser2() public { }
 
     function test_getProposalAsset1TokenId() public { }
 
