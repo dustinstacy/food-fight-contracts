@@ -175,16 +175,19 @@ contract AssetSwap is IERC1155Receiver {
             revert AssetSwapNotUser2(msg.sender, proposal.user2);
         }
 
-        // Create empty arrays for the depositAssets function
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
+        // Check if the caller has any of the asset1TokenId deposited
+        if (balances[msg.sender][proposal.asset2TokenId] == 0) {
+            // Create empty arrays for the depositAssets function
+            uint256[] memory tokenIds = new uint256[](1);
+            uint256[] memory amounts = new uint256[](1);
 
-        // Store the asset2 token ID and amount
-        tokenIds[0] = proposal.asset2TokenId;
-        amounts[0] = 1;
+            // Store the asset1 token ID and amount
+            tokenIds[0] = proposal.asset2TokenId;
+            amounts[0] = 1;
 
-        // Deposit asset2 into the contract
-        depositAssets(tokenIds, amounts);
+            // Deposit asset1 into the contract
+            depositAssets(tokenIds, amounts);
+        }
 
         // Update the user balances
         balances[proposal.user2][proposal.asset2TokenId] -= 1;
