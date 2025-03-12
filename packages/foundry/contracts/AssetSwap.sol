@@ -130,6 +130,30 @@ contract AssetSwap {
         emit ProposalCreated(proposalCount);
     }
 
+    // @notice Cancel a proposal to swap two assets
+    /// @param proposalId The ID of the proposal to cancel
+    function cancelProposal(uint256 proposalId) external {
+        Proposal storage proposal = proposals[proposalId];
+
+        // Check if the proposal is pending
+        if (proposal.status != ProposalStatus.Pending) {
+            revert AssetSwapProposalNotPending(proposal.status);
+        }
+
+        // Check if the caller is the owner1
+        if (proposal.owner1 != msg.sender) {
+            revert AssetSwapNotOwner1(msg.sender, proposal.owner1);
+        }
+
+        // Update the proposal status
+        proposal.status = ProposalStatus.Canceled;
+
+        // Update the user balances
+        balances[proposal.owner1][proposal.asset1TokenId] += 1;
+
+        emit ProposalCanceled(proposalId);
+    }
+
     // @notice Approve a proposal to swap two assets
     /// @param proposalId The ID of the proposal to approve
     function approveProposal(uint256 proposalId) external {
@@ -189,30 +213,6 @@ contract AssetSwap {
         balances[proposal.owner1][proposal.asset1TokenId] += 1;
 
         emit ProposalRejected(proposalId);
-    }
-
-    // @notice Cancel a proposal to swap two assets
-    /// @param proposalId The ID of the proposal to cancel
-    function cancelProposal(uint256 proposalId) external {
-        Proposal storage proposal = proposals[proposalId];
-
-        // Check if the proposal is pending
-        if (proposal.status != ProposalStatus.Pending) {
-            revert AssetSwapProposalNotPending(proposal.status);
-        }
-
-        // Check if the caller is the owner1
-        if (proposal.owner1 != msg.sender) {
-            revert AssetSwapNotOwner1(msg.sender, proposal.owner1);
-        }
-
-        // Update the proposal status
-        proposal.status = ProposalStatus.Canceled;
-
-        // Update the user balances
-        balances[proposal.owner1][proposal.asset1TokenId] += 1;
-
-        emit ProposalCanceled(proposalId);
     }
 
     ///////////////////////////////////////////////////////////
