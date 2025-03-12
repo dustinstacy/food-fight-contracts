@@ -1,11 +1,17 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// Remove when deploying to a live network.
+import "forge-std/console.sol";
+
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title AssetSwap
 /// @notice This contract allows users to swap ERC1155 assets with each other.
-contract AssetSwap {
+
+contract AssetSwap is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
@@ -13,11 +19,11 @@ contract AssetSwap {
     /// Emitted when the caller tries to approve a proposal that is not pending.
     error AssetSwapProposalNotPending(ProposalStatus status);
 
-    /// Emitted when the caller tries to cancel a proposal that is not the owner1.
-    error AssetSwapNotOwner1(address caller, address owner1);
+    /// Emitted when the caller tries to cancel a proposal that is not the user1.
+    error AssetSwapNotOwner1(address caller, address user1);
 
-    /// Emitted when the caller tries to approve a proposal that is not the owner2.
-    error AssetSwapNotOwner2(address caller, address owner2);
+    /// Emitted when the caller tries to approve a proposal that is not the user2.
+    error AssetSwapNotOwner2(address caller, address user2);
 
     /// Emitted when the token IDs and amounts arrays have different lengths.
     error AssetSwapArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
@@ -63,8 +69,8 @@ contract AssetSwap {
     ///////////////////////////////////////////////////////////
 
     struct Proposal {
-        address owner1;
-        address owner2;
+        address user1;
+        address user2;
         uint256 asset1TokenId;
         uint256 asset2TokenId;
         ProposalStatus status;
@@ -75,7 +81,7 @@ contract AssetSwap {
     ///////////////////////////////////////////////////////////
 
     mapping(uint256 proposalId => Proposal) private proposals;
-    mapping(address owner => mapping(uint256 tokenId => uint256 balance)) private balances;
+    mapping(address user => mapping(uint256 tokenId => uint256 balance)) private balances;
 
     uint256 private proposalCount;
     IERC1155 private assetsContract;
@@ -94,10 +100,10 @@ contract AssetSwap {
     ///////////////////////////////////////////////////////////
 
     /// @notice Create a proposal to swap two assets
-    /// @param owner2 The address of the owner to swap with
+    /// @param user2 The address of the user to swap with
     /// @param asset1TokenId The token ID of the first asset
     /// @param asset2TokenId The token ID of the second asset
-    function createProposal(address owner2, uint256 asset1TokenId, uint256 asset2TokenId) external {
+    function createProposal(address user2, uint256 asset1TokenId, uint256 asset2TokenId) external {
         // Check if the caller has any of the asset1TokenId deposited
         if (balances[msg.sender][asset1TokenId] == 0) {
             // Create empty arrays for the depositAssets function
@@ -117,8 +123,8 @@ contract AssetSwap {
 
         // Create the proposal and store it in the proposals mapping
         proposals[proposalCount] = Proposal({
-            owner1: msg.sender,
-            owner2: owner2,
+            user1: msg.sender,
+            user2: user2,
             asset1TokenId: asset1TokenId,
             asset2TokenId: asset2TokenId,
             status: ProposalStatus.Pending
@@ -140,16 +146,16 @@ contract AssetSwap {
             revert AssetSwapProposalNotPending(proposal.status);
         }
 
-        // Check if the caller is the owner1
-        if (proposal.owner1 != msg.sender) {
-            revert AssetSwapNotOwner1(msg.sender, proposal.owner1);
+        // Check if the caller is the user1
+        if (proposal.user1 != msg.sender) {
+            revert AssetSwapNotOwner1(msg.sender, proposal.user1);
         }
 
         // Update the proposal status
         proposal.status = ProposalStatus.Canceled;
 
         // Update the user balances
-        balances[proposal.owner1][proposal.asset1TokenId] += 1;
+        balances[proposal.user1][proposal.asset1TokenId] += 1;
 
         emit ProposalCanceled(proposalId);
     }
@@ -164,9 +170,9 @@ contract AssetSwap {
             revert AssetSwapProposalNotPending(proposal.status);
         }
 
-        // Check if the caller is the owner2
-        if (proposal.owner2 != msg.sender) {
-            revert AssetSwapNotOwner2(msg.sender, proposal.owner2);
+        // Check if the caller is the user2
+        if (proposal.user2 != msg.sender) {
+            revert AssetSwapNotOwner2(msg.sender, proposal.user2);
         }
 
         // Create empty arrays for the depositAssets function
@@ -181,9 +187,9 @@ contract AssetSwap {
         depositAssets(tokenIds, amounts);
 
         // Update the user balances
-        balances[proposal.owner2][proposal.asset2TokenId] -= 1;
-        balances[proposal.owner1][proposal.asset2TokenId] += 1;
-        balances[proposal.owner2][proposal.asset1TokenId] += 1;
+        balances[proposal.user2][proposal.asset2TokenId] -= 1;
+        balances[proposal.user1][proposal.asset2TokenId] += 1;
+        balances[proposal.user2][proposal.asset1TokenId] += 1;
 
         // Update the proposal status
         proposal.status = ProposalStatus.Approved;
@@ -201,16 +207,16 @@ contract AssetSwap {
             revert AssetSwapProposalNotPending(proposal.status);
         }
 
-        // Check if the caller is the owner2
-        if (proposal.owner2 != msg.sender) {
-            revert AssetSwapNotOwner2(msg.sender, proposal.owner2);
+        // Check if the caller is the user2
+        if (proposal.user2 != msg.sender) {
+            revert AssetSwapNotOwner2(msg.sender, proposal.user2);
         }
 
         // Update the proposal status
         proposal.status = ProposalStatus.Rejected;
 
         // Update the user balances
-        balances[proposal.owner1][proposal.asset1TokenId] += 1;
+        balances[proposal.user1][proposal.asset1TokenId] += 1;
 
         emit ProposalRejected(proposalId);
     }
@@ -289,18 +295,18 @@ contract AssetSwap {
         return proposals[proposalId];
     }
 
-    /// @notice Get the owner1 of a proposal
+    /// @notice Get the user1 of a proposal
     /// @param proposalId The ID of the proposal
-    /// @return owner1 The address of the owner1
-    function getProposalOwner1(uint256 proposalId) public view returns (address owner1) {
-        return proposals[proposalId].owner1;
+    /// @return user1 The address of the user1
+    function getProposalOwner1(uint256 proposalId) public view returns (address user1) {
+        return proposals[proposalId].user1;
     }
 
-    /// @notice Get the owner2 of a proposal
+    /// @notice Get the user2 of a proposal
     /// @param proposalId The ID of the proposal
-    /// @return owner2 The address of the owner2
-    function getProposalOwner2(uint256 proposalId) public view returns (address owner2) {
-        return proposals[proposalId].owner2;
+    /// @return user2 The address of the user2
+    function getProposalOwner2(uint256 proposalId) public view returns (address user2) {
+        return proposals[proposalId].user2;
     }
 
     /// @notice Get the asset1 token ID of a proposal
@@ -325,11 +331,11 @@ contract AssetSwap {
     }
 
     /// @notice Get the balance of a user for a specific token
-    /// @param owner The address of the user
+    /// @param user The address of the user
     /// @param tokenId The ID of the token
     /// @return balance The balance of the user for the token
-    function getBalance(address owner, uint256 tokenId) public view returns (uint256 balance) {
-        return balances[owner][tokenId];
+    function getBalance(address user, uint256 tokenId) public view returns (uint256 balance) {
+        return balances[user][tokenId];
     }
 
     /// @notice Get the number of proposals
@@ -342,5 +348,40 @@ contract AssetSwap {
     /// @return assetsContract The address of the ERC1155 contract
     function getAssetsContract() public view returns (address) {
         return address(assetsContract);
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               ERC1155 RECEIVER FUNCTIONS              ///
+    /////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155Received(
+        address, /*operator*/
+        address, /*from*/
+        uint256, /*id*/
+        uint256, /*value*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155BatchReceived(
+        address, /*operator*/
+        address, /*from*/
+        uint256[] memory, /*ids*/
+        uint256[] memory, /*values*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               ERC165 INTERFACE FUNCTIONS              ///
+    /////////////////////////////////////////////////////////////
+
+    // Implement supportsInterface
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
