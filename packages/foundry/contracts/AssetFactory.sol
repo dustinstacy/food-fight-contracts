@@ -79,9 +79,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @dev Simple placehold pricing model. Needs to be updated.
     function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external {
         uint256 price = assetPrices[id];
-        console.log("price: %d", price);
         uint256 totalPrice = price * amount;
-        console.log("totalPrice: %d", totalPrice);
 
         safeTransferFrom(_msgSender(), address(this), igcTokenId, totalPrice, "");
 
@@ -96,6 +94,8 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @dev The IDs and amounts arrays must be the same length.
     /// @dev Simple placehold pricing model. Needs to be updated.
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external {
+        // Same error would get thrown in the _mintBatch function
+        // This is to precede the error that would be thrown in the for loop.
         if (ids.length != amounts.length) {
             revert ERC1155InvalidArrayLength(ids.length, amounts.length);
         }
