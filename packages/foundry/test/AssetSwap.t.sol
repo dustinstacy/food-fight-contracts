@@ -513,6 +513,7 @@ contract AssetSwapDepositAssetsTest is AssetSwapSetupHelper {
         amounts[0] = user1AssetBalance + 1;
 
         vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IERC1155Errors.ERC1155InsufficientBalance.selector,
