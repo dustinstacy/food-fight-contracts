@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { Test, console2 } from "forge-std/Test.sol";
+import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { AssetSwap } from "@contracts/AssetSwap.sol";
 import { AssetFactorySetAssetsHelper } from "./AssetFactory.t.sol";
 
@@ -35,6 +36,7 @@ contract AssetSwapSetupHelper is AssetFactorySetAssetsHelper {
     AssetSwap public swap;
     address public user1;
     address public user2;
+    address public user3;
 
     uint256 constant DEPOSIT_1 = 1;
     uint256 constant DEPOSIT_5 = 5;
@@ -50,6 +52,7 @@ contract AssetSwapSetupHelper is AssetFactorySetAssetsHelper {
         swap = new AssetSwap(address(factory));
         user1 = user;
         user2 = address(3);
+        user3 = address(4);
         setUpAssets();
         mintInitialIGC(user1, MINT_1000000);
         mintInitialIGC(user2, MINT_1000000);
@@ -97,6 +100,7 @@ contract AssetSwapCreateProposalHelper is AssetSwapSetupHelper {
     function createProposal() public {
         vm.startPrank(user1);
         swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
+        vm.stopPrank();
 
         // Ensure validity of data for inheriting tests
         AssetSwap.Proposal memory proposal = swap.getProposal(1);
@@ -341,6 +345,29 @@ contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
         vm.stopPrank();
     }
 
+    function test_approveProposal_RevertWhen_StatusNotPending() public {
+        vm.prank(user1);
+        swap.cancelProposal(1);
+
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetSwap.AssetSwapProposalNotPending.selector, canceledStatus));
+        swap.approveProposal(1);
+    }
+
+    function test_approveProposal_RevertWhen_NotUser2() public {
+        vm.prank(user3);
+        vm.expectRevert(abi.encodeWithSelector(AssetSwap.AssetSwapNotUser2.selector, user3, user2));
+        swap.approveProposal(1);
+    }
+
+    function test_approveProposal_RevertWhen_AssetNotDepositedWithoutApproval() public {
+        vm.prank(user2);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, address(swap), user2)
+        );
+        swap.approveProposal(1);
+    }
+
     function test_rejectProposal() public {
         vm.startPrank(user2);
         swap.rejectProposal(1);
@@ -369,6 +396,21 @@ contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
         emit ProposalRejected(1);
         swap.rejectProposal(1);
         vm.stopPrank();
+    }
+
+    function test_rejectProposal_RevertWhen_StatusNotPending() public {
+        vm.prank(user1);
+        swap.cancelProposal(1);
+
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetSwap.AssetSwapProposalNotPending.selector, canceledStatus));
+        swap.rejectProposal(1);
+    }
+
+    function test_rejectProposal_RevertWhen_NotUser2() public {
+        vm.prank(user3);
+        vm.expectRevert(abi.encodeWithSelector(AssetSwap.AssetSwapNotUser2.selector, user3, user2));
+        swap.rejectProposal(1);
     }
 }
 
