@@ -380,7 +380,7 @@ contract AssetSwap is IERC1155Receiver {
     }
 
     /////////////////////////////////////////////////////////////
-    ///               ERC165 INTERFACE FUNCTIONS              ///
+    ///               IERC165 INTERFACE FUNCTIONS             ///
     /////////////////////////////////////////////////////////////
 
     // Implement supportsInterface

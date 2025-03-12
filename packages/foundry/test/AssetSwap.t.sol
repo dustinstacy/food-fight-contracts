@@ -819,7 +819,7 @@ contract AssetSwapERC1155ReceiverTest is AssetSwapSetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///               ERC165 INTERFACE TESTS                ///
+///               IERC165 INTERFACE TESTS                ///
 ///////////////////////////////////////////////////////////
 
 contract AssetSwapERC165Test is AssetSwapSetupHelper {
