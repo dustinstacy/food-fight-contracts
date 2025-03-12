@@ -34,6 +34,12 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// Emitted when an assets URI and price are set.
     event AssetDataSet(string uri, uint256 id, uint256 price);
 
+    /// Emitted when a asset is burnt.
+    event AssetBurnt(address indexed account, uint256 id, uint256 amount);
+
+    /// Emitted when assets are burnt
+    event AssetsBurnt(address indexed account, uint256[] ids, uint256[] amounts);
+
     /// Emitted when an owner withdraws funds from the contract.
     event Withdrawal(address indexed to, uint256 amount);
 
@@ -132,6 +138,8 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
         }
 
         _burn(account, id, amount);
+
+        emit AssetBurnt(account, id, amount);
     }
 
     /// @notice Burns given amounts of multiple assets.
@@ -141,6 +149,12 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     function burnBatch(address account, uint256[] memory ids, uint256[] memory amounts) external {
         if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
+        }
+
+        // Same error would get thrown in the _burnBatch function
+        // This is to precede the error that would be thrown in the for loop.
+        if (ids.length != amounts.length) {
+            revert ERC1155InvalidArrayLength(ids.length, amounts.length);
         }
 
         for (uint256 i = 0; i < ids.length; i++) {
@@ -154,6 +168,8 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
         }
 
         _burnBatch(account, ids, amounts);
+
+        emit AssetsBurnt(account, ids, amounts);
     }
 
     ///////////////////////////////////////////////////////////
