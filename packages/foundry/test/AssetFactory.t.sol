@@ -4,6 +4,9 @@ pragma solidity ^0.8.28;
 import { Test, console } from "forge-std/Test.sol";
 import { AssetFactory } from "@contracts/AssetFactory.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { IERC1155 } from "@openzeppelin/contracts/interfaces/IERC1155.sol";
+import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 ///////////////////////////////////////////////////////////
 ///                      ERRORS                         ///
@@ -53,6 +56,9 @@ contract AssetFactorySetupHelper is Test {
     uint256 constant MINT_10 = 10;
     uint256 constant MINT_100 = 100;
     uint256 constant MINT_1000 = 1000;
+    uint256 constant MINT_10000 = 10000;
+    uint256 constant MINT_100000 = 100000;
+    uint256 constant MINT_1000000 = 1000000;
 
     function setUp() public {
         owner = address(1);
@@ -80,6 +86,8 @@ contract AssetFactorySetAssetsHelper is AssetFactorySetupHelper {
     }
 }
 
+contract AssetFactoryERC1155InvalidRecieverHelper { }
+
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
 ///////////////////////////////////////////////////////////
@@ -96,10 +104,8 @@ contract AssetFactoryConstructorTest is AssetFactorySetupHelper {
 
 contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     function test_setAssetURI_RevertIf_NotTheOwner() public {
-        // Store new URI
         string memory newURI = "ipfs://asset1NewURI";
 
-        // Set user as the caller
         vm.prank(user);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
@@ -108,10 +114,8 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     }
 
     function test_setAssetURI() public {
-        // Store new URI
         string memory newURI = "ipfs://asset1NewURI";
 
-        // Set owner as the caller
         vm.prank(owner);
 
         // Check for the URISet event when setting the new URI
@@ -124,10 +128,8 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     }
 
     function test_setAssetPrice_RevertIf_NotTheOwner() public {
-        // Store new price
         uint256 newPrice = 1000;
 
-        // Set user as the caller
         vm.prank(user);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
@@ -136,10 +138,8 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     }
 
     function test_setAssetPrice() public {
-        // Store new price
         uint256 newPrice = 1000;
 
-        // Set owner as the caller
         vm.prank(owner);
 
         // Check for the AssetPriceSet event when setting the new price
@@ -152,11 +152,9 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     }
 
     function test_setAssetData_RevertIf_NotTheOwner() public {
-        // Store new URI and price
         string memory newURI = "ipfs://asset1NewURI";
         uint256 newPrice = 1000;
 
-        // Set user as the caller
         vm.prank(user);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
@@ -165,11 +163,9 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
     }
 
     function test_setAssetData() public {
-        // Store new URI and price
         string memory newURI = "ipfs://asset1NewURI";
         uint256 newPrice = 1000;
 
-        // Set owner as the caller
         vm.prank(owner);
 
         // Check for the AssetDataSet event when setting the new URI and price
@@ -189,14 +185,23 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
 
 contract AssetFactoryIGCTest is AssetFactorySetupHelper {
     function test_mintIGC() public {
-        // Set user as the caller
         vm.prank(user);
-
-        // Mint IGC for the user
         factory.mintIGC(user, MINT_1000);
 
         // Check the user's IGC balance
         assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
+    }
+
+    function test_mintIGC_RevertIf_InvalidReceiver() public {
+        AssetFactoryERC1155InvalidRecieverHelper invalidReceiver = new AssetFactoryERC1155InvalidRecieverHelper();
+
+        vm.prank(address(invalidReceiver));
+
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
+        );
+        factory.mintIGC(address(invalidReceiver), MINT_1000);
     }
 }
 
@@ -204,7 +209,110 @@ contract AssetFactoryIGCTest is AssetFactorySetupHelper {
 ///                  MINTING TESTS                      ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryAssetMintingTest is Test { }
+contract AssetFactoryAssetMintingTest is AssetFactorySetAssetsHelper {
+    function test_mintAsset1() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000);
+
+        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
+
+        vm.prank(user);
+        factory.mintAsset(user, ASSET_ONE_ID, MINT_1, "");
+
+        // Check the user's asset balance
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - ASSET_ONE_PRICE);
+    }
+
+    function test_mintAsset2() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_10000);
+
+        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
+
+        vm.prank(user);
+        factory.mintAsset(user, ASSET_TWO_ID, MINT_10, "");
+
+        // Check the user's asset balance
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - (ASSET_TWO_PRICE * MINT_10));
+    }
+
+    function test_mintAsset3() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_100000);
+
+        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
+
+        vm.prank(user);
+        factory.mintAsset(user, ASSET_THREE_ID, MINT_100, "");
+
+        // Check the user's asset balance
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_100);
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - (ASSET_THREE_PRICE * MINT_100));
+    }
+
+    function test_mintAssetEmitEvent() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000);
+
+        vm.prank(user);
+
+        // Check for the TransferSingle event when minting an asset
+        vm.expectEmit(true, false, false, false, address(factory));
+        emit IERC1155.TransferSingle(user, address(0), user, ASSET_ONE_ID, MINT_1);
+        factory.mintAsset(user, ASSET_ONE_ID, MINT_1, "");
+    }
+
+    function test_mintAsset_RevertIf_NotEnoughIGC() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1);
+
+        vm.prank(user);
+
+        // Check that the function reverts with the AssetFactoryNotEnoughIGC error
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user, 1, 100, 0));
+        factory.mintAsset(user, ASSET_ONE_ID, MINT_1, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1);
+    }
+
+    function test_mintAsset_RevertIf_AddressZero() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000);
+
+        vm.prank(user);
+
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0)));
+        factory.mintAsset(address(0), ASSET_ONE_ID, MINT_1, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
+    }
+
+    function test_mintAsset_RevertIf_InvalidReceiver() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000);
+
+        AssetFactoryERC1155InvalidRecieverHelper invalidReceiver = new AssetFactoryERC1155InvalidRecieverHelper();
+
+        vm.prank(user);
+
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
+        );
+        factory.mintAsset(address(invalidReceiver), ASSET_ONE_ID, MINT_1, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                  BURNING TESTS                      ///
