@@ -142,7 +142,37 @@ contract AssetSwapOwner1Test is AssetSwapSetupHelper {
         assertEq(expectedUser1AssetBalance, actualUser1AssetBalance);
     }
 
-    function test_createProposalWithoutAssetDeposited() public { }
+    function test_createProposalWithoutAssetDeposited() public {
+        // Check the user has not deposited any of the asset
+        uint256 user1AssetBalance = swap.getBalance(user1, ASSET_ONE_ID);
+        assertEq(user1AssetBalance, 0);
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
+        swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
+        vm.stopPrank();
+
+        // Check the proposal count was incremented
+        uint256 expectedProposalCount = 1;
+        uint256 actualProposalCount = swap.getProposalCount();
+        assertEq(expectedProposalCount, actualProposalCount);
+
+        // Check the proposal was created correctly
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        assertEq(user1, proposal.user1);
+        assertEq(user2, proposal.user2);
+        assertEq(ASSET_ONE_ID, proposal.asset1TokenId);
+        assertEq(ASSET_TWO_ID, proposal.asset2TokenId);
+
+        // Convert the proposal status to an integer and check it was set correctly
+        uint256 proposalStatus = uint256(proposal.status);
+        assertEq(proposalStatus, pendingStatus);
+
+        // Check that the user's asset balance was not decremented
+        uint256 expectedUser1AssetBalance = user1AssetBalance;
+        uint256 actualUser1AssetBalance = swap.getBalance(user1, ASSET_ONE_ID);
+        assertEq(expectedUser1AssetBalance, actualUser1AssetBalance);
+    }
 
     function test_createProposal_EmitEvent() public { }
 
