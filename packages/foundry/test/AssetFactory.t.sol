@@ -9,16 +9,6 @@ import { IERC1155 } from "@openzeppelin/contracts/interfaces/IERC1155.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 ///////////////////////////////////////////////////////////
-///                      ERRORS                         ///
-///////////////////////////////////////////////////////////
-
-/// Emitted when an owner tries to withdraw more funds than the contract balance.
-error AssetFactoryWithdrawalExceedsBalance(uint256 amount, uint256 balance);
-
-/// Emitted when an owner tries to withdraw funds from the contract and the transfer fails.
-error AssetFactoryWithdrawalFailed(address to, uint256 amount);
-
-///////////////////////////////////////////////////////////
 ///                     EVENTS                          ///
 ///////////////////////////////////////////////////////////
 
@@ -44,6 +34,7 @@ event Withdrawal(address indexed to, uint256 amount);
 ///                      HELPERS                        ///
 ///////////////////////////////////////////////////////////
 
+/// @dev Helper contract to setup the AssetFactory contract
 contract AssetFactorySetupHelper is Test {
     AssetFactory factory;
     address public owner;
@@ -66,7 +57,7 @@ contract AssetFactorySetupHelper is Test {
     uint256 constant MINT_100000 = 100000;
     uint256 constant MINT_1000000 = 1000000;
 
-    function setUp() public {
+    function setUp() public virtual {
         owner = address(1);
         user = address(2);
         factory = new AssetFactory(owner);
@@ -101,13 +92,14 @@ contract AssetFactorySetAssetsHelper is AssetFactorySetupHelper {
     }
 }
 
+/// @dev Helper contract to test invalid receiver for ERC1155
 contract AssetFactoryERC1155InvalidRecieverHelper { }
 
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
 ///////////////////////////////////////////////////////////
 contract AssetFactoryConstructorTest is AssetFactorySetupHelper {
-    function test_constructor() public view {
+    function test_assetFactoryConstructor() public view {
         // Check the owner was set correctly
         assertEq(factory.owner(), owner);
     }
