@@ -103,7 +103,6 @@ contract AssetAuction {
         uint256 winningBid;
         AuctionStatus status;
         Style style;
-        Bid[] bids;
     }
 
     struct Bid {
@@ -117,6 +116,7 @@ contract AssetAuction {
     ///////////////////////////////////////////////////////////
 
     mapping(uint256 auctionId => Auction) private auctions;
+    mapping(uint256 auctionId => Bid[]) private bids;
     mapping(address user => mapping(uint256 assetId => uint256 assetBalance)) private assetBalances;
     mapping(address user => uint256 igcBalance) private igcBalances;
 
@@ -160,9 +160,6 @@ contract AssetAuction {
         // Increment the auction count
         auctionCount++;
 
-        // Create an empty array of bids
-        Bid[] memory bids = new Bid[](0);
-
         // Create the auction and store it in the auctions mapping
         auctions[auctionCount] = Auction({
             seller: msg.sender,
@@ -174,8 +171,7 @@ contract AssetAuction {
             winningBid: 0,
             winningBidder: address(0),
             status: AuctionStatus.Open,
-            style: style,
-            bids: bids
+            style: style
         });
 
         // Update the asset balances
@@ -210,7 +206,7 @@ contract AssetAuction {
         auction.highestBidder = msg.sender;
 
         // Add the bid to the bids array
-        auction.bids.push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
+        bids[auctionId].push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
 
         emit BidPlaced(msg.sender, auctionId, amount);
     }
@@ -493,9 +489,9 @@ contract AssetAuction {
 
     /// @notice Get the bids of an auction
     /// @param auctionId The ID of the auction
-    /// @return bids The bids of the auction
-    function getAuctionBids(uint256 auctionId) public view returns (Bid[] memory bids) {
-        return auctions[auctionId].bids;
+    /// @return bidsArray The bids of the auction
+    function getAuctionBids(uint256 auctionId) public view returns (Bid[] memory bidsArray) {
+        return bids[auctionId];
     }
 
     /// @notice Get the balance of an asset for a user
