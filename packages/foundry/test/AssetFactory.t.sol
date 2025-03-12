@@ -794,7 +794,21 @@ contract AssetFactoryWithdrawalTest is Test { }
 ///                 VIEW FUNCTIONS TESTS                ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryViewFunctionsTest is Test { }
+contract AssetFactoryViewFunctionsTest is AssetFactorySetAssetsHelper {
+    function test_getAssetUri() public {
+        setUpAssets();
+
+        // Check the URI of the asset
+        assertEq(factory.getAssetURI(1), "ipfs://asset1");
+    }
+
+    function test_getAssetPrice() public {
+        setUpAssets();
+
+        // Check the price of the asset
+        assertEq(factory.getAssetPrice(1), 100);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                ERC1155 RECEIVER TESTS               ///
