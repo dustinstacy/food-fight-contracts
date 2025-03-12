@@ -312,6 +312,178 @@ contract AssetFactoryAssetMintingTest is AssetFactorySetAssetsHelper {
         // Check the user's IGC balance
         assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
     }
+
+    function test_mintBatch() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+
+        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
+
+        vm.prank(user);
+
+        // Set up arrays for minting multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_1;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_100;
+
+        uint256 totalPrice = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * MINT_10) + (ASSET_THREE_PRICE * MINT_100);
+
+        factory.mintBatch(user, assetIds, amounts, "");
+
+        // Check the user's asset balances
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_100);
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - totalPrice);
+    }
+
+    function test_mintBatchEmitEvent() public {
+        // Set up assets for testing
+        setUpAssets();
+
+        // Mint IGC for the user
+        mintInitialIGC(user, MINT_100000);
+
+        // Set user as the caller
+        vm.prank(user);
+
+        // Set up arrays for minting multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_1;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_100;
+
+        // Check for the TransferBatch event when minting multiple assets
+        vm.expectEmit(false, true, false, false, address(factory));
+        emit IERC1155.TransferBatch(user, address(0), user, assetIds, amounts);
+        factory.mintBatch(user, assetIds, amounts, "");
+    }
+
+    function test_mintBatch_RevertIf_ArraysNotSamelength() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_100000);
+
+        vm.prank(user);
+
+        // Set up different length arrays for minting multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](2);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_1;
+        amounts[1] = MINT_10;
+
+        // Check that the function reverts with the ERC1155InvalidArrayLength error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidArrayLength.selector, assetIds.length, amounts.length)
+        );
+        factory.mintBatch(user, assetIds, amounts, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_100000);
+    }
+
+    function test_mintBatch_RevertIf_NotEnoughIGC() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1);
+
+        vm.prank(user);
+
+        // Set up arrays for minting multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_1;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_100;
+
+        uint256 totalPrice = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * MINT_10) + (ASSET_THREE_PRICE * MINT_100);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user, 1, totalPrice, 0)
+        );
+        factory.mintBatch(user, assetIds, amounts, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1);
+    }
+
+    function test_mintBatch_RevertIf_AddressZero() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_100000);
+
+        vm.prank(user);
+
+        // Set up arrays for minting multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_1;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_100;
+
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0)));
+        factory.mintBatch(address(0), assetIds, amounts, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_100000);
+    }
+
+    function test_mintBatch_RevertIf_InvalidReceiver() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_100000);
+
+        AssetFactoryERC1155InvalidRecieverHelper invalidReceiver = new AssetFactoryERC1155InvalidRecieverHelper();
+
+        // Set up arrays for minting multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_1;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_100;
+
+        vm.prank(user);
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
+        );
+        factory.mintBatch(address(invalidReceiver), assetIds, amounts, "");
+
+        // Check the user's IGC balance
+        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_100000);
+    }
 }
 
 ///////////////////////////////////////////////////////////
