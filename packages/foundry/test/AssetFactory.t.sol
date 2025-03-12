@@ -800,4 +800,19 @@ contract AssetFactoryViewFunctionsTest is Test { }
 ///                ERC1155 RECEIVER TESTS               ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryERC1155ReceiverTest is Test { }
+contract AssetFactoryERC1155ReceiverTest is AssetFactorySetAssetsHelper {
+    function test_onERC1155Received() public view {
+        bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+        bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
+
+        assertEq(returnedSelector, expectedSelector);
+    }
+
+    function test_onERC1155BatchReceived() public view {
+        bytes4 expectedSelector = bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+        bytes4 returnedSelector =
+            factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
+
+        assertEq(returnedSelector, expectedSelector);
+    }
+}
