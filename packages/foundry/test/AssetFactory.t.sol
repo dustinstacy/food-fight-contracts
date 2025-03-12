@@ -788,7 +788,8 @@ contract AssetFactoryAssetBurnTest is AssetFactorySetAssetsHelper {
 ///                  WITHDRAWAL TESTS                   ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryWithdrawalTest is Test { }
+/// @dev Need to implement payment functionality to test withdrawal
+contract AssetFactoryWithdrawalTest is AssetFactorySetAssetsHelper { }
 
 ///////////////////////////////////////////////////////////
 ///                 VIEW FUNCTIONS TESTS                ///
