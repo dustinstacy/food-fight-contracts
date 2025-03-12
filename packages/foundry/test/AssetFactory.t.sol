@@ -607,6 +607,181 @@ contract AssetFactoryAssetBurnTest is AssetFactorySetAssetsHelper {
         // Check the user's asset balance
         assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
     }
+
+    function test_burnBatch() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+        mintInitialAssets(user, MINT_10);
+
+        vm.prank(user);
+
+        // Set up arrays for burning multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_10;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_10;
+
+        factory.burnBatch(user, assetIds, amounts);
+
+        // Check the user's asset balances
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), 0);
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), 0);
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), 0);
+    }
+
+    function test_burnBatch_WithApproval() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+        mintInitialAssets(user, MINT_10);
+
+        vm.prank(user);
+        // Set the approval for the user
+        factory.setApprovalForAll(owner, true);
+
+        vm.prank(owner);
+
+        // Set up arrays for burning multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_10;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_10;
+
+        factory.burnBatch(user, assetIds, amounts);
+
+        // Check the user's asset balances
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), 0);
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), 0);
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), 0);
+    }
+
+    function test_burnBatchEmitEvent() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+        mintInitialAssets(user, MINT_10);
+
+        vm.prank(user);
+
+        // Set up arrays for burning multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_10;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_10;
+
+        // Check for the AssetsBurnt event when burning multiple assets
+        vm.expectEmit(false, false, true, false, address(factory));
+        emit AssetsBurnt(user, assetIds, amounts);
+        factory.burnBatch(user, assetIds, amounts);
+    }
+
+    function test_burnBatch_RevertIf_MissingApproval() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+        mintInitialAssets(user, MINT_10);
+
+        // Set up arrays for burning multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_10;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_10;
+
+        vm.prank(owner);
+
+        // Check that the function reverts with the ERC1155MissingApproval error
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, owner, user));
+        factory.burnBatch(user, assetIds, amounts);
+
+        // Check the user's asset balances
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_10);
+    }
+
+    function test_burnBatch_RevertIf_ArraysNotSameLength() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+        mintInitialAssets(user, MINT_10);
+
+        vm.prank(user);
+
+        // Set up arrays for burning multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](2);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_10;
+        amounts[1] = MINT_10;
+
+        // Check that the function reverts with the ERC1155InvalidArrayLength error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidArrayLength.selector, assetIds.length, amounts.length)
+        );
+        factory.burnBatch(user, assetIds, amounts);
+
+        // Check the user's asset balances
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_10);
+    }
+
+    function test_burnBatch_RevertIf_InsufficientBalance() public {
+        setUpAssets();
+        mintInitialIGC(user, MINT_1000000);
+        mintInitialAssets(user, MINT_10);
+
+        vm.prank(user);
+
+        // Set up arrays for burning multiple assets
+        uint256[] memory assetIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        assetIds[0] = ASSET_ONE_ID;
+        assetIds[1] = ASSET_TWO_ID;
+        assetIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = MINT_10;
+        amounts[1] = MINT_10;
+        amounts[2] = MINT_100;
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user, MINT_10, MINT_100, ASSET_THREE_ID
+            )
+        );
+        factory.burnBatch(user, assetIds, amounts);
+
+        // Check the user's asset balances
+        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
+        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_10);
+    }
 }
 
 ///////////////////////////////////////////////////////////
