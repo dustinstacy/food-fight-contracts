@@ -427,10 +427,106 @@ contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
 ///                    ASSETS TESTS                     ///
 ///////////////////////////////////////////////////////////
 
-contract AssetSwapAssetsTest is AssetSwapSetupHelper {
-    function test_withdrawAssets() public { }
+contract AssetSwapAssetsTest is AssetSwapCreateProposalHelper {
+    function test_depositAssets() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
 
-    function test_depositAssets() public { }
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_1;
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
+        swap.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user1AssetBalance = swap.getBalance(user1, ASSET_ONE_ID);
+        assertEq(user1AssetBalance, DEPOSIT_1);
+    }
+
+    function test_depositMultipleAssets() public {
+        uint256[] memory tokenIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        tokenIds[1] = ASSET_TWO_ID;
+        tokenIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = DEPOSIT_1;
+        amounts[1] = DEPOSIT_5;
+        amounts[2] = DEPOSIT_10;
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
+        swap.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user1Asset1Balance = swap.getBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = swap.getBalance(user1, ASSET_TWO_ID);
+        uint256 user1Asset3Balance = swap.getBalance(user1, ASSET_THREE_ID);
+
+        assertEq(user1Asset1Balance, DEPOSIT_1);
+        assertEq(user1Asset2Balance, DEPOSIT_5);
+        assertEq(user1Asset3Balance, DEPOSIT_10);
+    }
+
+    function test_depositAssets_EmitEvent() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_1;
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
+        vm.expectEmit(false, false, false, false, address(swap));
+        emit AssetsDeposited(user1, tokenIds, amounts);
+        swap.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
+
+    function test_depositAssets_RevertWhen_ArraysNotSameLength() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](2);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_1;
+        amounts[1] = DEPOSIT_5;
+
+        vm.startPrank(user1);
+        vm.expectRevert(
+            abi.encodeWithSelector(AssetSwap.AssetSwapArraysLengthMismatch.selector, tokenIds.length, amounts.length)
+        );
+        swap.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
+
+    function test_depositAssets_RevertWhen_InsufficientBalance() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        uint256 user1AssetBalance = factory.balanceOf(user1, ASSET_ONE_ID);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = user1AssetBalance + 1;
+
+        vm.startPrank(user1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector,
+                user1,
+                user1AssetBalance,
+                user1AssetBalance + 1,
+                ASSET_ONE_ID
+            )
+        );
+        swap.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
+
+    function test_withdrawAssets() public { }
 }
 
 ///////////////////////////////////////////////////////////

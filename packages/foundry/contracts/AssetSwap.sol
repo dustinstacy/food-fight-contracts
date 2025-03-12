@@ -228,6 +228,32 @@ contract AssetSwap is IERC1155Receiver {
     ///                  ASSETS FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Deposit assets into the contract
+    /// @param tokenIds The token IDs of the assets to deposit
+    /// @param amounts The amounts of the assets to deposit
+    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
+        // Check if the token IDs and amounts arrays have the same length
+        if (tokenIds.length != amounts.length) {
+            revert AssetSwapArraysLengthMismatch(tokenIds.length, amounts.length);
+        }
+
+        // Store the necessary variables for the safeBatchTransferFrom function
+        uint256 length = tokenIds.length;
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the assets to the contract
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        // Update the user balances
+        for (uint256 i = 0; i < length; i++) {
+            balances[from][tokenIds[i]] += amounts[i];
+        }
+
+        emit AssetsDeposited(from, tokenIds, amounts);
+    }
+
     /// @notice Withdraw assets from the contract
     /// @param tokenIds The token IDs of the assets to withdraw
     /// @param amounts The amounts of the assets to withdraw
@@ -259,32 +285,6 @@ contract AssetSwap is IERC1155Receiver {
         assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
 
         emit AssetsWithdrawn(to, tokenIds, amounts);
-    }
-
-    /// @notice Deposit assets into the contract
-    /// @param tokenIds The token IDs of the assets to deposit
-    /// @param amounts The amounts of the assets to deposit
-    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
-        // Check if the token IDs and amounts arrays have the same length
-        if (tokenIds.length != amounts.length) {
-            revert AssetSwapArraysLengthMismatch(tokenIds.length, amounts.length);
-        }
-
-        // Store the necessary variables for the safeBatchTransferFrom function
-        uint256 length = tokenIds.length;
-        address from = msg.sender;
-        address to = address(this);
-        bytes memory data = "";
-
-        // Transfer the assets to the contract
-        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
-
-        // Update the user balances
-        for (uint256 i = 0; i < length; i++) {
-            balances[from][tokenIds[i]] += amounts[i];
-        }
-
-        emit AssetsDeposited(from, tokenIds, amounts);
     }
 
     ///////////////////////////////////////////////////////////
