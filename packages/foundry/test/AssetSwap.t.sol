@@ -45,7 +45,7 @@ contract AssetSwapSetupHelper is AssetFactorySetAssetsHelper {
     uint256 rejectedStatus = uint256(AssetSwap.ProposalStatus.Rejected);
     uint256 canceledStatus = uint256(AssetSwap.ProposalStatus.Canceled);
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         swap = new AssetSwap(address(factory));
         user1 = user;
@@ -71,13 +71,41 @@ contract AssetSwapSetupHelper is AssetFactorySetAssetsHelper {
     }
 }
 
-contract AssetSwapDepositAssetsHelper is AssetSwapSetupHelper {
+contract AssetSwapCreateProposalHelper is AssetSwapSetupHelper {
+    function setUp() public override {
+        super.setUp();
+        depositAssets();
+        createProposal();
+    }
+
     function depositAssets() public {
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory amounts = new uint256[](1);
         tokenIds[0] = ASSET_ONE_ID;
         amounts[0] = DEPOSIT_1;
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(swap), true);
         swap.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user1AssetBalance = swap.getBalance(user1, ASSET_ONE_ID);
+        assertEq(user1AssetBalance, DEPOSIT_1);
+    }
+
+    function createProposal() public {
+        vm.startPrank(user1);
+        swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
+
+        // Ensure validity of data for inheriting tests
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+        assertEq(user1, proposal.user1);
+        assertEq(user2, proposal.user2);
+        assertEq(ASSET_ONE_ID, proposal.asset1TokenId);
+        assertEq(ASSET_TWO_ID, proposal.asset2TokenId);
+        uint256 proposalStatus = uint256(proposal.status);
+        assertEq(proposalStatus, pendingStatus);
     }
 }
 
@@ -177,14 +205,40 @@ contract AssetSwapOwner1Test is AssetSwapSetupHelper {
     function test_createProposal_EmitEvent() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(swap), true);
+
         // Check that the ProposalCreated event was emitted
         vm.expectEmit(false, false, false, false, address(swap));
         emit ProposalCreated(1);
         swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
         vm.stopPrank();
     }
+}
 
-    function test_cancelProposal() public { }
+contract AssetSwapOwner1CancelProposalTest is AssetSwapCreateProposalHelper {
+    function test_cancelProposal() public {
+        vm.startPrank(user1);
+        swap.cancelProposal(1);
+        vm.stopPrank();
+
+        AssetSwap.Proposal memory proposal = swap.getProposal(1);
+
+        // Convert the proposal status to an integer and check it was set correctly
+        uint256 status = uint256(proposal.status);
+        assertEq(status, canceledStatus);
+
+        // Check that user1's asset balance was updated
+        uint256 expectedUser1AssetBalance = DEPOSIT_1;
+        uint256 actualUser1AssetBalance = swap.getBalance(user1, ASSET_ONE_ID);
+        assertEq(expectedUser1AssetBalance, actualUser1AssetBalance);
+    }
+
+    function test_cancelProposal_EmitEvent() public {
+        vm.startPrank(user1);
+        vm.expectEmit(false, false, false, false, address(swap));
+        emit ProposalCanceled(1);
+        swap.cancelProposal(1);
+        vm.stopPrank();
+    }
 }
 
 ///////////////////////////////////////////////////////////
