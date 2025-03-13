@@ -897,7 +897,83 @@ contract AssetAuctionWithdrawAssetsTest is AssetAuctionSetupHelper {
 }
 
 contract AssetAuctionWithdrawIGCTest is AssetAuctionSetupHelper {
-    function test_withdrawIGC() public { }
+    function test_withdrawIGCAfterDeposit() public {
+        uint256 startingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
+        uint256 startingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositIGC(MINT_10);
+
+        uint256 afterDepositUser1AuctionIGCBalance = auction.getIGCBalance(user1);
+        uint256 afterDepositUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+        assertEq(startingUser1AuctionIGCBalance + MINT_10, afterDepositUser1AuctionIGCBalance);
+        assertEq(startingUser1IGCBalance - MINT_10, afterDepositUser1IGCBalance);
+
+        auction.withdrawIGC(MINT_10);
+        vm.stopPrank();
+
+        uint256 endingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
+        uint256 endingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+        assertEq(startingUser1AuctionIGCBalance, endingUser1AuctionIGCBalance);
+        assertEq(startingUser1IGCBalance, endingUser1IGCBalance);
+    }
+
+    function test_withdrawIGCAfterAssetSold() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        uint256 startingUser2IGCBalance = factory.balanceOf(user2, IGC_TOKEN_ID);
+        assertEq(MINT_1000000, startingUser2IGCBalance);
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        auction.claimAsset(1);
+        vm.stopPrank();
+
+        uint256 user2IGCBalanceAfterClaim = factory.balanceOf(user2, IGC_TOKEN_ID);
+        assertEq(MINT_1000000 - MINT_10, user2IGCBalanceAfterClaim);
+
+        uint256 startingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+
+        vm.prank(user1);
+        auction.withdrawIGC(MINT_10);
+
+        uint256 endingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+        assertEq(startingUser1IGCBalance + MINT_10, endingUser1IGCBalance);
+    }
+
+    function test_withdrawIGC_EmitEvent() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositIGC(MINT_10);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit IGCWithdrawn(user1, MINT_10);
+        auction.withdrawIGC(MINT_10);
+        vm.stopPrank();
+    }
+
+    function test_withdrawIGC_RevertWhen_InsufficientBalance() public {
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetAuction.AssetAuctionInsufficientBalance.selector, user2, 0, 10 ** 18, IGC_TOKEN_ID
+            )
+        );
+        auction.withdrawIGC(10 ** 18);
+        vm.stopPrank();
+    }
 }
 
 ///////////////////////////////////////////////////////////
