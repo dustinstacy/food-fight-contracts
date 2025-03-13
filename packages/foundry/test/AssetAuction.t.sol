@@ -277,11 +277,34 @@ contract AssetAustionCancelAuctionTest is AssetAuctionCreateAuctionHelper {
         vm.stopPrank();
     }
 
-    function test_cancelAuction_RevertWhen_StatusNotOpen() public { }
+    function test_cancelAuction_RevertWhen_StatusNotOpen() public {
+        vm.startPrank(user1);
+        auction.cancelAuction(1);
 
-    function test_cancelAuction_RevertWhen_DeadlinePassed() public { }
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        uint256 status = uint256(auctionData.status);
 
-    function test_cancelAuction_RevertWhen_NotSeller() public { }
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionIsNotOpen.selector, status));
+        auction.cancelAuction(1);
+        vm.stopPrank();
+    }
+
+    function test_cancelAuction_RevertWhen_DeadlinePassed() public {
+        vm.warp(ONE_HOUR + 1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        uint256 deadline = auctionData.deadline;
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineHasPassed.selector, deadline));
+        auction.cancelAuction(1);
+    }
+
+    function test_cancelAuction_RevertWhen_NotSeller() public {
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheSeller.selector, user2, user1));
+        auction.cancelAuction(1);
+    }
 }
 
 contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
