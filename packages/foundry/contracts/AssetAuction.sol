@@ -27,6 +27,9 @@ contract AssetAuction is IERC1155Receiver {
     // Emitted when the auction has not ended
     error AssetAuctionAuctionHasNotEnded(AuctionStatus status);
 
+    // Emitted when the asset has already been claimed
+    error AssetAuctionAssetAlreadyClaimed(AuctionStatus status);
+
     // Emitted when the user is not the seller
     error AssetAuctionNotTheSeller(address caller, address seller);
 
@@ -294,6 +297,10 @@ contract AssetAuction is IERC1155Receiver {
     /// @param auctionId The ID of the auction
     function claimAsset(uint256 auctionId) external {
         Auction storage auction = auctions[auctionId];
+
+        if (auction.status == AuctionStatus.Claimed) {
+            revert AssetAuctionAssetAlreadyClaimed(auction.status);
+        }
 
         // Check if the has ended
         if (auction.status != AuctionStatus.Ended) {
