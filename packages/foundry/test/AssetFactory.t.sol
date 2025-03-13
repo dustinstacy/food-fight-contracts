@@ -113,7 +113,7 @@ contract AssetFactoryConstructorTest is AssetFactorySetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                  SET ASSETS TESTS                   ///
+///               SETTER FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
 contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
@@ -194,7 +194,7 @@ contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                     IGC TESTS                       ///
+///                  IGC FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
 contract AssetFactoryIGCTest is AssetFactorySetupHelper {
@@ -220,7 +220,7 @@ contract AssetFactoryIGCTest is AssetFactorySetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                  MINTING TESTS                      ///
+///                 MINT FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
 contract AssetFactoryAssetMintingTest is AssetFactorySetAssetsHelper {
@@ -501,7 +501,7 @@ contract AssetFactoryAssetMintingTest is AssetFactorySetAssetsHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                  BURNING TESTS                      ///
+///                 BURN FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
 contract AssetFactoryAssetBurnTest is AssetFactorySetAssetsHelper {
@@ -784,14 +784,14 @@ contract AssetFactoryAssetBurnTest is AssetFactorySetAssetsHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                  WITHDRAWAL TESTS                   ///
+///               WITHDRAW FUNCTION TESTS               ///
 ///////////////////////////////////////////////////////////
 
 /// @dev Need to implement payment functionality to test withdrawal
 contract AssetFactoryWithdrawalTest is AssetFactorySetAssetsHelper { }
 
 ///////////////////////////////////////////////////////////
-///                 VIEW FUNCTIONS TESTS                ///
+///                 VIEW FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
 contract AssetFactoryViewFunctionsTest is AssetFactorySetAssetsHelper {

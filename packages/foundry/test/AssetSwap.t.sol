@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 import { Test, console } from "forge-std/Test.sol";
-import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { AssetSwap } from "@contracts/AssetSwap.sol";
 import { AssetFactorySetAssetsHelper } from "./AssetFactory.t.sol";
+import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 ///////////////////////////////////////////////////////////
 ///                    EVENTS                           ///
@@ -72,6 +72,7 @@ contract AssetSwapSetupHelper is AssetFactorySetAssetsHelper {
         assertEq(MINT_1000000 - totalPrice, factory.balanceOf(user2, IGC_TOKEN_ID));
         assertEq(user1, address(2));
         assertEq(user2, address(3));
+        assertEq(user3, address(4));
     }
 }
 
@@ -131,7 +132,7 @@ contract AssetSwapConstructorTest is AssetSwapSetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                    USER 1 TESTS                     ///
+///               USER 1 FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
 contract AssetSwapUser1Test is AssetSwapSetupHelper {
@@ -276,7 +277,7 @@ contract AssetSwapUser1CancelProposalTest is AssetSwapCreateProposalHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                     USER 2 TESTS                   ///
+///                 USER 2 FUNCTION TESTS               ///
 ///////////////////////////////////////////////////////////
 
 contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
@@ -425,7 +426,7 @@ contract AssetSwapUser2Test is AssetSwapCreateProposalHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///                    ASSETS TESTS                     ///
+///                DEPOSIT FUNCTION TESTS               ///
 ///////////////////////////////////////////////////////////
 
 contract AssetSwapDepositAssetsTest is AssetSwapSetupHelper {
@@ -528,6 +529,10 @@ contract AssetSwapDepositAssetsTest is AssetSwapSetupHelper {
         vm.stopPrank();
     }
 }
+
+///////////////////////////////////////////////////////////
+///               WITHDRAW FUNCTION TESTS               ///
+///////////////////////////////////////////////////////////
 
 contract AssetSwapWithdrawAssetsTest is AssetSwapCreateProposalHelper {
     function test_withdrawAssetsAfterDepositing() public {
@@ -819,7 +824,7 @@ contract AssetSwapERC1155ReceiverTest is AssetSwapSetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///               IERC165 INTERFACE TESTS                ///
+///               IERC165 INTERFACE TESTS               ///
 ///////////////////////////////////////////////////////////
 
 contract AssetSwapERC165Test is AssetSwapSetupHelper {
