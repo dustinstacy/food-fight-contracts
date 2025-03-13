@@ -28,7 +28,7 @@ event BidPlaced(address bidder, uint256 auctionId, uint256 amount);
 event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
 
 // Emitted when an auction is cancelled
-event AuctionCancelled(uint256 auctionId);
+event AuctionCanceled(uint256 auctionId);
 
 // Emitted when the reserve price is not met
 event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
@@ -112,6 +112,34 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
 contract AssetAuctionCreateAuctionHelper is AssetAuctionSetupHelper {
     function setUp() public virtual override {
         super.setUp();
+        createAuction();
+    }
+
+    function createAuction() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+
+        // Validate auction data and balances
+        uint256 user1Asset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(0, user1Asset1BalanceAfter);
+
+        uint256 expectedAuctionCount = 1;
+        uint256 auctionCount = auction.getAuctionCount();
+        assertEq(expectedAuctionCount, auctionCount);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(user1, auctionData.seller);
+        assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
+        assertEq(MINT_10, auctionData.reservePrice);
+        assertEq(ONE_HOUR, auctionData.deadline);
+        assertEq(englishStyle, uint256(auctionData.style));
+        assertEq(0, auctionData.highestBid);
+        assertEq(address(0), auctionData.highestBidder);
+        assertEq(0, auctionData.winningBid);
+        assertEq(address(0), auctionData.winningBidder);
+        assertEq(openStatus, uint256(auctionData.status));
     }
 }
 
@@ -229,9 +257,25 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
 }
 
 contract AssetAustionCancelAuctionTest is AssetAuctionCreateAuctionHelper {
-    function test_cancelAuction() public { }
+    function test_cancelAuction() public {
+        vm.prank(user1);
+        auction.cancelAuction(1);
 
-    function test_cancelAuction_EmitEvent() public { }
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(canceledStatus, uint256(auctionData.status));
+
+        uint256 expectedUser1Asset1Balance = DEPOSIT_ONE;
+        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(expectedUser1Asset1Balance, user1Asset1Balance);
+    }
+
+    function test_cancelAuction_EmitEvent() public {
+        vm.startPrank(user1);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit AuctionCanceled(1);
+        auction.cancelAuction(1);
+        vm.stopPrank();
+    }
 
     function test_cancelAuction_RevertWhen_StatusNotOpen() public { }
 
