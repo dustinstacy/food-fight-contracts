@@ -126,7 +126,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param id ID of the asset to burn.
     /// @param amount Amount of the asset to burn.
     /// @dev Need to implement balance checking.
-    function burn(address account, uint256 id, uint256 amount) external {
+    function burnAsset(address account, uint256 id, uint256 amount) external {
         if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
