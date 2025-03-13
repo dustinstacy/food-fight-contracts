@@ -714,15 +714,151 @@ contract AssetAuctionDepositIGCTest is AssetAuctionSetupHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetAuctionWithdrawAssetsTest is AssetAuctionSetupHelper {
-    function test_withdrawAssetsAfterDepositing() public { }
+    function test_withdrawAssetsAfterDepositing() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
 
-    function test_withdrawMultipleAssetsAfterDepositing() public { }
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
 
-    function test_withdrawAssetsAfterCancelingAuction() public { }
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositAssets(tokenIds, amounts);
 
-    function test_withdrawAssetsAfterClaimingAsset() public { }
+        uint256 user1AuctionAsset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(DEPOSIT_ONE, user1AuctionAsset1Balance);
 
-    function test_withdrawAssets_EmitEvent() public { }
+        uint256 user1Asset1Balance = factory.balanceOf(user1, ASSET_ONE_ID);
+        assertEq(MINT_10 - DEPOSIT_ONE, user1Asset1Balance);
+
+        auction.withdrawAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        uint256 user1AuctionAsset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(0, user1AuctionAsset1BalanceAfter);
+
+        uint256 user1Asset1BalanceAfter = factory.balanceOf(user1, ASSET_ONE_ID);
+        assertEq(MINT_10, user1Asset1BalanceAfter);
+    }
+
+    function test_withdrawMultipleAssetsAfterDepositing() public {
+        vm.startPrank(user1);
+        factory.mintAsset(user1, ASSET_TWO_ID, DEPOSIT_FIVE, "");
+        factory.mintAsset(user1, ASSET_THREE_ID, MINT_10, "");
+
+        uint256[] memory tokenIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        tokenIds[1] = ASSET_TWO_ID;
+        tokenIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = DEPOSIT_ONE;
+        amounts[1] = DEPOSIT_FIVE;
+        amounts[2] = DEPOSIT_TEN;
+
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = auction.getAssetBalance(user1, ASSET_TWO_ID);
+        uint256 user1Asset3Balance = auction.getAssetBalance(user1, ASSET_THREE_ID);
+
+        assertEq(user1Asset1Balance, DEPOSIT_ONE);
+        assertEq(user1Asset2Balance, DEPOSIT_FIVE);
+        assertEq(user1Asset3Balance, DEPOSIT_TEN);
+
+        // Check that the user has the correct amount of assets in their account
+        uint256 user1Asset1BalanceBefore = factory.balanceOf(user1, ASSET_ONE_ID);
+        uint256 user1Asset2BalanceBefore = factory.balanceOf(user1, ASSET_TWO_ID);
+        uint256 user1Asset3BalanceBefore = factory.balanceOf(user1, ASSET_THREE_ID);
+
+        assertEq(user1Asset1BalanceBefore, MINT_10 - DEPOSIT_ONE);
+        assertEq(user1Asset2BalanceBefore, DEPOSIT_FIVE);
+        assertEq(user1Asset3BalanceBefore, MINT_10);
+    }
+
+    function test_withdrawAssetsAfterCancelingAuction() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+
+        uint256 user1AuctionAsset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(0, user1AuctionAsset1Balance);
+
+        uint256 user1Asset1Balance = factory.balanceOf(user1, ASSET_ONE_ID);
+        assertEq(MINT_10 - DEPOSIT_ONE, user1Asset1Balance);
+
+        auction.cancelAuction(1);
+
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
+
+        auction.withdrawAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        uint256 user1AuctionAsset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(0, user1AuctionAsset1BalanceAfter);
+
+        uint256 user1Asset1BalanceAfter = factory.balanceOf(user1, ASSET_ONE_ID);
+        assertEq(MINT_10, user1Asset1BalanceAfter);
+    }
+
+    function test_withdrawAssetsAfterClaimingAsset() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        uint256 startingUser2Asset1Balance = factory.balanceOf(user2, ASSET_ONE_ID);
+        assertEq(0, startingUser2Asset1Balance);
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        auction.claimAsset(1);
+
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
+
+        auction.withdrawAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        uint256 user2Asset1Balance = factory.balanceOf(user2, ASSET_ONE_ID);
+        assertEq(startingUser2Asset1Balance + DEPOSIT_ONE, user2Asset1Balance);
+    }
+
+    function test_withdrawAssets_EmitEvent() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
+
+        auction.depositAssets(tokenIds, amounts);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit AssetsWithdrawn(user1, tokenIds, amounts);
+        auction.withdrawAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
 
     function test_withdrawAssets_RevertWhen_ArraysNotSameLength() public { }
 
