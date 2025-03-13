@@ -78,7 +78,7 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
         mintInitialIGC(user1, MINT_1000000);
         mintInitialIGC(user2, MINT_1000000);
         mintInitialIGC(user3, MINT_1000000);
-        mintInitialAssets(user1, MINT_10);
+        factory.mintAsset(user1, ASSET_ONE_ID, MINT_10, "");
 
         uint256 totalPrice = (MINT_10 * ASSET_ONE_PRICE) + (MINT_10 * ASSET_TWO_PRICE) + (MINT_10 * ASSET_THREE_PRICE);
 
@@ -86,10 +86,10 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
         assertEq(MINT_10, factory.balanceOf(user1, ASSET_ONE_ID));
         assertEq(0, factory.balanceOf(user2, ASSET_ONE_ID));
         assertEq(0, factory.balanceOf(user3, ASSET_ONE_ID));
-        assertEq(MINT_10, factory.balanceOf(user1, ASSET_TWO_ID));
+        assertEq(0, factory.balanceOf(user1, ASSET_TWO_ID));
         assertEq(0, factory.balanceOf(user2, ASSET_TWO_ID));
         assertEq(0, factory.balanceOf(user3, ASSET_TWO_ID));
-        assertEq(MINT_10, factory.balanceOf(user1, ASSET_THREE_ID));
+        assertEq(0, factory.balanceOf(user1, ASSET_THREE_ID));
         assertEq(0, factory.balanceOf(user2, ASSET_THREE_ID));
         assertEq(0, factory.balanceOf(user3, ASSET_THREE_ID));
 
@@ -102,6 +102,12 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
         assertEq(user1, address(2));
         assertEq(user2, address(3));
         assertEq(user3, address(4));
+    }
+}
+
+contract AssetAuctionCreateAuctionHelper is AssetAuctionSetupHelper {
+    function setUp() public virtual override {
+        super.setUp();
     }
 }
 
@@ -120,15 +126,41 @@ contract AssetAuctionConstructorTest is AssetAuctionSetupHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
-    function test_createAuction() public { }
+    function test_createAuctionWithAssetsDeposited() public { }
+
+    function test_createAuctionWithoutAssetsDeposited() public { }
+
+    function test_createAuction_EmitEvent() public { }
+
+    function test_createAuction_RevertWhen_InsufficientAssets() public { }
+
+    function test_createAuction_RevertWhen_AssetsDepositedWithoutApproval() public { }
 }
 
-contract AssetAustionCancelAuctionTest is AssetAuctionSetupHelper {
+contract AssetAustionCancelAuctionTest is AssetAuctionCreateAuctionHelper {
     function test_cancelAuction() public { }
+
+    function test_cancelAuction_EmitEvent() public { }
+
+    function test_cancelAuction_RevertWhen_StatusNotOpen() public { }
+
+    function test_cancelAuction_RevertWhen_DeadlinePassed() public { }
+
+    function test_cancelAuction_RevertWhen_NotSeller() public { }
 }
 
-contract AssetAuctionCompleteAuctionTest is AssetAuctionSetupHelper {
-    function test_completeAuction() public { }
+contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
+    function test_completeAuctionWhenReserveMet() public { }
+
+    function test_completeAuctionWhenReserveNotMet() public { }
+
+    function test_completeAuction_EmitEvent() public { }
+
+    function test_completeAuction_RevertWhen_StatusNotOpen() public { }
+
+    function test_completeAuction_RevertWhen_NotSeller() public { }
+
+    function test_completeAuction_RevertWhen_DeadlineNotPassed() public { }
 }
 
 ///////////////////////////////////////////////////////////
@@ -137,10 +169,28 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionSetupHelper {
 
 contract AssetAuctionPlaceBidTest is AssetAuctionSetupHelper {
     function test_placeBid() public { }
+
+    function test_placeBid_EmitEvent() public { }
+
+    function test_placeBid_RevertWhen_StatusNotOpen() public { }
+
+    function test_placeBid_RevertWhen_DeadlinePassed() public { }
+
+    function test_placeBid_RevertWhen_BidLessThanHighestBid() public { }
 }
 
 contract AssetAuctionClaimAssetTest is AssetAuctionSetupHelper {
     function test_claimAsset() public { }
+
+    function test_claimAsset_EmitEvent() public { }
+
+    function test_claimAsset_RevertWhen_StatusNotEnded() public { }
+
+    function test_claimAsset_RevertWhen_NotWinningBidder() public { }
+
+    function test_claimAsset_RevertWhen_AssetAlreadyClaimed() public { }
+
+    function test_claimAsset_RevertWhen_NotEnoughIGC() public { }
 }
 
 ///////////////////////////////////////////////////////////
@@ -149,10 +199,22 @@ contract AssetAuctionClaimAssetTest is AssetAuctionSetupHelper {
 
 contract AssetAuctionDepositAssetsTest is AssetAuctionSetupHelper {
     function test_depositAssets() public { }
+
+    function test_depositMultipleAssets() public { }
+
+    function test_depositAssets_EmitEvent() public { }
+
+    function test_depositAssets_RevertWhen_ArraysNotSameLength() public { }
+
+    function test_depositAssets_RevertWhen_InsufficientBalance() public { }
 }
 
 contract AssetAuctionDepositIGCTest is AssetAuctionSetupHelper {
     function test_depositIGC() public { }
+
+    function test_depositIGC_EmitEvent() public { }
+
+    function test_depositIGC_RevertWhen_InsufficientBalance() public { }
 }
 
 ///////////////////////////////////////////////////////////
@@ -160,7 +222,19 @@ contract AssetAuctionDepositIGCTest is AssetAuctionSetupHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetAuctionWithdrawAssetsTest is AssetAuctionSetupHelper {
-    function test_withdrawAssets() public { }
+    function test_withdrawAssetsAfterDepositing() public { }
+
+    function test_withdrawMultipleAssetsAfterDepositing() public { }
+
+    function test_withdrawAssetsAfterCancelingAuction() public { }
+
+    function test_withdrawAssetsAfterClaimingAsset() public { }
+
+    function test_withdrawAssets_EmitEvent() public { }
+
+    function test_withdrawAssets_RevertWhen_ArraysNotSameLength() public { }
+
+    function test_withdrawAssets_RevertWhen_InsufficientBalance() public { }
 }
 
 contract AssetAuctionWithdrawIGCTest is AssetAuctionSetupHelper {
