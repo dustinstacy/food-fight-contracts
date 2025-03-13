@@ -71,6 +71,7 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
     function setUp() public virtual override {
         super.setUp();
         auction = new AssetAuction(address(factory));
+        user1 = user;
         user2 = address(3);
         user3 = address(4);
         setUpAssets();
