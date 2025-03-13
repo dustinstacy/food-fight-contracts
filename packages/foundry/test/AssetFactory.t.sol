@@ -1,111 +1,19 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Test, console } from "forge-std/Test.sol";
-import { AssetFactory } from "@contracts/AssetFactory.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155 } from "@openzeppelin/contracts/interfaces/IERC1155.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
-///////////////////////////////////////////////////////////
-///                     EVENTS                          ///
-///////////////////////////////////////////////////////////
-
-/// Emitted when the URI of the metadata for a asset is set.
-event AssetURISet(string uri, uint256 id);
-
-/// Emitted when the price of a asset is set.
-event AssetPriceSet(uint256 id, uint256 price);
-
-/// Emitted when an assets URI and price are set.
-event AssetDataSet(string uri, uint256 id, uint256 price);
-
-/// Emitted when a asset is burnt.
-event AssetBurnt(address indexed account, uint256 id, uint256 amount);
-
-/// Emitted when assets are burnt
-event AssetsBurnt(address indexed account, uint256[] ids, uint256[] amounts);
-
-/// Emitted when an owner withdraws funds from the contract.
-event Withdrawal(address indexed to, uint256 amount);
-
-///////////////////////////////////////////////////////////
-///                      HELPERS                        ///
-///////////////////////////////////////////////////////////
-
-/// @dev Helper contract to setup the AssetFactory contract
-contract AssetFactorySetupHelper is Test {
-    AssetFactory factory;
-    address public owner;
-    address public user;
-
-    uint256 constant IGC_TOKEN_ID = 0;
-    uint256 constant ASSET_ONE_ID = 1;
-    uint256 constant ASSET_TWO_ID = 2;
-    uint256 constant ASSET_THREE_ID = 3;
-
-    uint256 constant ASSET_ONE_PRICE = 100;
-    uint256 constant ASSET_TWO_PRICE = 200;
-    uint256 constant ASSET_THREE_PRICE = 300;
-
-    uint256 constant MINT_1 = 1;
-    uint256 constant MINT_10 = 10;
-    uint256 constant MINT_100 = 100;
-    uint256 constant MINT_1000 = 1000;
-    uint256 constant MINT_10000 = 10000;
-    uint256 constant MINT_100000 = 100000;
-    uint256 constant MINT_1000000 = 1000000;
-
-    function setUp() public virtual {
-        owner = address(1);
-        user = address(2);
-        factory = new AssetFactory(owner);
-    }
-}
-
-/// @dev Helper contract to setup assets for testing
-contract AssetFactorySetAssetsHelper is AssetFactorySetupHelper {
-    // Set up assets for testing
-    // Can update this function to set up more/different assets
-    function setUpAssets() public {
-        vm.startPrank(owner);
-        factory.setAssetData(1, "ipfs://asset1", 100);
-        factory.setAssetData(2, "ipfs://asset2", 200);
-        factory.setAssetData(3, "ipfs://asset3", 300);
-        vm.stopPrank();
-
-        assertEq(factory.getAssetURI(1), "ipfs://asset1");
-        assertEq(factory.getAssetURI(2), "ipfs://asset2");
-        assertEq(factory.getAssetURI(3), "ipfs://asset3");
-        assertEq(factory.getAssetPrice(1), 100);
-        assertEq(factory.getAssetPrice(2), 200);
-        assertEq(factory.getAssetPrice(3), 300);
-    }
-
-    // Mint initial IGC for testing
-    function mintInitialIGC(address minter, uint256 amount) public {
-        vm.prank(minter);
-        factory.mintIGC(minter, amount);
-    }
-
-    // Mint initial assets for testing
-    function mintInitialAssets(address minter, uint256 amount) public {
-        vm.startPrank(minter);
-        factory.mintAsset(minter, ASSET_ONE_ID, amount, "");
-        factory.mintAsset(minter, ASSET_TWO_ID, amount, "");
-        factory.mintAsset(minter, ASSET_THREE_ID, amount, "");
-        vm.stopPrank();
-    }
-}
-
-/// @dev Helper contract to test invalid receiver for ERC1155
-contract AssetFactoryERC1155InvalidRecieverHelper { }
+import { Test, console } from "forge-std/Test.sol";
+import { AssetFactory } from "@contracts/AssetFactory.sol";
+import { AssetFactoryHelper } from "./helpers/AssetFactoryHelper.sol";
 
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
 ///////////////////////////////////////////////////////////
-contract AssetFactoryConstructorTest is AssetFactorySetupHelper {
+contract AssetFactoryConstructorTest is AssetFactoryHelper {
     function test_assetFactoryConstructor() public view {
         // Check the owner was set correctly
         assertEq(factory.owner(), owner);
@@ -113,109 +21,26 @@ contract AssetFactoryConstructorTest is AssetFactorySetupHelper {
 }
 
 ///////////////////////////////////////////////////////////
-///               SETTER FUNCTION TESTS                 ///
-///////////////////////////////////////////////////////////
-
-contract AssetFactorySetAssetsTest is AssetFactorySetAssetsHelper {
-    function test_setAssetURI_RevertIf_NotTheOwner() public {
-        string memory newURI = "ipfs://asset1NewURI";
-
-        vm.prank(user);
-
-        // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user));
-        factory.setAssetURI(1, newURI);
-    }
-
-    function test_setAssetURI() public {
-        string memory newURI = "ipfs://asset1NewURI";
-
-        vm.prank(owner);
-
-        // Check for the URISet event when setting the new URI
-        vm.expectEmit(false, false, false, false, address(factory));
-        emit AssetURISet(newURI, 1);
-        factory.setAssetURI(1, newURI);
-
-        // Check the URI was set correctly
-        assertEq(factory.getAssetURI(1), newURI);
-    }
-
-    function test_setAssetPrice_RevertIf_NotTheOwner() public {
-        uint256 newPrice = 1000;
-
-        vm.prank(user);
-
-        // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user));
-        factory.setAssetPrice(1, newPrice);
-    }
-
-    function test_setAssetPrice() public {
-        uint256 newPrice = 1000;
-
-        vm.prank(owner);
-
-        // Check for the AssetPriceSet event when setting the new price
-        vm.expectEmit(false, false, false, false, address(factory));
-        emit AssetPriceSet(1, newPrice);
-        factory.setAssetPrice(1, newPrice);
-
-        // Check the price was set correctly
-        assertEq(factory.getAssetPrice(1), newPrice);
-    }
-
-    function test_setAssetData_RevertIf_NotTheOwner() public {
-        string memory newURI = "ipfs://asset1NewURI";
-        uint256 newPrice = 1000;
-
-        vm.prank(user);
-
-        // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user));
-        factory.setAssetData(1, newURI, newPrice);
-    }
-
-    function test_setAssetData() public {
-        string memory newURI = "ipfs://asset1NewURI";
-        uint256 newPrice = 1000;
-
-        vm.prank(owner);
-
-        // Check for the AssetDataSet event when setting the new URI and price
-        vm.expectEmit(false, false, false, false, address(factory));
-        emit AssetDataSet(newURI, 1, newPrice);
-        factory.setAssetData(1, newURI, newPrice);
-
-        // Check the URI and price were set correctly
-        assertEq(factory.getAssetURI(1), newURI);
-        assertEq(factory.getAssetPrice(1), newPrice);
-    }
-}
-
-///////////////////////////////////////////////////////////
 ///                  IGC FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryIGCTest is AssetFactorySetupHelper {
+contract AssetFactoryIGCFunctionsTest is AssetFactoryHelper {
     function test_mintIGC() public {
-        vm.prank(user);
-        factory.mintIGC(user, MINT_1000);
+        vm.prank(user1);
+        factory.mintIGC(user1, ONE);
 
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
+        // Check the user1's IGC balance has increased
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), ONE);
     }
 
-    function test_mintIGC_RevertIf_InvalidReceiver() public {
-        AssetFactoryERC1155InvalidRecieverHelper invalidReceiver = new AssetFactoryERC1155InvalidRecieverHelper();
-
+    function test_mintIGC_RevertsIf_InvalidReceiver() public {
         vm.prank(address(invalidReceiver));
 
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
         );
-        factory.mintIGC(address(invalidReceiver), MINT_1000);
+        factory.mintIGC(address(invalidReceiver), ONE);
     }
 }
 
@@ -223,280 +48,164 @@ contract AssetFactoryIGCTest is AssetFactorySetupHelper {
 ///                 MINT FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryAssetMintingTest is AssetFactorySetAssetsHelper {
-    function test_mintAsset1() public {
+contract AssetFactoryMintingFunctionsTest is AssetFactoryHelper {
+    // User1's IGC balance before minting assets
+    uint256 user1StartingIGCBalance;
+    // Total price of minting one of asset one, five of asset two, and ten of asset three
+    uint256 totalPrice = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * FIVE) + (ASSET_THREE_PRICE * TEN);
+
+    function setUp() public {
         setUpAssets();
-        mintInitialIGC(user, MINT_1000);
+        mintInitialIGC(user1, ONE_MILLION);
 
-        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
-
-        vm.prank(user);
-        factory.mintAsset(user, ASSET_ONE_ID, MINT_1, "");
-
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - ASSET_ONE_PRICE);
+        user1StartingIGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
     }
 
-    function test_mintAsset2() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_10000);
+    function test_mintAsset_One() public {
+        vm.prank(user1);
+        factory.mintAsset(user1, ASSET_ONE_ID, ONE, "");
 
-        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
-
-        vm.prank(user);
-        factory.mintAsset(user, ASSET_TWO_ID, MINT_10, "");
-
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - (ASSET_TWO_PRICE * MINT_10));
+        // Check the user1's asset balance has increased
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), ONE);
+        // Check the user1's IGC balance has decreased
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), user1StartingIGCBalance - ASSET_ONE_PRICE);
     }
 
-    function test_mintAsset3() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
+    function test_mintAsset_Two() public {
+        vm.prank(user1);
+        factory.mintAsset(user1, ASSET_TWO_ID, FIVE, "");
 
-        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
-
-        vm.prank(user);
-        factory.mintAsset(user, ASSET_THREE_ID, MINT_100, "");
-
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_100);
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - (ASSET_THREE_PRICE * MINT_100));
+        // Check the user1's asset balance has increased
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), FIVE);
+        // Check the user1's IGC balance has decreased
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), user1StartingIGCBalance - (ASSET_TWO_PRICE * FIVE));
     }
 
-    function test_mintAssetEmitEvent() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000);
+    function test_mintAsset_Three() public {
+        vm.prank(user1);
+        factory.mintAsset(user1, ASSET_THREE_ID, TEN, "");
 
-        vm.prank(user);
+        // Check the user1's asset balance has increased
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), TEN);
+        // Check the user1's IGC balance has decreased
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), user1StartingIGCBalance - (ASSET_THREE_PRICE * TEN));
+    }
+
+    function test_mintAsset_EmitsEvent() public {
+        vm.prank(user1);
 
         // Check for the TransferSingle event when minting an asset
         vm.expectEmit(true, false, false, false, address(factory));
-        emit IERC1155.TransferSingle(user, address(0), user, ASSET_ONE_ID, MINT_1);
-        factory.mintAsset(user, ASSET_ONE_ID, MINT_1, "");
+        emit IERC1155.TransferSingle(user1, address(0), user1, ASSET_ONE_ID, ONE);
+        factory.mintAsset(user1, ASSET_ONE_ID, ONE, "");
     }
 
-    function test_mintAsset_RevertIf_NotEnoughIGC() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1);
-
-        vm.prank(user);
-
-        // Check that the function reverts with the AssetFactoryNotEnoughIGC error
-        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user, 1, 100, 0));
-        factory.mintAsset(user, ASSET_ONE_ID, MINT_1, "");
-
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1);
-    }
-
-    function test_mintAsset_RevertIf_AddressZero() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000);
-
-        vm.prank(user);
-
-        // Check that the function reverts with the ERC1155InvalidReceiver error
-        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0)));
-        factory.mintAsset(address(0), ASSET_ONE_ID, MINT_1, "");
-
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
-    }
-
-    function test_mintAsset_RevertIf_InvalidReceiver() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000);
-
-        AssetFactoryERC1155InvalidRecieverHelper invalidReceiver = new AssetFactoryERC1155InvalidRecieverHelper();
-
-        vm.prank(user);
-
-        // Check that the function reverts with the ERC1155InvalidReceiver error
-        vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
-        );
-        factory.mintAsset(address(invalidReceiver), ASSET_ONE_ID, MINT_1, "");
-
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000);
-    }
-
-    function test_mintBatch() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-
-        uint256 userIGCBalance = factory.balanceOf(user, IGC_TOKEN_ID);
-
-        vm.prank(user);
-
-        // Set up arrays for minting multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_1;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_100;
-
-        uint256 totalPrice = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * MINT_10) + (ASSET_THREE_PRICE * MINT_100);
-
-        factory.mintBatch(user, assetIds, amounts, "");
-
-        // Check the user's asset balances
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_100);
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), userIGCBalance - totalPrice);
-    }
-
-    function test_mintBatchEmitEvent() public {
-        // Set up assets for testing
-        setUpAssets();
-
-        // Mint IGC for the user
-        mintInitialIGC(user, MINT_100000);
-
-        // Set user as the caller
-        vm.prank(user);
-
-        // Set up arrays for minting multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_1;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_100;
-
-        // Check for the TransferBatch event when minting multiple assets
-        vm.expectEmit(false, true, false, false, address(factory));
-        emit IERC1155.TransferBatch(user, address(0), user, assetIds, amounts);
-        factory.mintBatch(user, assetIds, amounts, "");
-    }
-
-    function test_mintBatch_RevertIf_ArraysNotSamelength() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
-
-        vm.prank(user);
-
-        // Set up different length arrays for minting multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](2);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_1;
-        amounts[1] = MINT_10;
-
-        // Check that the function reverts with the ERC1155InvalidArrayLength error
-        vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidArrayLength.selector, assetIds.length, amounts.length)
-        );
-        factory.mintBatch(user, assetIds, amounts, "");
-
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_100000);
-    }
-
-    function test_mintBatch_RevertIf_NotEnoughIGC() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1);
-
-        vm.prank(user);
-
-        // Set up arrays for minting multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_1;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_100;
-
-        uint256 totalPrice = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * MINT_10) + (ASSET_THREE_PRICE * MINT_100);
+    function test_mintAsset_RevertsIf_InsufficientBalance() public {
+        vm.prank(user2);
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user, 1, totalPrice, 0)
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user2, 0, ASSET_ONE_PRICE, 0)
         );
-        factory.mintBatch(user, assetIds, amounts, "");
+        factory.mintAsset(user2, ASSET_ONE_ID, ONE, "");
 
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1);
+        // Check the user2's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user2, IGC_TOKEN_ID), 0);
     }
 
-    function test_mintBatch_RevertIf_AddressZero() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
-
-        vm.prank(user);
-
-        // Set up arrays for minting multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_1;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_100;
+    function test_mintAsset_RevertsIf_AddressZero() public {
+        vm.prank(user1);
 
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0)));
-        factory.mintBatch(address(0), assetIds, amounts, "");
+        factory.mintAsset(address(0), ASSET_ONE_ID, ONE, "");
 
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_100000);
+        // Check the user1's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), ONE_MILLION);
     }
 
-    function test_mintBatch_RevertIf_InvalidReceiver() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
+    function test_mintAsset_RevertsIf_InvalidReceiver() public {
+        vm.prank(user1);
 
-        AssetFactoryERC1155InvalidRecieverHelper invalidReceiver = new AssetFactoryERC1155InvalidRecieverHelper();
-
-        // Set up arrays for minting multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_1;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_100;
-
-        vm.prank(user);
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
         );
-        factory.mintBatch(address(invalidReceiver), assetIds, amounts, "");
+        factory.mintAsset(address(invalidReceiver), ASSET_ONE_ID, ONE, "");
 
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_100000);
+        // Check the user1's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), ONE_MILLION);
+    }
+
+    function test_mintBatch() public {
+        vm.prank(user1);
+        factory.mintBatch(user1, assetIds, allVarying, "");
+
+        // Check the user1's asset balances have increased
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), ONE);
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), FIVE);
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), TEN);
+        // Check the user1's IGC balance has decreased
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), user1StartingIGCBalance - totalPrice);
+    }
+
+    function test_mintBatch_EmitsEvent() public {
+        vm.prank(user1);
+
+        // Check for the TransferBatch event when minting multiple assets
+        vm.expectEmit(false, true, false, false, address(factory));
+        emit IERC1155.TransferBatch(user1, address(0), user1, assetIds, allVarying);
+        factory.mintBatch(user1, assetIds, allVarying, "");
+    }
+
+    function test_mintBatch_RevertsIf_InvalidArrayLength() public {
+        vm.prank(user1);
+
+        // Check that the function reverts with the ERC1155InvalidArrayLength error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidArrayLength.selector, assetIds.length, invalid.length)
+        );
+        factory.mintBatch(user1, assetIds, invalid, "");
+
+        // Check the user1's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), ONE_MILLION);
+    }
+
+    function test_mintBatch_RevertsIf_InsufficientBalance() public {
+        vm.prank(user2);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user2, 0, totalPrice, 0)
+        );
+        factory.mintBatch(user1, assetIds, allVarying, "");
+
+        // Check the user2's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user2, IGC_TOKEN_ID), 0);
+    }
+
+    function test_mintBatch_RevertsIf_AddressZero() public {
+        vm.prank(user1);
+
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0)));
+        factory.mintBatch(address(0), assetIds, all, "");
+
+        // Check the user1's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), ONE_MILLION);
+    }
+
+    function test_mintBatch_RevertsIf_InvalidReceiver() public {
+        vm.prank(user1);
+
+        // Check that the function reverts with the ERC1155InvalidReceiver error
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(invalidReceiver))
+        );
+        factory.mintBatch(address(invalidReceiver), assetIds, all, "");
+
+        // Check the user1's IGC balance hasn't changed
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), ONE_MILLION);
     }
 }
 
@@ -504,309 +213,259 @@ contract AssetFactoryAssetMintingTest is AssetFactorySetAssetsHelper {
 ///                 BURN FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryAssetBurnTest is AssetFactorySetAssetsHelper {
-    function test_burnIGC() public {
+contract AssetFactoryBurningFunctionsTest is AssetFactoryHelper {
+    // User1's IGC balance after minting assets
+    uint256 user1AfterMintingAssetsIGCBalance;
+
+    function setUp() public {
         setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
+        mintInitialIGC(user1, ONE_MILLION);
+        mintInitialAssets(user1, all);
 
-        vm.prank(user);
-
-        factory.burn(user, IGC_TOKEN_ID, MINT_1000);
-
-        // Check the user's IGC balance
-        assertEq(factory.balanceOf(user, IGC_TOKEN_ID), MINT_1000000 - MINT_1000);
+        user1AfterMintingAssetsIGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
     }
 
-    function test_burnAsset() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_10000);
-        mintInitialAssets(user, MINT_1);
+    function test_burnAsset_Single() public {
+        vm.prank(user1);
+        factory.burnAsset(user1, ASSET_ONE_ID, ONE);
 
-        vm.prank(user);
-
-        factory.burn(user, ASSET_ONE_ID, MINT_1);
-
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), 0);
+        // Check the user1's asset balance has decreased
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN - ONE);
     }
 
-    function test_burnMultipleAssets() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
+    function test_burnAsset_Multiple() public {
+        vm.prank(user1);
+        factory.burnAsset(user1, ASSET_TWO_ID, FIVE);
 
-        vm.prank(user);
-
-        factory.burn(user, ASSET_TWO_ID, MINT_10);
-
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), 0);
+        // Check the user1's asset balance has decreased
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), TEN - FIVE);
     }
 
-    function test_burn_WithApproval() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
-        mintInitialAssets(user, MINT_1);
+    function test_burnAsset_IGC() public {
+        vm.prank(user1);
+        factory.burnAsset(user1, IGC_TOKEN_ID, ONE_THOUSAND);
 
-        vm.prank(user);
-        // Set the approval for the user
+        // Check the user1's IGC balance has decreased
+        assertEq(factory.balanceOf(user1, IGC_TOKEN_ID), user1AfterMintingAssetsIGCBalance - ONE_THOUSAND);
+    }
+
+    function test_burnAsset_WithApproval() public {
+        vm.prank(user1);
         factory.setApprovalForAll(owner, true);
 
         vm.prank(owner);
+        factory.burnAsset(user1, ASSET_ONE_ID, ONE);
 
-        factory.burn(user, ASSET_ONE_ID, MINT_1);
-
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), 0);
+        // Check the user1's asset balance has decreased
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN - ONE);
     }
 
-    function test_burnEmitEvent() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
-        mintInitialAssets(user, MINT_1);
-
-        vm.prank(user);
+    function test_burnAsset_EmitsEvent() public {
+        vm.prank(user1);
 
         // Check for the AssetBurnt event when burning an asset
         vm.expectEmit(true, false, false, false, address(factory));
-        emit AssetBurnt(user, ASSET_ONE_ID, MINT_1);
-        factory.burn(user, ASSET_ONE_ID, MINT_1);
+        emit AssetFactory.AssetBurnt(user1, ASSET_ONE_ID, ONE);
+        factory.burnAsset(user1, ASSET_ONE_ID, ONE);
     }
 
-    function test_burn_RevertIf_MissingApproval() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
-        mintInitialAssets(user, MINT_1);
-
+    function test_burnAsset_RevertsIf_MissingApprovalForAll() public {
         vm.prank(owner);
 
         // Check that the function reverts with the ERC1155MissingApproval error
-        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, owner, user));
-        factory.burn(user, ASSET_ONE_ID, MINT_1);
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, owner, user1));
+        factory.burnAsset(user1, ASSET_ONE_ID, ONE);
 
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
+        // Check the user1's asset balance hasn't changed
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN);
     }
 
-    function test_burn_RevertIf_InsufficientBalance() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_100000);
-        mintInitialAssets(user, MINT_1);
-
-        vm.prank(user);
+    function test_burn_RevertsIf_InsufficientBalance() public {
+        vm.prank(user1);
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector, user, MINT_1, MINT_10, ASSET_ONE_ID
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user1, TEN, ONE_THOUSAND, ASSET_ONE_ID
             )
         );
-        factory.burn(user, ASSET_ONE_ID, MINT_10);
+        factory.burnAsset(user1, ASSET_ONE_ID, ONE_THOUSAND);
 
-        // Check the user's asset balance
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_1);
+        // Check the user1's asset balance hasn't changed
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN);
     }
 
     function test_burnBatch() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
+        vm.prank(user1);
+        factory.burnBatch(user1, assetIds, all);
 
-        vm.prank(user);
-
-        // Set up arrays for burning multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_10;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_10;
-
-        factory.burnBatch(user, assetIds, amounts);
-
-        // Check the user's asset balances
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), 0);
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), 0);
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), 0);
+        // Check the user1's asset balances have decreased
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), 0);
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), 0);
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), 0);
     }
 
     function test_burnBatch_WithApproval() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
-
-        vm.prank(user);
-        // Set the approval for the user
+        vm.prank(user1);
         factory.setApprovalForAll(owner, true);
 
         vm.prank(owner);
+        factory.burnBatch(user1, assetIds, all);
 
-        // Set up arrays for burning multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_10;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_10;
-
-        factory.burnBatch(user, assetIds, amounts);
-
-        // Check the user's asset balances
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), 0);
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), 0);
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), 0);
+        // Check the user1's asset balances have decreased
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), 0);
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), 0);
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), 0);
     }
 
-    function test_burnBatchEmitEvent() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
-
-        vm.prank(user);
-
-        // Set up arrays for burning multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_10;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_10;
+    function test_burnBatch_EmitsEvent() public {
+        vm.prank(user1);
 
         // Check for the AssetsBurnt event when burning multiple assets
         vm.expectEmit(false, false, true, false, address(factory));
-        emit AssetsBurnt(user, assetIds, amounts);
-        factory.burnBatch(user, assetIds, amounts);
+        emit AssetFactory.AssetsBurnt(user1, assetIds, all);
+        factory.burnBatch(user1, assetIds, all);
     }
 
-    function test_burnBatch_RevertIf_MissingApproval() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
-
-        // Set up arrays for burning multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_10;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_10;
-
+    function test_burnBatch_RevertsIf_MissingApprovalForAll() public {
         vm.prank(owner);
 
         // Check that the function reverts with the ERC1155MissingApproval error
-        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, owner, user));
-        factory.burnBatch(user, assetIds, amounts);
+        vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, owner, user1));
+        factory.burnBatch(user1, assetIds, all);
 
-        // Check the user's asset balances
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_10);
+        // Check the user1's asset balances haven't changed
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN);
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), TEN);
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), TEN);
     }
 
-    function test_burnBatch_RevertIf_ArraysNotSameLength() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
-
-        vm.prank(user);
-
-        // Set up arrays for burning multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](2);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_10;
-        amounts[1] = MINT_10;
+    function test_burnBatch_RevertsIf_InvalidArrayLength() public {
+        vm.prank(user1);
 
         // Check that the function reverts with the ERC1155InvalidArrayLength error
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidArrayLength.selector, assetIds.length, amounts.length)
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidArrayLength.selector, assetIds.length, invalid.length)
         );
-        factory.burnBatch(user, assetIds, amounts);
+        factory.burnBatch(user1, assetIds, invalid);
 
-        // Check the user's asset balances
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_10);
+        // Check the user1's asset balances haven't changed
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN);
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), TEN);
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), TEN);
     }
 
-    function test_burnBatch_RevertIf_InsufficientBalance() public {
-        setUpAssets();
-        mintInitialIGC(user, MINT_1000000);
-        mintInitialAssets(user, MINT_10);
+    function test_burnBatch_RevertsIf_InsufficientBalance() public {
+        // Change an index to a value that is greater than the user1's balance
+        all[0] = ONE_THOUSAND;
 
-        vm.prank(user);
-
-        // Set up arrays for burning multiple assets
-        uint256[] memory assetIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        assetIds[0] = ASSET_ONE_ID;
-        assetIds[1] = ASSET_TWO_ID;
-        assetIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = MINT_10;
-        amounts[1] = MINT_10;
-        amounts[2] = MINT_100;
-
+        vm.prank(user1);
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector, user, MINT_10, MINT_100, ASSET_THREE_ID
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user1, TEN, ONE_THOUSAND, ASSET_ONE_ID
             )
         );
-        factory.burnBatch(user, assetIds, amounts);
+        factory.burnBatch(user1, assetIds, all);
 
-        // Check the user's asset balances
-        assertEq(factory.balanceOf(user, ASSET_ONE_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_TWO_ID), MINT_10);
-        assertEq(factory.balanceOf(user, ASSET_THREE_ID), MINT_10);
+        // Check the user1's asset balances
+        assertEq(factory.balanceOf(user1, ASSET_ONE_ID), TEN);
+        assertEq(factory.balanceOf(user1, ASSET_TWO_ID), TEN);
+        assertEq(factory.balanceOf(user1, ASSET_THREE_ID), TEN);
     }
 }
 
 ///////////////////////////////////////////////////////////
-///               WITHDRAW FUNCTION TESTS               ///
+///               SETTER FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
-/// @dev Need to implement payment functionality to test withdrawal
-contract AssetFactoryWithdrawalTest is AssetFactorySetAssetsHelper { }
+contract AssetFactorySetterFunctionsTest is AssetFactoryHelper {
+    string newURI = "ipfs://asset1NewURI";
+
+    function test_setAssetURI() public {
+        vm.prank(owner);
+        factory.setAssetURI(ASSET_ONE_ID, newURI);
+
+        // Check the URI was set correctly
+        assertEq(factory.getAssetURI(ASSET_ONE_ID), newURI);
+    }
+
+    function test_setAssetURI_EmitsEvent() public {
+        vm.prank(owner);
+
+        // Check for the URISet event when setting the new URI
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.AssetURISet(newURI, ASSET_ONE_ID);
+        factory.setAssetURI(ASSET_ONE_ID, newURI);
+    }
+
+    function test_setAssetURI_ReverstIf_NotTheOwner() public {
+        vm.prank(user1);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        factory.setAssetURI(ASSET_ONE_ID, newURI);
+    }
+
+    function test_setAssetPrice() public {
+        vm.prank(owner);
+
+        // Check for the AssetPriceSet event when setting the new price
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.AssetPriceSet(ASSET_ONE_ID, ONE_MILLION);
+        factory.setAssetPrice(ASSET_ONE_ID, ONE_MILLION);
+
+        // Check the price was set correctly
+        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ONE_MILLION);
+    }
+
+    function test_setAssetPrice_RevertsIf_NotTheOwner() public {
+        vm.prank(user1);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        factory.setAssetPrice(ASSET_ONE_ID, ONE_MILLION);
+    }
+
+    function test_setAssetData() public {
+        vm.prank(owner);
+
+        // Check for the AssetDataSet event when setting the new URI and price
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.AssetDataSet(newURI, ASSET_ONE_ID, ONE_MILLION);
+        factory.setAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
+
+        // Check the URI and price were set correctly
+        assertEq(factory.getAssetURI(ASSET_ONE_ID), newURI);
+        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ONE_MILLION);
+    }
+
+    function test_setAssetData_RevertsIf_NotTheOwner() public {
+        vm.prank(user1);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        factory.setAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 ///                 VIEW FUNCTION TESTS                 ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryViewFunctionsTest is AssetFactorySetAssetsHelper {
+contract AssetFactoryViewFunctionsTest is AssetFactoryHelper {
     function test_getAssetUri() public {
         setUpAssets();
 
         // Check the URI of the asset
-        assertEq(factory.getAssetURI(1), "ipfs://asset1");
+        assertEq(factory.getAssetURI(ASSET_ONE_ID), "ipfs://asset1");
     }
 
     function test_getAssetPrice() public {
         setUpAssets();
 
         // Check the price of the asset
-        assertEq(factory.getAssetPrice(1), 100);
+        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ASSET_ONE_PRICE);
     }
 }
 
@@ -814,7 +473,7 @@ contract AssetFactoryViewFunctionsTest is AssetFactorySetAssetsHelper {
 ///                ERC1155 RECEIVER TESTS               ///
 ///////////////////////////////////////////////////////////
 
-contract AssetFactoryERC1155ReceiverTest is AssetFactorySetAssetsHelper {
+contract AssetFactoryERC1155ReceiverTest is AssetFactoryHelper {
     function test_onERC1155Received() public view {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
         bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
