@@ -34,7 +34,7 @@ contract Constants {
     // Used to pass in asset IDs to functions requiring an array of asset IDs
     uint256[] assetIds = [ASSET_ONE_ID, ASSET_TWO_ID, ASSET_THREE_ID];
 
-    // Used to pass in asset amounts to functions requiring an array of asset amounts
+    // Used to pass in asset amounts to functions requiring an array of asset mint amounts
     uint256[] asset1 = [TEN, 0, 0];
     uint256[] asset2 = [0, TEN, 0];
     uint256[] asset3 = [0, 0, TEN];
