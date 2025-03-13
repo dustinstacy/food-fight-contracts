@@ -488,13 +488,84 @@ contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
         vm.stopPrank();
     }
 
-    function test_claimAsset_RevertWhen_StatusNotEnded() public { }
+    function test_claimAsset_RevertWhen_StatusNotEnded() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
 
-    function test_claimAsset_RevertWhen_NotWinningBidder() public { }
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionHasNotEnded.selector, openStatus));
+        auction.claimAsset(1);
+    }
 
-    function test_claimAsset_RevertWhen_AssetAlreadyClaimed() public { }
+    function test_claimAsset_RevertWhen_NotWinningBidder() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
 
-    function test_claimAsset_RevertWhen_NotEnoughIGC() public { }
+        vm.prank(user3);
+        auction.placeBid(1, MINT_10 + 1);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(endedStatus, uint256(auctionData.status));
+
+        address winningBidder = auctionData.winningBidder;
+        assertEq(user3, winningBidder);
+
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheWinningBidder.selector, user2, user3));
+        auction.claimAsset(1);
+    }
+
+    function test_claimAsset_RevertWhen_AssetAlreadyClaimed() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        auction.claimAsset(1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(AssetAuction.AssetAuctionAssetAlreadyClaimed.selector, auctionData.status)
+        );
+        auction.claimAsset(1);
+    }
+
+    function test_claimAsset_RevertWhen_NotEnoughIGC() public {
+        vm.prank(user2);
+        auction.placeBid(1, 10 ** 18);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(endedStatus, uint256(auctionData.status));
+
+        address winningBidder = auctionData.winningBidder;
+        assertEq(user2, winningBidder);
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, MINT_1000000, 10 ** 18, IGC_TOKEN_ID
+            )
+        );
+        auction.claimAsset(1);
+        vm.stopPrank();
+    }
 }
 
 ///////////////////////////////////////////////////////////
