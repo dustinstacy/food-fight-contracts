@@ -2,10 +2,12 @@
 pragma solidity ^0.8.28;
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title AssetAuction
 /// @notice Auction contract where users can put their NFTs up for auction and other users can bid on them.
-contract AssetAuction {
+contract AssetAuction is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
     ///                     ERRORS                          ///
     ///////////////////////////////////////////////////////////
@@ -50,7 +52,7 @@ contract AssetAuction {
     event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
 
     // Emitted when an auction is cancelled
-    event AuctionCancelled(uint256 auctionId);
+    event AuctionCanceled(uint256 auctionId);
 
     // Emitted when the reserve price is not met
     event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
@@ -76,7 +78,7 @@ contract AssetAuction {
 
     enum AuctionStatus {
         Open,
-        Cancelled,
+        Canceled,
         Ended,
         ReserveNotMet
     }
@@ -180,10 +182,9 @@ contract AssetAuction {
         emit AuctionCreated(msg.sender, auctionCount, assetTokenId, reservePrice, deadline, style);
     }
 
-    /// @notice Allows a user to bid on an auction
+    /// @notice Allows a seller to cancel an auction
     /// @param auctionId The ID of the auction
-    /// @param amount The amount to bid
-    function bid(uint256 auctionId, uint256 amount) external {
+    function cancelAuction(uint256 auctionId) external {
         Auction storage auction = auctions[auctionId];
 
         // Check if the auction is open
@@ -191,24 +192,23 @@ contract AssetAuction {
             revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
-        // Check if the auction has ended
+        // Check if the deadline has passed
         if (block.timestamp >= auction.deadline) {
             revert AssetAuctionDeadlineHasPassed(auction.deadline);
         }
 
-        // Check if the bid is higher than the highest bid
-        if (amount <= auction.highestBid) {
-            revert AssetAuctionBidNotHigherThanHighestBid(auction.highestBid, amount);
+        // Check if the caller is the seller
+        if (auction.seller != msg.sender) {
+            revert AssetAuctionYouAreNotTheSeller(msg.sender, auction.seller);
         }
 
-        // Update the highest bid and highest bidder
-        auction.highestBid = amount;
-        auction.highestBidder = msg.sender;
+        // Update the auction status
+        auction.status = AuctionStatus.Canceled;
 
-        // Add the bid to the bids array
-        bids[auctionId].push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
+        // Update the seller assetBalances
+        assetBalances[auction.seller][auction.assetTokenId] += 1;
 
-        emit BidPlaced(msg.sender, auctionId, amount);
+        emit AuctionCanceled(auctionId);
     }
 
     /// @notice Allows a seller to complete an auction
@@ -248,9 +248,10 @@ contract AssetAuction {
         emit AuctionEnded(auctionId, auction.winningBidder, auction.winningBid);
     }
 
-    /// @notice Allows a seller to cancel an auction
+    /// @notice Allows a user to bid on an auction
     /// @param auctionId The ID of the auction
-    function cancelAuction(uint256 auctionId) external {
+    /// @param amount The amount to bid
+    function placeBid(uint256 auctionId, uint256 amount) external {
         Auction storage auction = auctions[auctionId];
 
         // Check if the auction is open
@@ -258,23 +259,24 @@ contract AssetAuction {
             revert AssetAuctionAuctionIsNotOpen(auction.status);
         }
 
-        // Check if the deadline has passed
+        // Check if the auction has ended
         if (block.timestamp >= auction.deadline) {
             revert AssetAuctionDeadlineHasPassed(auction.deadline);
         }
 
-        // Check if the caller is the seller
-        if (auction.seller != msg.sender) {
-            revert AssetAuctionYouAreNotTheSeller(msg.sender, auction.seller);
+        // Check if the bid is higher than the highest bid
+        if (amount <= auction.highestBid) {
+            revert AssetAuctionBidNotHigherThanHighestBid(auction.highestBid, amount);
         }
 
-        // Update the auction status
-        auction.status = AuctionStatus.Cancelled;
+        // Update the highest bid and highest bidder
+        auction.highestBid = amount;
+        auction.highestBidder = msg.sender;
 
-        // Update the seller assetBalances
-        assetBalances[auction.seller][auction.assetTokenId] += 1;
+        // Add the bid to the bids array
+        bids[auctionId].push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
 
-        emit AuctionCancelled(auctionId);
+        emit BidPlaced(msg.sender, auctionId, amount);
     }
 
     /// @notice Allows a user to claim the asset they won in an auction
@@ -307,6 +309,49 @@ contract AssetAuction {
     ///////////////////////////////////////////////////////////
     ///                  ASSETS FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
+
+    /// @notice Deposit assets into the contract
+    /// @param tokenIds The token IDs of the assets to deposit
+    /// @param amounts The amounts of the assets to deposit
+    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
+        // Check if the token IDs and amounts arrays have the same length
+        if (tokenIds.length != amounts.length) {
+            revert AssetAuctionArraysLengthMismatch(tokenIds.length, amounts.length);
+        }
+
+        // Store the necessary variables for the safeBatchTransferFrom function
+        uint256 length = tokenIds.length;
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the assets to the contract
+        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
+
+        // Update the user balances
+        for (uint256 i = 0; i < length; i++) {
+            assetBalances[from][tokenIds[i]] += amounts[i];
+        }
+
+        emit AssetsDeposited(from, tokenIds, amounts);
+    }
+
+    /// @notice Deposit IGC into the contract
+    /// @param amount The amount of IGC to deposit
+    function depositIGC(uint256 amount) public {
+        // Store the necessary variables for the safeTransferFrom function
+        address from = msg.sender;
+        address to = address(this);
+        bytes memory data = "";
+
+        // Transfer the IGC to the contract
+        assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
+
+        // Update the user balance
+        igcBalances[from] += amount;
+
+        emit IGCDeposited(from, amount);
+    }
 
     /// @notice Withdraw assets from the contract
     /// @param tokenIds The token IDs of the assets to withdraw
@@ -361,49 +406,6 @@ contract AssetAuction {
         assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
 
         emit IGCWithdrawn(to, amount);
-    }
-
-    /// @notice Deposit assets into the contract
-    /// @param tokenIds The token IDs of the assets to deposit
-    /// @param amounts The amounts of the assets to deposit
-    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) public {
-        // Check if the token IDs and amounts arrays have the same length
-        if (tokenIds.length != amounts.length) {
-            revert AssetAuctionArraysLengthMismatch(tokenIds.length, amounts.length);
-        }
-
-        // Store the necessary variables for the safeBatchTransferFrom function
-        uint256 length = tokenIds.length;
-        address from = msg.sender;
-        address to = address(this);
-        bytes memory data = "";
-
-        // Transfer the assets to the contract
-        assetsContract.safeBatchTransferFrom(from, to, tokenIds, amounts, data);
-
-        // Update the user balances
-        for (uint256 i = 0; i < length; i++) {
-            assetBalances[from][tokenIds[i]] += amounts[i];
-        }
-
-        emit AssetsDeposited(from, tokenIds, amounts);
-    }
-
-    /// @notice Deposit IGC into the contract
-    /// @param amount The amount of IGC to deposit
-    function depositIGC(uint256 amount) public {
-        // Store the necessary variables for the safeTransferFrom function
-        address from = msg.sender;
-        address to = address(this);
-        bytes memory data = "";
-
-        // Transfer the IGC to the contract
-        assetsContract.safeTransferFrom(from, to, igcTokenId, amount, data);
-
-        // Update the user balance
-        igcBalances[from] += amount;
-
-        emit IGCDeposited(from, amount);
     }
 
     ///////////////////////////////////////////////////////////
@@ -494,6 +496,13 @@ contract AssetAuction {
         return bids[auctionId];
     }
 
+    /// @notice Get the count of bids of an auction
+    /// @param auctionId The ID of the auction
+    /// @return count The count of bids of the auction
+    function getAuctionBidCount(uint256 auctionId) public view returns (uint256 count) {
+        return bids[auctionId].length;
+    }
+
     /// @notice Get the balance of an asset for a user
     /// @param user The address of the user
     /// @param assetId The ID of the asset
@@ -525,5 +534,40 @@ contract AssetAuction {
     /// @return address The address of the assets contract
     function getAssetsContract() public view returns (address) {
         return address(assetsContract);
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               ERC1155 RECEIVER FUNCTIONS              ///
+    /////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155Received(
+        address, /*operator*/
+        address, /*from*/
+        uint256, /*id*/
+        uint256, /*value*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155BatchReceived(
+        address, /*operator*/
+        address, /*from*/
+        uint256[] memory, /*ids*/
+        uint256[] memory, /*values*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               IERC165 INTERFACE FUNCTIONS             ///
+    /////////////////////////////////////////////////////////////
+
+    // Implement supportsInterface
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
