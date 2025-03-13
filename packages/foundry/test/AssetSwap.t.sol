@@ -231,9 +231,8 @@ contract AssetSwapUser1Test is AssetSwapSetupHelper {
 
 contract AssetSwapUser1CancelProposalTest is AssetSwapCreateProposalHelper {
     function test_cancelProposal() public {
-        vm.startPrank(user1);
+        vm.prank(user1);
         swap.cancelProposal(1);
-        vm.stopPrank();
 
         AssetSwap.Proposal memory proposal = swap.getProposal(1);
 
@@ -551,9 +550,8 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapCreateProposalHelper {
         uint256 user1AssetBalance = swap.getBalance(user1, ASSET_ONE_ID);
         assertEq(user1AssetBalance, DEPOSIT_1);
 
-        vm.startPrank(user1);
+        vm.prank(user1);
         swap.withdrawAssets(tokenIds, amounts);
-        vm.stopPrank();
 
         // Check that the user's asset balance was updated
         uint256 expectedUser1AssetBalance = 0;
@@ -593,9 +591,8 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapCreateProposalHelper {
         assertEq(user1Asset2Balance, DEPOSIT_5);
         assertEq(user1Asset3Balance, DEPOSIT_10);
 
-        vm.startPrank(user1);
+        vm.prank(user1);
         swap.withdrawAssets(tokenIds, amounts);
-        vm.stopPrank();
 
         // Check that the user's asset balance was updated
         uint256 expectedUser1Asset1Balance = 0;
@@ -626,9 +623,8 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapCreateProposalHelper {
     }
 
     function test_withdrawAssetsAfterCancelingProposal() public {
-        vm.startPrank(user1);
+        vm.prank(user1);
         swap.cancelProposal(1);
-        vm.stopPrank();
 
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory amounts = new uint256[](1);
@@ -636,9 +632,8 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapCreateProposalHelper {
         tokenIds[0] = ASSET_ONE_ID;
         amounts[0] = DEPOSIT_1;
 
-        vm.startPrank(user1);
+        vm.prank(user1);
         swap.withdrawAssets(tokenIds, amounts);
-        vm.stopPrank();
 
         // Check that the user's asset balance was updated
         uint256 expectedUser1AssetBalance = 0;
