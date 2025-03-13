@@ -672,11 +672,41 @@ contract AssetAuctionDepositAssetsTest is AssetAuctionSetupHelper {
 }
 
 contract AssetAuctionDepositIGCTest is AssetAuctionSetupHelper {
-    function test_depositIGC() public { }
+    function test_depositIGC() public {
+        uint256 startingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
+        uint256 startingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
 
-    function test_depositIGC_EmitEvent() public { }
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositIGC(MINT_10);
+        vm.stopPrank();
 
-    function test_depositIGC_RevertWhen_InsufficientBalance() public { }
+        uint256 endingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
+        uint256 endingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+        assertEq(startingUser1AuctionIGCBalance + MINT_10, endingUser1AuctionIGCBalance);
+        assertEq(startingUser1IGCBalance - MINT_10, endingUser1IGCBalance);
+    }
+
+    function test_depositIGC_EmitEvent() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit IGCDeposited(user1, MINT_10);
+        auction.depositIGC(MINT_10);
+        vm.stopPrank();
+    }
+
+    function test_depositIGC_RevertWhen_InsufficientBalance() public {
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, MINT_1000000, 10 ** 18, IGC_TOKEN_ID
+            )
+        );
+        auction.depositIGC(10 ** 18);
+        vm.stopPrank();
+    }
 }
 
 ///////////////////////////////////////////////////////////
