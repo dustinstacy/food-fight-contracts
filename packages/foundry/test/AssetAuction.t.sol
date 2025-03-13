@@ -308,11 +308,44 @@ contract AssetAustionCancelAuctionTest is AssetAuctionCreateAuctionHelper {
 }
 
 contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
-    function test_completeAuctionWhenReserveMet() public { }
+    function test_completeAuctionWhenReserveMet() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
 
-    function test_completeAuctionWhenReserveNotMet() public { }
+        vm.warp(ONE_HOUR + 1);
 
-    function test_completeAuction_EmitEvent() public { }
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(endedStatus, uint256(auctionData.status));
+    }
+
+    function test_completeAuctionWhenReserveNotMet() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_1);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(reserveNotMetStatus, uint256(auctionData.status));
+    }
+
+    function test_completeAuction_EmitEvent() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.startPrank(user1);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit AuctionEnded(1, user2, MINT_10);
+        auction.completeAuction(1);
+        vm.stopPrank();
+    }
 
     function test_completeAuction_RevertWhen_StatusNotOpen() public { }
 
