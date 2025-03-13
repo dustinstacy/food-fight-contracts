@@ -28,10 +28,10 @@ contract AssetAuction is IERC1155Receiver {
     error AssetAuctionAuctionHasNotEnded(AuctionStatus status);
 
     // Emitted when the user is not the seller
-    error AssetAuctionYouAreNotTheSeller(address caller, address seller);
+    error AssetAuctionNotTheSeller(address caller, address seller);
 
     // Emitted when the user is not the winning bidder
-    error AssetAuctionYouAreNotTheWinningBidder(address caller, address winningBidder);
+    error AssetAuctionNotTheWinningBidder(address caller, address winningBidder);
 
     /// Emitted when the token IDs and amounts arrays have different lengths.
     error AssetAuctionArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
@@ -204,7 +204,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the caller is the seller
         if (auction.seller != msg.sender) {
-            revert AssetAuctionYouAreNotTheSeller(msg.sender, auction.seller);
+            revert AssetAuctionNotTheSeller(msg.sender, auction.seller);
         }
 
         // Update the auction status
@@ -233,7 +233,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the caller is the seller
         if (auction.seller != msg.sender) {
-            revert AssetAuctionYouAreNotTheSeller(msg.sender, auction.seller);
+            revert AssetAuctionNotTheSeller(msg.sender, auction.seller);
         }
 
         // Check if the reserve price has been met
@@ -301,7 +301,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the caller is the winning bidder
         if (auction.winningBidder != msg.sender) {
-            revert AssetAuctionYouAreNotTheWinningBidder(msg.sender, auction.winningBidder);
+            revert AssetAuctionNotTheWinningBidder(msg.sender, auction.winningBidder);
         }
 
         // Check the IGC balance of the bidder
