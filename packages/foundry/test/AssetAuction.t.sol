@@ -205,9 +205,27 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
         vm.stopPrank();
     }
 
-    function test_createAuction_RevertWhen_InsufficientAssets() public { }
+    function test_createAuction_RevertWhen_InsufficientAssets() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user1, 0, DEPOSIT_ONE, ASSET_TWO_ID
+            )
+        );
+        auction.createAuction(ASSET_TWO_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+    }
 
-    function test_createAuction_RevertWhen_AssetsDepositedWithoutApproval() public { }
+    function test_createAuction_RevertWhen_AssetsDepositedWithoutApproval() public {
+        vm.prank(user1);
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, address(auction), user1)
+        );
+
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+    }
 }
 
 contract AssetAustionCancelAuctionTest is AssetAuctionCreateAuctionHelper {
