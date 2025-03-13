@@ -18,6 +18,9 @@ contract AssetAuction is IERC1155Receiver {
     // Emitted when the deadline has passed
     error AssetAuctionDeadlineHasPassed(uint256 deadline);
 
+    // Emitted when the deadline has not passed
+    error AssetAuctionDeadlineNotPassed(uint256 deadline);
+
     // Emitted when the bid is not higher than the highest bid
     error AssetAuctionBidNotHigherThanHighestBid(uint256 highestBid, uint256 amount);
 
@@ -80,7 +83,8 @@ contract AssetAuction is IERC1155Receiver {
         Open,
         Canceled,
         Ended,
-        ReserveNotMet
+        ReserveNotMet,
+        Claimed
     }
 
     enum Style {
@@ -144,6 +148,7 @@ contract AssetAuction is IERC1155Receiver {
     /// @param reservePrice The reserve price of the auction
     /// @param deadline The deadline of the auction
     /// @param style The style of the auction
+    /// @dev Should set bounds for the reserve price and deadline
     function createAuction(uint256 assetTokenId, uint256 reservePrice, uint256 deadline, Style style) public {
         // Check if the caller has any of the assetTokenId deposited
         if (assetBalances[msg.sender][assetTokenId] == 0) {
@@ -223,7 +228,12 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the deadline has passed
         if (block.timestamp < auction.deadline) {
-            revert AssetAuctionDeadlineHasPassed(auction.deadline);
+            revert AssetAuctionDeadlineNotPassed(auction.deadline);
+        }
+
+        // Check if the caller is the seller
+        if (auction.seller != msg.sender) {
+            revert AssetAuctionYouAreNotTheSeller(msg.sender, auction.seller);
         }
 
         // Check if the reserve price has been met
@@ -298,6 +308,9 @@ contract AssetAuction is IERC1155Receiver {
         if (igcBalances[msg.sender] < auction.winningBid) {
             depositIGC(auction.winningBid - igcBalances[msg.sender]);
         }
+
+        // update the auction status
+        auction.status = AuctionStatus.Claimed;
 
         // update the igcBalances
         igcBalances[msg.sender] -= auction.winningBid;
