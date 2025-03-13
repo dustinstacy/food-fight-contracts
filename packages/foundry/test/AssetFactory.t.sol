@@ -1,12 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Test, console } from "forge-std/Test.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155 } from "@openzeppelin/contracts/interfaces/IERC1155.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-
-import { Test, console } from "forge-std/Test.sol";
 import { AssetFactory } from "@contracts/AssetFactory.sol";
 import { AssetFactoryHelper } from "./helpers/AssetFactoryHelper.sol";
 
@@ -478,6 +477,7 @@ contract AssetFactoryERC1155ReceiverTest is AssetFactoryHelper {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
         bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
 
+        // Check the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
     }
 
@@ -486,6 +486,7 @@ contract AssetFactoryERC1155ReceiverTest is AssetFactoryHelper {
         bytes4 returnedSelector =
             factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
 
+        // Check the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
     }
 }
