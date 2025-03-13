@@ -22,7 +22,7 @@ contract AssetAuction is IERC1155Receiver {
     error AssetAuctionDeadlineNotPassed(uint256 deadline);
 
     // Emitted when the bid is not higher than the highest bid
-    error AssetAuctionBidNotHigherThanHighestBid(uint256 highestBid, uint256 amount);
+    error AssetAuctionBidNotHigherThanHighestBid(uint256 amount, uint256 highestBid);
 
     // Emitted when the auction has not ended
     error AssetAuctionAuctionHasNotEnded(AuctionStatus status);
@@ -277,7 +277,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the bid is higher than the highest bid
         if (amount <= auction.highestBid) {
-            revert AssetAuctionBidNotHigherThanHighestBid(auction.highestBid, amount);
+            revert AssetAuctionBidNotHigherThanHighestBid(amount, auction.highestBid);
         }
 
         // Update the highest bid and highest bidder
