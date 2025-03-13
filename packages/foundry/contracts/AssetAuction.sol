@@ -502,7 +502,7 @@ contract AssetAuction is IERC1155Receiver {
     /// @notice Get the status of an auction
     /// @param auctionId The ID of the auction
     /// @return status The status of the auction
-    function getAuctionAuctionStatus(uint256 auctionId) public view returns (AuctionStatus status) {
+    function getAuctionStatus(uint256 auctionId) public view returns (AuctionStatus status) {
         return auctions[auctionId].status;
     }
 
