@@ -69,6 +69,8 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
     uint256 candleStyle = uint256(AssetAuction.Style.Candle);
 
     uint256 constant DEPOSIT_ONE = 1;
+    uint256 constant DEPOSIT_FIVE = 5;
+    uint256 constant DEPOSIT_TEN = 10;
     uint256 constant ONE_HOUR = 3600;
 
     function setUp() public virtual override {
@@ -573,11 +575,67 @@ contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetAuctionDepositAssetsTest is AssetAuctionSetupHelper {
-    function test_depositAssets() public { }
+    function test_depositAssets() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
 
-    function test_depositMultipleAssets() public { }
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
 
-    function test_depositAssets_EmitEvent() public { }
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user1AssetBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(user1AssetBalance, DEPOSIT_ONE);
+    }
+
+    function test_depositMultipleAssets() public {
+        vm.startPrank(user1);
+        factory.mintAsset(user1, ASSET_TWO_ID, DEPOSIT_FIVE, "");
+        factory.mintAsset(user1, ASSET_THREE_ID, MINT_10, "");
+
+        uint256[] memory tokenIds = new uint256[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        tokenIds[1] = ASSET_TWO_ID;
+        tokenIds[2] = ASSET_THREE_ID;
+
+        amounts[0] = DEPOSIT_ONE;
+        amounts[1] = DEPOSIT_FIVE;
+        amounts[2] = DEPOSIT_TEN;
+
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+
+        // Check that the user has deposited the correct amount of assets
+        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        uint256 user1Asset2Balance = auction.getAssetBalance(user1, ASSET_TWO_ID);
+        uint256 user1Asset3Balance = auction.getAssetBalance(user1, ASSET_THREE_ID);
+
+        assertEq(user1Asset1Balance, DEPOSIT_ONE);
+        assertEq(user1Asset2Balance, DEPOSIT_FIVE);
+        assertEq(user1Asset3Balance, DEPOSIT_TEN);
+    }
+
+    function test_depositAssets_EmitEvent() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit AssetsDeposited(user1, tokenIds, amounts);
+        auction.depositAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
 
     function test_depositAssets_RevertWhen_ArraysNotSameLength() public { }
 
