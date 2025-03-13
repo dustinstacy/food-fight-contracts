@@ -394,14 +394,14 @@ contract AssetAuction is IERC1155Receiver {
 
         for (uint256 i = 0; i < length; i++) {
             // Check if the user has enough balance
-            if (assetBalances[from][tokenIds[i]] < amounts[i]) {
-                revert AssetAuctionInsufficientBalance(from, assetBalances[from][tokenIds[i]], amounts[i], tokenIds[i]);
+            if (assetBalances[to][tokenIds[i]] < amounts[i]) {
+                revert AssetAuctionInsufficientBalance(to, assetBalances[from][tokenIds[i]], amounts[i], tokenIds[i]);
             }
         }
 
         // Update the user balances
         for (uint256 i = 0; i < length; i++) {
-            assetBalances[from][tokenIds[i]] -= amounts[i];
+            assetBalances[to][tokenIds[i]] -= amounts[i];
         }
 
         // Transfer the assets to the user
