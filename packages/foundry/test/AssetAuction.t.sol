@@ -442,9 +442,51 @@ contract AssetAuctionPlaceBidTest is AssetAuctionCreateAuctionHelper {
 }
 
 contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
-    function test_claimAsset() public { }
+    function test_claimAsset() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
 
-    function test_claimAsset_EmitEvent() public { }
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        uint256 startingUser1IGCBalance = auction.getIGCBalance(user1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(endedStatus, uint256(auctionData.status));
+
+        address winningBidder = auctionData.winningBidder;
+        assertEq(user2, winningBidder);
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        auction.claimAsset(1);
+        vm.stopPrank();
+
+        uint256 user2Asset1Balance = auction.getAssetBalance(user2, ASSET_ONE_ID);
+        assertEq(DEPOSIT_ONE, user2Asset1Balance);
+
+        uint256 endingUser1IGCBalance = auction.getIGCBalance(user1);
+        assertEq(startingUser1IGCBalance + MINT_10, endingUser1IGCBalance);
+    }
+
+    function test_claimAsset_EmitEvent() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user1);
+        auction.completeAuction(1);
+
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit AssetClaimed(user2, 1, ASSET_ONE_ID, MINT_10);
+        auction.claimAsset(1);
+        vm.stopPrank();
+    }
 
     function test_claimAsset_RevertWhen_StatusNotEnded() public { }
 
