@@ -68,6 +68,9 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
     uint256 blindStyle = uint256(AssetAuction.Style.Blind);
     uint256 candleStyle = uint256(AssetAuction.Style.Candle);
 
+    uint256 constant DEPOSIT_ONE = 1;
+    uint256 constant ONE_HOUR = 3600;
+
     function setUp() public virtual override {
         super.setUp();
         auction = new AssetAuction(address(factory));
@@ -78,9 +81,10 @@ contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
         mintInitialIGC(user1, MINT_1000000);
         mintInitialIGC(user2, MINT_1000000);
         mintInitialIGC(user3, MINT_1000000);
+        vm.prank(user1);
         factory.mintAsset(user1, ASSET_ONE_ID, MINT_10, "");
 
-        uint256 totalPrice = (MINT_10 * ASSET_ONE_PRICE) + (MINT_10 * ASSET_TWO_PRICE) + (MINT_10 * ASSET_THREE_PRICE);
+        uint256 totalPrice = (MINT_10 * ASSET_ONE_PRICE);
 
         // Validate starting asset balances
         assertEq(MINT_10, factory.balanceOf(user1, ASSET_ONE_ID));
@@ -126,11 +130,80 @@ contract AssetAuctionConstructorTest is AssetAuctionSetupHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
-    function test_createAuctionWithAssetsDeposited() public { }
+    function test_createAuctionWithAssetsDeposited() public {
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
 
-    function test_createAuctionWithoutAssetsDeposited() public { }
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.depositAssets(tokenIds, amounts);
 
-    function test_createAuction_EmitEvent() public { }
+        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(DEPOSIT_ONE, user1Asset1Balance);
+
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+
+        uint256 expectedAuctionCount = 1;
+        uint256 auctionCount = auction.getAuctionCount();
+        assertEq(expectedAuctionCount, auctionCount);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(user1, auctionData.seller);
+        assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
+        assertEq(MINT_10, auctionData.reservePrice);
+        assertEq(ONE_HOUR, auctionData.deadline);
+        assertEq(englishStyle, uint256(auctionData.style));
+        assertEq(0, auctionData.highestBid);
+        assertEq(address(0), auctionData.highestBidder);
+        assertEq(0, auctionData.winningBid);
+        assertEq(address(0), auctionData.winningBidder);
+        assertEq(openStatus, uint256(auctionData.status));
+
+        uint256 user1Asset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(user1Asset1Balance - DEPOSIT_ONE, user1Asset1BalanceAfter);
+    }
+
+    function test_createAuctionWithoutAssetsDeposited() public {
+        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(0, user1Asset1Balance);
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+
+        uint256 expectedAuctionCount = 1;
+        uint256 auctionCount = auction.getAuctionCount();
+        assertEq(expectedAuctionCount, auctionCount);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(user1, auctionData.seller);
+        assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
+        assertEq(MINT_10, auctionData.reservePrice);
+        assertEq(ONE_HOUR, auctionData.deadline);
+        assertEq(englishStyle, uint256(auctionData.style));
+        assertEq(0, auctionData.highestBid);
+        assertEq(address(0), auctionData.highestBidder);
+        assertEq(0, auctionData.winningBid);
+        assertEq(address(0), auctionData.winningBidder);
+        assertEq(openStatus, uint256(auctionData.status));
+
+        uint256 user1Asset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        assertEq(0, user1Asset1BalanceAfter);
+    }
+
+    function test_createAuction_EmitEvent() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit AuctionCreated(user1, 1, ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        vm.stopPrank();
+    }
 
     function test_createAuction_RevertWhen_InsufficientAssets() public { }
 
