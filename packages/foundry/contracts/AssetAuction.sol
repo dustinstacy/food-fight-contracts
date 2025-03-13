@@ -317,6 +317,9 @@ contract AssetAuction is IERC1155Receiver {
         igcBalances[msg.sender] -= auction.winningBid;
         igcBalances[auction.seller] += auction.winningBid;
 
+        // Transfer the asset to the winning bidder
+        assetBalances[auction.winningBidder][auction.assetTokenId] += 1;
+
         emit AssetClaimed(auction.winningBidder, auctionId, auction.assetTokenId, auction.winningBid);
     }
 
