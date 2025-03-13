@@ -410,11 +410,35 @@ contract AssetAuctionPlaceBidTest is AssetAuctionCreateAuctionHelper {
         vm.stopPrank();
     }
 
-    function test_placeBid_RevertWhen_StatusNotOpen() public { }
+    function test_placeBid_RevertWhen_StatusNotOpen() public {
+        vm.prank(user1);
+        auction.cancelAuction(1);
 
-    function test_placeBid_RevertWhen_DeadlinePassed() public { }
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        uint256 status = uint256(auctionData.status);
 
-    function test_placeBid_RevertWhen_BidLessThanHighestBid() public { }
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionIsNotOpen.selector, status));
+        auction.placeBid(1, MINT_10);
+    }
+
+    function test_placeBid_RevertWhen_DeadlinePassed() public {
+        vm.warp(ONE_HOUR + 1);
+
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineHasPassed.selector, ONE_HOUR));
+        auction.placeBid(1, MINT_10);
+    }
+
+    function test_placeBid_RevertWhen_BidLessThanHighestBid() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.prank(user3);
+        vm.expectRevert(
+            abi.encodeWithSelector(AssetAuction.AssetAuctionBidNotHigherThanHighestBid.selector, MINT_1, MINT_10)
+        );
+        auction.placeBid(1, MINT_1);
+    }
 }
 
 contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
