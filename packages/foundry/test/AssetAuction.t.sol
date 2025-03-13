@@ -860,9 +860,40 @@ contract AssetAuctionWithdrawAssetsTest is AssetAuctionSetupHelper {
         vm.stopPrank();
     }
 
-    function test_withdrawAssets_RevertWhen_ArraysNotSameLength() public { }
+    function test_withdrawAssets_RevertWhen_ArraysNotSameLength() public {
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
 
-    function test_withdrawAssets_RevertWhen_InsufficientBalance() public { }
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](2);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
+        amounts[1] = DEPOSIT_ONE;
+
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionArraysLengthMismatch.selector, 1, 2));
+        auction.withdrawAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
+
+    function test_withdrawAssets_RevertWhen_InsufficientBalance() public {
+        vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
+
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokenIds[0] = ASSET_ONE_ID;
+        amounts[0] = DEPOSIT_ONE;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetAuction.AssetAuctionInsufficientBalance.selector, user2, 0, DEPOSIT_ONE, ASSET_ONE_ID
+            )
+        );
+        auction.withdrawAssets(tokenIds, amounts);
+        vm.stopPrank();
+    }
 }
 
 contract AssetAuctionWithdrawIGCTest is AssetAuctionSetupHelper {
