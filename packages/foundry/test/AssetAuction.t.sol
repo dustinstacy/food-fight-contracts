@@ -347,11 +347,45 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
         vm.stopPrank();
     }
 
-    function test_completeAuction_RevertWhen_StatusNotOpen() public { }
+    function test_completeAuction_RevertWhen_StatusNotOpen() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
 
-    function test_completeAuction_RevertWhen_NotSeller() public { }
+        vm.warp(ONE_HOUR + 1);
 
-    function test_completeAuction_RevertWhen_DeadlineNotPassed() public { }
+        vm.startPrank(user1);
+        auction.completeAuction(1);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        uint256 status = uint256(auctionData.status);
+
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionIsNotOpen.selector, status));
+        auction.completeAuction(1);
+        vm.stopPrank();
+    }
+
+    function test_completeAuction_RevertWhen_DeadlineNotPassed() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        uint256 deadline = auctionData.deadline;
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineNotPassed.selector, deadline));
+        auction.completeAuction(1);
+    }
+
+    function test_completeAuction_RevertWhen_NotSeller() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
+
+        vm.warp(ONE_HOUR + 1);
+
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheSeller.selector, user2, user1));
+        auction.completeAuction(1);
+    }
 }
 
 ///////////////////////////////////////////////////////////
