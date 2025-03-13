@@ -261,6 +261,7 @@ contract AssetAuction is IERC1155Receiver {
     /// @notice Allows a user to bid on an auction
     /// @param auctionId The ID of the auction
     /// @param amount The amount to bid
+    /// @dev Should check if the bidder has enough IGC to place the bid
     function placeBid(uint256 auctionId, uint256 amount) external {
         Auction storage auction = auctions[auctionId];
 

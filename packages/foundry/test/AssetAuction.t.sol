@@ -392,10 +392,23 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
 ///              BIDDER FUNCTION TESTS                  ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionPlaceBidTest is AssetAuctionSetupHelper {
-    function test_placeBid() public { }
+contract AssetAuctionPlaceBidTest is AssetAuctionCreateAuctionHelper {
+    function test_placeBid() public {
+        vm.prank(user2);
+        auction.placeBid(1, MINT_10);
 
-    function test_placeBid_EmitEvent() public { }
+        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        assertEq(MINT_10, auctionData.highestBid);
+        assertEq(user2, auctionData.highestBidder);
+    }
+
+    function test_placeBid_EmitEvent() public {
+        vm.startPrank(user2);
+        vm.expectEmit(false, false, false, false, address(auction));
+        emit BidPlaced(user2, 1, MINT_10);
+        auction.placeBid(1, MINT_10);
+        vm.stopPrank();
+    }
 
     function test_placeBid_RevertWhen_StatusNotOpen() public { }
 
@@ -404,7 +417,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionSetupHelper {
     function test_placeBid_RevertWhen_BidLessThanHighestBid() public { }
 }
 
-contract AssetAuctionClaimAssetTest is AssetAuctionSetupHelper {
+contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
     function test_claimAsset() public { }
 
     function test_claimAsset_EmitEvent() public { }
