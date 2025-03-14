@@ -41,4 +41,11 @@ contract Constants {
     uint256[] all = [TEN, TEN, TEN];
     uint256[] allVarying = [ONE, FIVE, TEN];
     uint256[] invalid = [ONE, FIVE];
+
+    // Set up single asset arrays for testing
+    // depositAssets() and withdrawAssets() require arrays as arguments
+    //!! Consider creating a library of helper functions that repeat the same code
+    uint256[] asset1Single = [ASSET_ONE_ID];
+    uint256[] asset2Single = [ASSET_TWO_ID];
+    uint256[] amountSingle = [ONE];
 }

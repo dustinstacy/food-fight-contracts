@@ -14,12 +14,6 @@ contract AssetSwapHelper is AssetFactoryHelper {
     uint256 rejectedStatus = uint256(AssetSwap.ProposalStatus.Rejected);
     uint256 canceledStatus = uint256(AssetSwap.ProposalStatus.Canceled);
 
-    // Set up single asset arrays for testing
-    // depositAssets() and withdrawAssets() require arrays as arguments
-    uint256[] asset1Single = [ASSET_ONE_ID];
-    uint256[] asset2Single = [ASSET_TWO_ID];
-    uint256[] amountSingle = [ONE];
-
     // Set up the testing environment using the AssetFactoryHelper functions
     function setUp() public virtual {
         setUpAssets();
