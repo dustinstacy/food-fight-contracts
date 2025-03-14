@@ -12,7 +12,7 @@ import { Constants } from "./Constants.sol";
 contract AssetFactoryHelper is Constants, Test {
     // Set up assets for testing
     // Can update this function to set up more/different assets
-    function setUpAssets() public {
+    function setAssetsHelper() public {
         vm.startPrank(owner);
         factory.setAssetData(1, "ipfs://asset1", 100);
         factory.setAssetData(2, "ipfs://asset2", 200);
@@ -21,13 +21,13 @@ contract AssetFactoryHelper is Constants, Test {
     }
 
     // Mint initial IGC for testing
-    function mintInitialIGC(address minter, uint256 amount) public {
+    function mintIGCHelper(address minter, uint256 amount) public {
         vm.prank(minter);
         factory.mintIGC(minter, amount);
     }
 
     // Mint initial assets for testing
-    function mintInitialAssets(address minter, uint256[] memory amounts) public {
+    function mintAssetHelper(address minter, uint256[] memory amounts) public {
         vm.startPrank(minter);
         factory.mintAsset(minter, ASSET_ONE_ID, amounts[0], "");
         factory.mintAsset(minter, ASSET_TWO_ID, amounts[1], "");

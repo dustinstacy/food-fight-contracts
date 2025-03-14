@@ -54,8 +54,8 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryHelper {
     uint256 totalPrice = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * FIVE) + (ASSET_THREE_PRICE * TEN);
 
     function setUp() public {
-        setUpAssets();
-        mintInitialIGC(user1, ONE_MILLION);
+        setAssetsHelper();
+        mintIGCHelper(user1, ONE_MILLION);
 
         user1StartingIGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
     }
@@ -217,9 +217,9 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryHelper {
     uint256 user1AfterMintingAssetsIGCBalance;
 
     function setUp() public {
-        setUpAssets();
-        mintInitialIGC(user1, ONE_MILLION);
-        mintInitialAssets(user1, all);
+        setAssetsHelper();
+        mintIGCHelper(user1, ONE_MILLION);
+        mintAssetHelper(user1, all);
 
         user1AfterMintingAssetsIGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
     }
@@ -454,14 +454,14 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryHelper {
 
 contract AssetFactoryViewFunctionsTest is AssetFactoryHelper {
     function test_getAssetUri() public {
-        setUpAssets();
+        setAssetsHelper();
 
         // Check the URI of the asset
         assertEq(factory.getAssetURI(ASSET_ONE_ID), "ipfs://asset1");
     }
 
     function test_getAssetPrice() public {
-        setUpAssets();
+        setAssetsHelper();
 
         // Check the price of the asset
         assertEq(factory.getAssetPrice(ASSET_ONE_ID), ASSET_ONE_PRICE);
