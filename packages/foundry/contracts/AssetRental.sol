@@ -170,6 +170,70 @@ contract AssetRental {
         emit RentalAssetPosted(msg.sender, tokenId, price, duration);
     }
 
+    /// @notice Unlist an asset from the rental market.
+    /// @param rentalId The ID of the rental asset.
+    function unlistAsset(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the caller is the owner of the rental
+        if (rental.owner != msg.sender) {
+            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
+        }
+
+        if (unreturnedDeposits[msg.sender] > 0) {
+            // Check if the owner has enough funds to refund the deposit
+            if (igcBalances[msg.sender] < unreturnedDeposits[msg.sender]) {
+                revert AssetRentalNeedToReturnDepositsBeforeUnlisting(msg.sender, unreturnedDeposits[msg.sender]);
+            }
+
+            // Refund the deposit
+            igcBalances[msg.sender] -= unreturnedDeposits[msg.sender];
+            unreturnedDeposits[msg.sender] = 0;
+        }
+
+        // Check if the rental is being rented
+        if (rental.status == RentalStatus.Rented) {
+            revert AssetRentalRentalIsCurrentlyRented(rental.status);
+        }
+
+        // Remove the rental
+        rental.status = RentalStatus.Removed;
+
+        // Update the asset balances
+        assetBalances[msg.sender][rental.tokenId] += 1;
+    }
+
+    /// @notice Take back an asset that has not been returned.
+    /// @param rentalId The ID of the rental asset.
+    function takeBackAsset(uint256 rentalId) external {
+        RentalAsset memory rental = rentals[rentalId];
+
+        // Check if the rental is being rented
+        if (rental.status != RentalStatus.Rented) {
+            revert AssetRentalRentalIsNotCurrentlyRented(rental.status);
+        }
+
+        // Check if the caller is the owner of the rental
+        if (rental.owner != msg.sender) {
+            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
+        }
+
+        // Check if the rental has passed the return deadline
+        if (block.timestamp < rental.expiration + rental.depositExpiration) {
+            revert AssetRentalRentalHasNotExceededDeadline(
+                rental.expiration + rental.depositExpiration, block.timestamp
+            );
+        }
+
+        // Update the renter's tokens
+        renterTokens[rental.renter][rental.tokenId] -= 1;
+
+        // Make the asset available for rent
+        rental.status = RentalStatus.Available;
+
+        emit RentalRetrieved(rental.owner, rental.renter, rentalId, block.timestamp);
+    }
+
     /// @notice Rent an asset.
     /// @param rentalId The ID of the rental asset.
     function rentAsset(uint256 rentalId) external {
@@ -200,42 +264,8 @@ contract AssetRental {
         emit RentalAssetRented(msg.sender, rentalId, rental.price, rental.duration, block.timestamp);
     }
 
-    function cancelRental(uint256 rentalId) external {
-        RentalAsset memory rental = rentals[rentalId];
-
-        // Check if the rental is being rented
-        if (rental.status != RentalStatus.Rented) {
-            revert AssetRentalRentalIsNotCurrentlyRented(rental.status);
-        }
-
-        // Check if the caller is the owner of the rental
-        if (rental.owner != msg.sender) {
-            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
-        }
-
-        if (block.timestamp < rental.expiration) {
-            // Check if the owner has enough funds to refund the renter
-            if (igcBalances[rental.owner] < rental.price + rental.deposit) {
-                revert AssetRentalInsufficientBalance(
-                    rental.owner, igcBalances[rental.owner], rental.price + rental.deposit, igcTokenId
-                );
-            }
-
-            // Refund the renter
-            igcBalances[rental.owner] -= rental.price;
-            igcBalances[rental.renter] += rental.price + rental.deposit;
-        }
-
-        // Cancel the rental
-        rental.status = RentalStatus.Available;
-
-        // Remove the rental from the renter's tokens
-        renterTokens[rental.renter][rental.tokenId] -= 1;
-
-        // Emit an event
-        emit RentalCancelled(rental.owner, rental.renter, rentalId, block.timestamp);
-    }
-
+    /// @notice Return an asset.
+    /// @param rentalId The ID of the rental asset.
     function returnAsset(uint256 rentalId) external {
         RentalAsset memory rental = rentals[rentalId];
 
@@ -272,66 +302,6 @@ contract AssetRental {
         igcBalances[rental.owner] -= rental.deposit;
 
         emit RentalReturned(rental.renter, rentalId, block.timestamp);
-    }
-
-    function relistAsset(uint256 rentalId) external {
-        RentalAsset memory rental = rentals[rentalId];
-
-        // Check if the rental is being rented
-        if (rental.status != RentalStatus.Rented) {
-            revert AssetRentalRentalIsNotCurrentlyRented(rental.status);
-        }
-
-        // Check if the caller is the owner of the rental
-        if (rental.owner != msg.sender) {
-            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
-        }
-
-        // Check if the rental has passed the return deadline
-        if (block.timestamp < rental.expiration + rental.depositExpiration) {
-            revert AssetRentalRentalHasNotExceededDeadline(
-                rental.expiration + rental.depositExpiration, block.timestamp
-            );
-        }
-
-        // Update the renter's tokens
-        renterTokens[rental.renter][rental.tokenId] -= 1;
-
-        // Make the asset available for rent
-        rental.status = RentalStatus.Available;
-
-        emit RentalRetrieved(rental.owner, rental.renter, rentalId, block.timestamp);
-    }
-
-    function unlistAsset(uint256 rentalId) external {
-        RentalAsset memory rental = rentals[rentalId];
-
-        // Check if the caller is the owner of the rental
-        if (rental.owner != msg.sender) {
-            revert AssetRentalNotTheOwner(msg.sender, rental.owner);
-        }
-
-        if (unreturnedDeposits[msg.sender] > 0) {
-            // Check if the owner has enough funds to refund the deposit
-            if (igcBalances[msg.sender] < unreturnedDeposits[msg.sender]) {
-                revert AssetRentalNeedToReturnDepositsBeforeUnlisting(msg.sender, unreturnedDeposits[msg.sender]);
-            }
-
-            // Refund the deposit
-            igcBalances[msg.sender] -= unreturnedDeposits[msg.sender];
-            unreturnedDeposits[msg.sender] = 0;
-        }
-
-        // Check if the rental is being rented
-        if (rental.status == RentalStatus.Rented) {
-            revert AssetRentalRentalIsCurrentlyRented(rental.status);
-        }
-
-        // Remove the rental
-        rental.status = RentalStatus.Removed;
-
-        // Update the asset balances
-        assetBalances[msg.sender][rental.tokenId] += 1;
     }
 
     ///////////////////////////////////////////////////////////
