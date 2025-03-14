@@ -13,7 +13,7 @@ contract AssetAuction is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
 
     // Emitted when the auction is not open
-    error AssetAuctionAuctionIsNotOpen(AuctionStatus status);
+    error AssetAuctionAuctionNotOpen(AuctionStatus status);
 
     // Emitted when the deadline has passed
     error AssetAuctionDeadlineHasPassed(uint256 deadline);
@@ -197,7 +197,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the auction is open
         if (auction.status != AuctionStatus.Open) {
-            revert AssetAuctionAuctionIsNotOpen(auction.status);
+            revert AssetAuctionAuctionNotOpen(auction.status);
         }
 
         // Check if the deadline has passed
@@ -226,7 +226,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the auction is open
         if (auction.status != AuctionStatus.Open) {
-            revert AssetAuctionAuctionIsNotOpen(auction.status);
+            revert AssetAuctionAuctionNotOpen(auction.status);
         }
 
         // Check if the deadline has passed
@@ -270,7 +270,7 @@ contract AssetAuction is IERC1155Receiver {
 
         // Check if the auction is open
         if (auction.status != AuctionStatus.Open) {
-            revert AssetAuctionAuctionIsNotOpen(auction.status);
+            revert AssetAuctionAuctionNotOpen(auction.status);
         }
 
         // Check if the auction has ended
