@@ -2,156 +2,24 @@
 pragma solidity ^0.8.28;
 
 import { Test, console } from "forge-std/Test.sol";
-import { AssetAuction } from "@contracts/AssetAuction.sol";
-import { AssetFactorySetAssetsHelper } from "./AssetFactory.t.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-
-///////////////////////////////////////////////////////////
-///                     EVENTS                          ///
-///////////////////////////////////////////////////////////
-
-// Emitted when an auction is created
-event AuctionCreated(
-    address seller,
-    uint256 auctionId,
-    uint256 assetTokenId,
-    uint256 reservePrice,
-    uint256 deadline,
-    AssetAuction.Style style
-);
-
-// Emitted when a bid is placed
-event BidPlaced(address bidder, uint256 auctionId, uint256 amount);
-
-// Emitted when an auction is ended
-event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
-
-// Emitted when an auction is cancelled
-event AuctionCanceled(uint256 auctionId);
-
-// Emitted when the reserve price is not met
-event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
-
-// Emitted when an asset is claimed
-event AssetClaimed(address winningBidder, uint256 auctionId, uint256 assetClaimedTokenId, uint256 winningBid);
-
-// Emitted when assets are withdrawn
-event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
-
-// Emitted when IGC is withdrawn
-event IGCWithdrawn(address to, uint256 amount);
-
-// Emitted when assets are deposited
-event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
-
-// Emitted when IGC is deposited
-event IGCDeposited(address from, uint256 amount);
-
-///////////////////////////////////////////////////////////
-///                      HELPERS                        ///
-///////////////////////////////////////////////////////////
-
-contract AssetAuctionSetupHelper is AssetFactorySetAssetsHelper {
-    AssetAuction auction;
-    address public user1;
-    address public user2;
-    address public user3;
-
-    uint256 openStatus = uint256(AssetAuction.AuctionStatus.Open);
-    uint256 canceledStatus = uint256(AssetAuction.AuctionStatus.Canceled);
-    uint256 endedStatus = uint256(AssetAuction.AuctionStatus.Ended);
-    uint256 reserveNotMetStatus = uint256(AssetAuction.AuctionStatus.ReserveNotMet);
-
-    uint256 englishStyle = uint256(AssetAuction.Style.English);
-    uint256 dutchStyle = uint256(AssetAuction.Style.Dutch);
-    uint256 blindStyle = uint256(AssetAuction.Style.Blind);
-    uint256 candleStyle = uint256(AssetAuction.Style.Candle);
-
-    uint256 constant DEPOSIT_ONE = 1;
-    uint256 constant DEPOSIT_FIVE = 5;
-    uint256 constant DEPOSIT_TEN = 10;
-    uint256 constant ONE_HOUR = 3600;
-
-    function setUp() public virtual override {
-        super.setUp();
-        auction = new AssetAuction(address(factory));
-        user1 = user;
-        user2 = address(3);
-        user3 = address(4);
-        setUpAssets();
-        mintInitialIGC(user1, MINT_1000000);
-        mintInitialIGC(user2, MINT_1000000);
-        mintInitialIGC(user3, MINT_1000000);
-        vm.prank(user1);
-        factory.mintAsset(user1, ASSET_ONE_ID, MINT_10, "");
-
-        uint256 totalPrice = (MINT_10 * ASSET_ONE_PRICE);
-
-        // Validate starting asset balances
-        assertEq(MINT_10, factory.balanceOf(user1, ASSET_ONE_ID));
-        assertEq(0, factory.balanceOf(user2, ASSET_ONE_ID));
-        assertEq(0, factory.balanceOf(user3, ASSET_ONE_ID));
-        assertEq(0, factory.balanceOf(user1, ASSET_TWO_ID));
-        assertEq(0, factory.balanceOf(user2, ASSET_TWO_ID));
-        assertEq(0, factory.balanceOf(user3, ASSET_TWO_ID));
-        assertEq(0, factory.balanceOf(user1, ASSET_THREE_ID));
-        assertEq(0, factory.balanceOf(user2, ASSET_THREE_ID));
-        assertEq(0, factory.balanceOf(user3, ASSET_THREE_ID));
-
-        // Validate starting IGC balances
-        assertEq(MINT_1000000 - totalPrice, factory.balanceOf(user1, IGC_TOKEN_ID));
-        assertEq(MINT_1000000, factory.balanceOf(user2, IGC_TOKEN_ID));
-        assertEq(MINT_1000000, factory.balanceOf(user3, IGC_TOKEN_ID));
-
-        // Validate addresses
-        assertEq(user1, address(2));
-        assertEq(user2, address(3));
-        assertEq(user3, address(4));
-    }
-}
-
-contract AssetAuctionCreateAuctionHelper is AssetAuctionSetupHelper {
-    function setUp() public virtual override {
-        super.setUp();
-        createAuction();
-    }
-
-    function createAuction() public {
-        vm.startPrank(user1);
-        factory.setApprovalForAll(address(auction), true);
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
-        vm.stopPrank();
-
-        // Validate auction data and balances
-        uint256 user1Asset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(0, user1Asset1BalanceAfter);
-
-        uint256 expectedAuctionCount = 1;
-        uint256 auctionCount = auction.getAuctionCount();
-        assertEq(expectedAuctionCount, auctionCount);
-
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
-        assertEq(user1, auctionData.seller);
-        assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
-        assertEq(MINT_10, auctionData.reservePrice);
-        assertEq(ONE_HOUR, auctionData.deadline);
-        assertEq(englishStyle, uint256(auctionData.style));
-        assertEq(0, auctionData.highestBid);
-        assertEq(address(0), auctionData.highestBidder);
-        assertEq(0, auctionData.winningBid);
-        assertEq(address(0), auctionData.winningBidder);
-        assertEq(openStatus, uint256(auctionData.status));
-    }
-}
+import { AssetAuction } from "@contracts/AssetAuction.sol";
+import { AssetAuctionHelper } from "./helpers/AssetAuctionHelper.sol";
 
 ///////////////////////////////////////////////////////////
 ///                 CONSTRUCTOR TESTS                   ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionConstructorTest is AssetAuctionSetupHelper {
+contract AssetAuctionConstructorTest is AssetAuctionHelper {
     function test_constructor() public view {
-        assertEq(address(factory), auction.getAssetsContract());
+        address expectedAddress = address(factory);
+        address actualAddress = auction.getAssetsContract();
+
+        // Check that the assets contract is set correctly
+        assertEq(expectedAddress, actualAddress);
+        // Check the auction count is 0
+        assertEq(0, auction.getAuctionCount());
     }
 }
 
@@ -159,31 +27,32 @@ contract AssetAuctionConstructorTest is AssetAuctionSetupHelper {
 ///              SELLER FUNCTION TESTS                  ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
-    function test_createAuctionWithAssetsDeposited() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
+contract AssetAuctionCreateAuctionTest is AssetAuctionHelper {
+    function test_createAuction_WithAssetsDeposited() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.depositAssets(tokenIds, amounts);
+        auction.depositAssets(asset1Single, amountSingle);
 
-        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(DEPOSIT_ONE, user1Asset1Balance);
+        uint256 user1Asset1AuctionBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
 
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        // Check that the user has deposited the correct amount of assets
+        assertEq(ONE, user1Asset1AuctionBalance);
+
+        auction.createAuction(ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
         vm.stopPrank();
 
-        uint256 expectedAuctionCount = 1;
+        uint256 expectedAuctionCount = ONE;
         uint256 auctionCount = auction.getAuctionCount();
+
+        // Check that the auction count is correct
         assertEq(expectedAuctionCount, auctionCount);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the auction data is correct
         assertEq(user1, auctionData.seller);
         assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
-        assertEq(MINT_10, auctionData.reservePrice);
+        assertEq(TEN, auctionData.reservePrice);
         assertEq(ONE_HOUR, auctionData.deadline);
         assertEq(englishStyle, uint256(auctionData.style));
         assertEq(0, auctionData.highestBid);
@@ -192,27 +61,30 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
         assertEq(address(0), auctionData.winningBidder);
         assertEq(openStatus, uint256(auctionData.status));
 
-        uint256 user1Asset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(user1Asset1Balance - DEPOSIT_ONE, user1Asset1BalanceAfter);
+        uint256 user1Asset1AuctionBalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+
+        // Check that the user has the correct amount of assets after the auction
+        assertEq(user1Asset1AuctionBalance - ONE, user1Asset1AuctionBalanceAfter);
     }
 
-    function test_createAuctionWithoutAssetsDeposited() public {
-        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(0, user1Asset1Balance);
-
+    function test_createAuction_WithoutAssetsDeposited() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        auction.createAuction(ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
         vm.stopPrank();
 
-        uint256 expectedAuctionCount = 1;
+        uint256 expectedAuctionCount = ONE;
         uint256 auctionCount = auction.getAuctionCount();
+
+        // Check that the auction count is correct
         assertEq(expectedAuctionCount, auctionCount);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the auction data is correct
         assertEq(user1, auctionData.seller);
         assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
-        assertEq(MINT_10, auctionData.reservePrice);
+        assertEq(TEN, auctionData.reservePrice);
         assertEq(ONE_HOUR, auctionData.deadline);
         assertEq(englishStyle, uint256(auctionData.style));
         assertEq(0, auctionData.highestBid);
@@ -221,172 +93,207 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionSetupHelper {
         assertEq(address(0), auctionData.winningBidder);
         assertEq(openStatus, uint256(auctionData.status));
 
-        uint256 user1Asset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(0, user1Asset1BalanceAfter);
+        uint256 user1Asset1AuctionBalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
+
+        // Check that the user has the correct amount of assets after the auction
+        assertEq(0, user1Asset1AuctionBalanceAfter);
     }
 
-    function test_createAuction_EmitEvent() public {
+    function test_createAuction_EmitsEvent() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
 
+        // Check that the AuctionCreated event is emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit AuctionCreated(user1, 1, ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        emit AssetAuction.AuctionCreated(user1, ONE, ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
+        auction.createAuction(ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
         vm.stopPrank();
     }
 
-    function test_createAuction_RevertWhen_InsufficientAssets() public {
-        vm.startPrank(user1);
+    function test_createAuction_RevertsIf_InsufficientBalance() public {
+        vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector, user1, 0, DEPOSIT_ONE, ASSET_TWO_ID
-            )
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, user2, 0, ONE, ASSET_ONE_ID)
         );
-        auction.createAuction(ASSET_TWO_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        auction.createAuction(ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
         vm.stopPrank();
     }
 
-    function test_createAuction_RevertWhen_AssetsDepositedWithoutApproval() public {
+    function test_createAuction_RevertsIf_MissingApprovalForAll() public {
         vm.prank(user1);
+
+        // Check that the function reverts with the ERC1155MissingApproval error
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, address(auction), user1)
         );
 
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        auction.createAuction(ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
         vm.stopPrank();
     }
 }
 
-contract AssetAustionCancelAuctionTest is AssetAuctionCreateAuctionHelper {
+contract AssetAustionCancelAuctionTest is AssetAuctionHelper {
+    function setUp() public override {
+        super.setUp();
+        createAuction();
+    }
+
     function test_cancelAuction() public {
         vm.prank(user1);
-        auction.cancelAuction(1);
+        auction.cancelAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the auction status is set to canceled
         assertEq(canceledStatus, uint256(auctionData.status));
 
-        uint256 expectedUser1Asset1Balance = DEPOSIT_ONE;
+        uint256 expectedUser1Asset1Balance = ONE;
         uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+
+        // Check that the user has the correct amount of assets after the auction is canceled
         assertEq(expectedUser1Asset1Balance, user1Asset1Balance);
     }
 
-    function test_cancelAuction_EmitEvent() public {
-        vm.startPrank(user1);
+    function test_cancelAuction_EmitsEvent() public {
+        vm.prank(user1);
+
+        // Check that the AuctionCanceled event is emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit AuctionCanceled(1);
-        auction.cancelAuction(1);
-        vm.stopPrank();
+        emit AssetAuction.AuctionCanceled(ONE);
+        auction.cancelAuction(ONE);
     }
 
-    function test_cancelAuction_RevertWhen_StatusNotOpen() public {
+    function test_cancelAuction_RevertsIf_NotOpenStatus() public {
         vm.startPrank(user1);
-        auction.cancelAuction(1);
+        auction.cancelAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         uint256 status = uint256(auctionData.status);
 
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionIsNotOpen.selector, status));
-        auction.cancelAuction(1);
+        // Check that the function reverts with the AssetAuctionAuctionIsNotOpen error
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionNotOpen.selector, status));
+        auction.cancelAuction(ONE);
         vm.stopPrank();
     }
 
-    function test_cancelAuction_RevertWhen_DeadlinePassed() public {
-        vm.warp(ONE_HOUR + 1);
+    function test_cancelAuction_RevertsIf_DeadlinePassed() public {
+        vm.warp(ONE_HOUR + ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         uint256 deadline = auctionData.deadline;
 
         vm.startPrank(user1);
+
+        // Check that the function reverts with the AssetAuctionDeadlineHasPassed error
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineHasPassed.selector, deadline));
-        auction.cancelAuction(1);
+        auction.cancelAuction(ONE);
     }
 
-    function test_cancelAuction_RevertWhen_NotSeller() public {
+    function test_cancelAuction_RevertsIf_NotTheSeller() public {
         vm.startPrank(user2);
+
+        // Check that the function reverts with the AssetAuctionNotTheSeller error
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheSeller.selector, user2, user1));
-        auction.cancelAuction(1);
+        auction.cancelAuction(ONE);
     }
 }
 
-contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
-    function test_completeAuctionWhenReserveMet() public {
-        vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
+    function setUp() public override {
+        super.setUp();
+        createAuction();
+    }
 
-        vm.warp(ONE_HOUR + 1);
+    function test_completeAuction_WhenReserveMet() public {
+        vm.prank(user2);
+        auction.placeBid(ONE, TEN);
+
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the auction status is set to Ended
         assertEq(endedStatus, uint256(auctionData.status));
     }
 
-    function test_completeAuctionWhenReserveNotMet() public {
+    function test_completeAuction_WhenReserveNotMet() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_1);
+        auction.placeBid(ONE, ONE);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the auction status is set to ReserveNotMet
         assertEq(reserveNotMetStatus, uint256(auctionData.status));
     }
 
-    function test_completeAuction_EmitEvent() public {
+    function test_completeAuction_EmitsEvent() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
-        vm.startPrank(user1);
+        vm.prank(user1);
+
+        // Check that the AuctionEnded event is emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit AuctionEnded(1, user2, MINT_10);
-        auction.completeAuction(1);
-        vm.stopPrank();
+        emit AssetAuction.AuctionEnded(ONE, user2, TEN);
+        auction.completeAuction(ONE);
     }
 
-    function test_completeAuction_RevertWhen_StatusNotOpen() public {
+    function test_completeAuction_RevertsIf_NotOpenStatus() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.startPrank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         uint256 status = uint256(auctionData.status);
 
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionIsNotOpen.selector, status));
-        auction.completeAuction(1);
+        // Check that the function reverts with the AssetAuctionAuctionNotOpen error
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionNotOpen.selector, status));
+        auction.completeAuction(ONE);
         vm.stopPrank();
     }
 
-    function test_completeAuction_RevertWhen_DeadlineNotPassed() public {
+    function test_completeAuction_RevertsIf_DeadlineNotPassed() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         uint256 deadline = auctionData.deadline;
 
-        vm.startPrank(user1);
+        vm.prank(user1);
+
+        // Check that the function reverts with the AssetAuctionDeadlineNotPassed error
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineNotPassed.selector, deadline));
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
     }
 
-    function test_completeAuction_RevertWhen_NotSeller() public {
+    function test_completeAuction_RevertsIf_NotTheSeller() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
-        vm.startPrank(user2);
+        vm.prank(user2);
+
+        // Check that the function reverts with the AssetAuctionNotTheSeller error
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheSeller.selector, user2, user1));
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
     }
 }
 
@@ -394,124 +301,147 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionCreateAuctionHelper {
 ///              BIDDER FUNCTION TESTS                  ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionPlaceBidTest is AssetAuctionCreateAuctionHelper {
+contract AssetAuctionPlaceBidTest is AssetAuctionHelper {
+    function setUp() public override {
+        super.setUp();
+        createAuction();
+    }
+
     function test_placeBid() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
-        assertEq(MINT_10, auctionData.highestBid);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the highest bid and bidder are set correctly
+        assertEq(TEN, auctionData.highestBid);
         assertEq(user2, auctionData.highestBidder);
     }
 
-    function test_placeBid_EmitEvent() public {
-        vm.startPrank(user2);
+    function test_placeBid_EmistEvent() public {
+        vm.prank(user2);
+
+        // Check that the BidPlaced event is emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit BidPlaced(user2, 1, MINT_10);
-        auction.placeBid(1, MINT_10);
-        vm.stopPrank();
+        emit AssetAuction.BidPlaced(user2, 1, TEN);
+        auction.placeBid(ONE, TEN);
     }
 
-    function test_placeBid_RevertWhen_StatusNotOpen() public {
+    function test_placeBid_RevertsIf_NotOpenStatus() public {
         vm.prank(user1);
-        auction.cancelAuction(1);
+        auction.cancelAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         uint256 status = uint256(auctionData.status);
 
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionIsNotOpen.selector, status));
-        auction.placeBid(1, MINT_10);
+        // Check that the function reverts with the AssetAuctionAuctionNotOpen error
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionNotOpen.selector, status));
+        auction.placeBid(ONE, TEN);
     }
 
-    function test_placeBid_RevertWhen_DeadlinePassed() public {
-        vm.warp(ONE_HOUR + 1);
+    function test_placeBid_RevertsIf_DeadlinePassed() public {
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user2);
+
+        // Check that the function reverts with the AssetAuctionDeadlineHasPassed error
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineHasPassed.selector, ONE_HOUR));
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
     }
 
-    function test_placeBid_RevertWhen_BidLessThanHighestBid() public {
+    function test_placeBid_RevertsIf_BidNotHigherThanHighestBid() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
         vm.prank(user3);
-        vm.expectRevert(
-            abi.encodeWithSelector(AssetAuction.AssetAuctionBidNotHigherThanHighestBid.selector, MINT_1, MINT_10)
-        );
-        auction.placeBid(1, MINT_1);
+        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionBidNotHigherThanHighestBid.selector, ONE, TEN));
+        auction.placeBid(ONE, ONE);
     }
 }
 
-contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
+contract AssetAuctionClaimAssetTest is AssetAuctionHelper {
+    function setUp() public override {
+        super.setUp();
+        createAuction();
+    }
+
     function test_claimAsset() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
         uint256 startingUser1IGCBalance = auction.getIGCBalance(user1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        // Check that the auction status is set to Ended
         assertEq(endedStatus, uint256(auctionData.status));
 
         address winningBidder = auctionData.winningBidder;
+
+        // Check that the winning bidder is correct
         assertEq(user2, winningBidder);
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
         vm.stopPrank();
 
         uint256 user2Asset1Balance = auction.getAssetBalance(user2, ASSET_ONE_ID);
-        assertEq(DEPOSIT_ONE, user2Asset1Balance);
+
+        // Check that the winning bidder has the asset
+        assertEq(ONE, user2Asset1Balance);
 
         uint256 endingUser1IGCBalance = auction.getIGCBalance(user1);
-        assertEq(startingUser1IGCBalance + MINT_10, endingUser1IGCBalance);
+
+        // Check that the seller's IGC balance was updated correctly
+        assertEq(startingUser1IGCBalance + TEN, endingUser1IGCBalance);
     }
 
-    function test_claimAsset_EmitEvent() public {
+    function test_claimAsset_EmitsEvent() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the AssetClaimed event is emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit AssetClaimed(user2, 1, ASSET_ONE_ID, MINT_10);
-        auction.claimAsset(1);
+        emit AssetAuction.AssetClaimed(user2, 1, ASSET_ONE_ID, TEN);
+        auction.claimAsset(ONE);
         vm.stopPrank();
     }
 
-    function test_claimAsset_RevertWhen_StatusNotEnded() public {
-        vm.prank(user2);
-        auction.placeBid(1, MINT_10);
-
+    function test_claimAsset_RevertsIf_NotEndedStatus() public {
         vm.startPrank(user2);
+        auction.placeBid(ONE, TEN);
+
+        // Check that the function reverts with the AssetAuctionAuctionHasNotEnded error
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionAuctionHasNotEnded.selector, openStatus));
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
     }
 
     function test_claimAsset_RevertWhen_NotWinningBidder() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
         vm.prank(user3);
-        auction.placeBid(1, MINT_10 + 1);
+        auction.placeBid(ONE, TEN + ONE);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         assertEq(endedStatus, uint256(auctionData.status));
 
         address winningBidder = auctionData.winningBidder;
@@ -519,459 +449,424 @@ contract AssetAuctionClaimAssetTest is AssetAuctionCreateAuctionHelper {
 
         vm.startPrank(user2);
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheWinningBidder.selector, user2, user3));
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
     }
 
-    function test_claimAsset_RevertWhen_AssetAlreadyClaimed() public {
+    function test_claimAsset_RevertsIf_AssetAlreadyClaimed() public {
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
+        // Check that the function reverts with the AssetAuctionAssetAlreadyClaimed error
         vm.expectRevert(
             abi.encodeWithSelector(AssetAuction.AssetAuctionAssetAlreadyClaimed.selector, auctionData.status)
         );
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
     }
 
-    function test_claimAsset_RevertWhen_NotEnoughIGC() public {
+    function test_claimAsset_RevertsIf_NotEnoughIGC() public {
         vm.prank(user2);
-        auction.placeBid(1, 10 ** 18);
+        auction.placeBid(ONE, ONE_MILLION + ONE);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
-        AssetAuction.Auction memory auctionData = auction.getAuction(1);
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
+
+        // Check that the auction status is set to Ended
         assertEq(endedStatus, uint256(auctionData.status));
 
         address winningBidder = auctionData.winningBidder;
+
+        // Check that the winning bidder is correct
         assertEq(user2, winningBidder);
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, MINT_1000000, 10 ** 18, IGC_TOKEN_ID
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, ONE_MILLION, ONE_MILLION + ONE, IGC_TOKEN_ID
             )
         );
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
         vm.stopPrank();
     }
 }
 
 ///////////////////////////////////////////////////////////
-///              DEPOSIT FUNCTION TESTS                 ///
+///                DEPOSIT FUNCTION TESTS               ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionDepositAssetsTest is AssetAuctionSetupHelper {
+contract AssetAuctionDepositAssetsTest is AssetAuctionHelper {
     function test_depositAssets() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.depositAssets(tokenIds, amounts);
+        auction.depositAssets(asset1Single, amountSingle);
         vm.stopPrank();
 
-        // Check that the user has deposited the correct amount of assets
         uint256 user1AssetBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(user1AssetBalance, DEPOSIT_ONE);
+
+        // Check that the user has deposited the correct amount of assets
+        assertEq(user1AssetBalance, ONE);
     }
 
-    function test_depositMultipleAssets() public {
+    function test_depositAssets_Multiple() public {
         vm.startPrank(user1);
-        factory.mintAsset(user1, ASSET_TWO_ID, DEPOSIT_FIVE, "");
-        factory.mintAsset(user1, ASSET_THREE_ID, MINT_10, "");
-
-        uint256[] memory tokenIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        tokenIds[1] = ASSET_TWO_ID;
-        tokenIds[2] = ASSET_THREE_ID;
-
-        amounts[0] = DEPOSIT_ONE;
-        amounts[1] = DEPOSIT_FIVE;
-        amounts[2] = DEPOSIT_TEN;
-
         factory.setApprovalForAll(address(auction), true);
-        auction.depositAssets(tokenIds, amounts);
+        auction.depositAssets(assetIds, all);
         vm.stopPrank();
 
-        // Check that the user has deposited the correct amount of assets
         uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
         uint256 user1Asset2Balance = auction.getAssetBalance(user1, ASSET_TWO_ID);
         uint256 user1Asset3Balance = auction.getAssetBalance(user1, ASSET_THREE_ID);
 
-        assertEq(user1Asset1Balance, DEPOSIT_ONE);
-        assertEq(user1Asset2Balance, DEPOSIT_FIVE);
-        assertEq(user1Asset3Balance, DEPOSIT_TEN);
+        // Check that the user has deposited the correct amount of assets
+        assertEq(user1Asset1Balance, TEN);
+        assertEq(user1Asset2Balance, TEN);
+        assertEq(user1Asset3Balance, TEN);
     }
 
-    function test_depositAssets_EmitEvent() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
+    function test_depositAssets_EmitsEvent() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the AssetsDeposited event was emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit AssetsDeposited(user1, tokenIds, amounts);
-        auction.depositAssets(tokenIds, amounts);
+        emit AssetAuction.AssetsDeposited(user1, asset1Single, amountSingle);
+        auction.depositAssets(asset1Single, amountSingle);
         vm.stopPrank();
     }
 
-    function test_depositAssets_RevertWhen_ArraysNotSameLength() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](2);
+    function test_depositAssets_RevertsIf_ArraysLengthMismatch() public {
+        vm.prank(user1);
 
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-        amounts[1] = DEPOSIT_ONE;
-
-        vm.startPrank(user1);
-        factory.setApprovalForAll(address(auction), true);
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionArraysLengthMismatch.selector, 1, 2));
-        auction.depositAssets(tokenIds, amounts);
-        vm.stopPrank();
-    }
-
-    function test_depositAssets_RevertWhen_InsufficientBalance() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
-        vm.startPrank(user2);
-        factory.setApprovalForAll(address(auction), true);
+        // Check that the function reverts with the AssetAuctionArraysLengthMismatch error
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, 0, DEPOSIT_ONE, ASSET_ONE_ID
+                AssetAuction.AssetAuctionArraysLengthMismatch.selector, assetIds.length, invalid.length
             )
         );
-        auction.depositAssets(tokenIds, amounts);
+        auction.depositAssets(assetIds, invalid);
+    }
+
+    function test_depositAssets_RevertsIf_InsufficientBalance() public {
+        amountSingle[0] = ONE_MILLION;
+
+        vm.startPrank(user1);
+        factory.setApprovalForAll(address(auction), true);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user1, TEN, ONE_MILLION, ASSET_ONE_ID
+            )
+        );
+        auction.depositAssets(asset1Single, amountSingle);
         vm.stopPrank();
     }
 }
 
-contract AssetAuctionDepositIGCTest is AssetAuctionSetupHelper {
+contract AssetAuctionDepositIGCTest is AssetAuctionHelper {
     function test_depositIGC() public {
         uint256 startingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
         uint256 startingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
 
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.depositIGC(MINT_10);
+        auction.depositIGC(TEN);
         vm.stopPrank();
 
         uint256 endingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
         uint256 endingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
-        assertEq(startingUser1AuctionIGCBalance + MINT_10, endingUser1AuctionIGCBalance);
-        assertEq(startingUser1IGCBalance - MINT_10, endingUser1IGCBalance);
+
+        // Check that the user's balances were updated correctly
+        assertEq(startingUser1AuctionIGCBalance + TEN, endingUser1AuctionIGCBalance);
+        assertEq(startingUser1IGCBalance - TEN, endingUser1IGCBalance);
     }
 
     function test_depositIGC_EmitEvent() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the IGCDeposited event was emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit IGCDeposited(user1, MINT_10);
-        auction.depositIGC(MINT_10);
+        emit AssetAuction.IGCDeposited(user1, TEN);
+        auction.depositIGC(TEN);
         vm.stopPrank();
     }
 
     function test_depositIGC_RevertWhen_InsufficientBalance() public {
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, MINT_1000000, 10 ** 18, IGC_TOKEN_ID
+                IERC1155Errors.ERC1155InsufficientBalance.selector, user2, ONE_MILLION, ONE_MILLION + ONE, IGC_TOKEN_ID
             )
         );
-        auction.depositIGC(10 ** 18);
+        auction.depositIGC(ONE_MILLION + ONE);
         vm.stopPrank();
     }
 }
 
 ///////////////////////////////////////////////////////////
-///              WITHDRAW FUNCTION TESTS                ///
+///               WITHDRAW FUNCTION TESTS               ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionWithdrawAssetsTest is AssetAuctionSetupHelper {
-    function test_withdrawAssetsAfterDepositing() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
+contract AssetAuctionWithdrawAssetsTest is AssetAuctionHelper {
+    function setUp() public override {
+        super.setUp();
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.depositAssets(tokenIds, amounts);
-
-        uint256 user1AuctionAsset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(DEPOSIT_ONE, user1AuctionAsset1Balance);
-
-        uint256 user1Asset1Balance = factory.balanceOf(user1, ASSET_ONE_ID);
-        assertEq(MINT_10 - DEPOSIT_ONE, user1Asset1Balance);
-
-        auction.withdrawAssets(tokenIds, amounts);
+        auction.depositAssets(assetIds, all);
         vm.stopPrank();
-
-        uint256 user1AuctionAsset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(0, user1AuctionAsset1BalanceAfter);
-
-        uint256 user1Asset1BalanceAfter = factory.balanceOf(user1, ASSET_ONE_ID);
-        assertEq(MINT_10, user1Asset1BalanceAfter);
     }
 
-    function test_withdrawMultipleAssetsAfterDepositing() public {
-        vm.startPrank(user1);
-        factory.mintAsset(user1, ASSET_TWO_ID, DEPOSIT_FIVE, "");
-        factory.mintAsset(user1, ASSET_THREE_ID, MINT_10, "");
+    function test_withdrawAssets() public {
+        vm.prank(user1);
+        auction.withdrawAssets(asset1Single, amountSingle);
 
-        uint256[] memory tokenIds = new uint256[](3);
-        uint256[] memory amounts = new uint256[](3);
+        uint256 expectedUser1Asset1AuctionBalance = TEN - ONE;
+        uint256 actualUser1Asset1AuctionBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
 
-        tokenIds[0] = ASSET_ONE_ID;
-        tokenIds[1] = ASSET_TWO_ID;
-        tokenIds[2] = ASSET_THREE_ID;
+        // Check that the user's asset balance was updated
+        assertEq(expectedUser1Asset1AuctionBalance, actualUser1Asset1AuctionBalance);
 
-        amounts[0] = DEPOSIT_ONE;
-        amounts[1] = DEPOSIT_FIVE;
-        amounts[2] = DEPOSIT_TEN;
+        uint256 expectedUser1Asset1FactoryBalance = ONE;
+        uint256 actualUser1Asset1FactoryBalance = factory.balanceOf(user1, ASSET_ONE_ID);
 
-        factory.setApprovalForAll(address(auction), true);
-        auction.depositAssets(tokenIds, amounts);
-        vm.stopPrank();
-
-        // Check that the user has deposited the correct amount of assets
-        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        uint256 user1Asset2Balance = auction.getAssetBalance(user1, ASSET_TWO_ID);
-        uint256 user1Asset3Balance = auction.getAssetBalance(user1, ASSET_THREE_ID);
-
-        assertEq(user1Asset1Balance, DEPOSIT_ONE);
-        assertEq(user1Asset2Balance, DEPOSIT_FIVE);
-        assertEq(user1Asset3Balance, DEPOSIT_TEN);
-
-        // Check that the user has the correct amount of assets in their account
-        uint256 user1Asset1BalanceBefore = factory.balanceOf(user1, ASSET_ONE_ID);
-        uint256 user1Asset2BalanceBefore = factory.balanceOf(user1, ASSET_TWO_ID);
-        uint256 user1Asset3BalanceBefore = factory.balanceOf(user1, ASSET_THREE_ID);
-
-        assertEq(user1Asset1BalanceBefore, MINT_10 - DEPOSIT_ONE);
-        assertEq(user1Asset2BalanceBefore, DEPOSIT_FIVE);
-        assertEq(user1Asset3BalanceBefore, MINT_10);
+        // Check the asset contract balance to ensure the assets were withdrawn
+        assertEq(expectedUser1Asset1FactoryBalance, actualUser1Asset1FactoryBalance);
     }
 
-    function test_withdrawAssetsAfterCancelingAuction() public {
-        vm.startPrank(user1);
-        factory.setApprovalForAll(address(auction), true);
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+    function test_withdrawAssets_Multiple() public {
+        vm.prank(user1);
+        auction.withdrawAssets(assetIds, all);
 
-        uint256 user1AuctionAsset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(0, user1AuctionAsset1Balance);
+        uint256 expectedUser1Asset1AuctionBalance = 0;
+        uint256 expectedUser1Asset2AuctionBalance = 0;
+        uint256 expectedUser1Asset3AuctionBalance = 0;
+        uint256 actualUser1Asset1AuctionBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+        uint256 actualUser1Asset2AuctionBalance = auction.getAssetBalance(user1, ASSET_TWO_ID);
+        uint256 actualUser1Asset3AuctionBalance = auction.getAssetBalance(user1, ASSET_THREE_ID);
 
-        uint256 user1Asset1Balance = factory.balanceOf(user1, ASSET_ONE_ID);
-        assertEq(MINT_10 - DEPOSIT_ONE, user1Asset1Balance);
+        // Check that the user's asset balance was updated
+        assertEq(expectedUser1Asset1AuctionBalance, actualUser1Asset1AuctionBalance);
+        assertEq(expectedUser1Asset2AuctionBalance, actualUser1Asset2AuctionBalance);
+        assertEq(expectedUser1Asset3AuctionBalance, actualUser1Asset3AuctionBalance);
 
-        auction.cancelAuction(1);
+        uint256 expectedUser1Asset1FactoryBalance = TEN;
+        uint256 expectedUser1Asset2FactoryBalance = TEN;
+        uint256 expectedUser1Asset3FactoryBalance = TEN;
+        uint256 actualUser1Asset1FactoryBalance = factory.balanceOf(user1, ASSET_ONE_ID);
+        uint256 actualUser1Asset2FactoryBalance = factory.balanceOf(user1, ASSET_TWO_ID);
+        uint256 actualUser1Asset3FactoryBalance = factory.balanceOf(user1, ASSET_THREE_ID);
 
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
-        auction.withdrawAssets(tokenIds, amounts);
-        vm.stopPrank();
-
-        uint256 user1AuctionAsset1BalanceAfter = auction.getAssetBalance(user1, ASSET_ONE_ID);
-        assertEq(0, user1AuctionAsset1BalanceAfter);
-
-        uint256 user1Asset1BalanceAfter = factory.balanceOf(user1, ASSET_ONE_ID);
-        assertEq(MINT_10, user1Asset1BalanceAfter);
+        // Check the asset contract balance to ensure the assets were withdrawn
+        assertEq(expectedUser1Asset1FactoryBalance, actualUser1Asset1FactoryBalance);
+        assertEq(expectedUser1Asset2FactoryBalance, actualUser1Asset2FactoryBalance);
+        assertEq(expectedUser1Asset3FactoryBalance, actualUser1Asset3FactoryBalance);
     }
 
-    function test_withdrawAssetsAfterClaimingAsset() public {
+    function test_withdrawAssets_AfterCancelingAuction() public {
+        createAuction();
         vm.startPrank(user1);
+        auction.cancelAuction(ONE);
+        auction.withdrawAssets(asset1Single, amountSingle);
+
+        uint256 expectedUser1AuctionBalance = TEN - ONE;
+        uint256 actualUser1AuctionBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+
+        // Check that the user's asset balance was updated
+        assertEq(expectedUser1AuctionBalance, actualUser1AuctionBalance);
+
+        uint256 expectedUser1FactoryBalance = ONE;
+        uint256 actualUser1FactoryBalance = factory.balanceOf(user1, ASSET_ONE_ID);
+
+        // Check the asset contract balance to ensure the assets were withdrawn
+        assertEq(expectedUser1FactoryBalance, actualUser1FactoryBalance);
+    }
+
+    function test_withdrawAssets_AfterClaiming() public {
+        createAuction();
+
+        vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
+        auction.placeBid(ONE, TEN);
         vm.stopPrank();
 
-        vm.prank(user2);
-        auction.placeBid(1, MINT_10);
-
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
-
-        uint256 startingUser2Asset1Balance = factory.balanceOf(user2, ASSET_ONE_ID);
-        assertEq(0, startingUser2Asset1Balance);
+        auction.completeAuction(ONE);
 
         vm.startPrank(user2);
-        factory.setApprovalForAll(address(auction), true);
-        auction.claimAsset(1);
-
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
-        auction.withdrawAssets(tokenIds, amounts);
+        auction.claimAsset(ONE);
+        auction.withdrawAssets(asset1Single, amountSingle);
         vm.stopPrank();
 
-        uint256 user2Asset1Balance = factory.balanceOf(user2, ASSET_ONE_ID);
-        assertEq(startingUser2Asset1Balance + DEPOSIT_ONE, user2Asset1Balance);
+        uint256 expectedUser1AuctionBalance = TEN - ONE;
+        uint256 actualUser1AuctionBalance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+
+        // Check that the user1's auction contract balances are correct
+        assertEq(expectedUser1AuctionBalance, actualUser1AuctionBalance);
+
+        uint256 expectedUser2AuctionBalance = 0;
+        uint256 actualUser2AuctionBalance = auction.getAssetBalance(user2, ASSET_ONE_ID);
+
+        // Check that the user2's auction contract balances are correct
+        assertEq(expectedUser2AuctionBalance, actualUser2AuctionBalance);
+
+        uint256 expectedUser1FactoryBalance = 0;
+        uint256 actualUser1FactoryBalance = factory.balanceOf(user1, ASSET_ONE_ID);
+
+        // Check that the user1's asset contract balances are correct
+        assertEq(expectedUser1FactoryBalance, actualUser1FactoryBalance);
+
+        uint256 expectedUser2FactoryBalance = ONE;
+        uint256 actualUser2FactoryBalance = factory.balanceOf(user2, ASSET_ONE_ID);
+
+        // Check that the user2's asset contract balances are correct
+        assertEq(expectedUser2FactoryBalance, actualUser2FactoryBalance);
     }
 
-    function test_withdrawAssets_EmitEvent() public {
-        vm.startPrank(user1);
-        factory.setApprovalForAll(address(auction), true);
+    function test_withdrawAssets_EmitsEvent() public {
+        vm.prank(user1);
 
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
-        auction.depositAssets(tokenIds, amounts);
+        // Check that the AssetsWithdrawn event was emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit AssetsWithdrawn(user1, tokenIds, amounts);
-        auction.withdrawAssets(tokenIds, amounts);
-        vm.stopPrank();
+        emit AssetAuction.AssetsWithdrawn(user1, asset1Single, amountSingle);
+        auction.withdrawAssets(asset1Single, amountSingle);
     }
 
-    function test_withdrawAssets_RevertWhen_ArraysNotSameLength() public {
-        vm.startPrank(user1);
-        factory.setApprovalForAll(address(auction), true);
+    function test_withdrawAssets_RevertsIf_ArrayLengthMismatch() public {
+        vm.prank(user1);
 
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](2);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-        amounts[1] = DEPOSIT_ONE;
-
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionArraysLengthMismatch.selector, 1, 2));
-        auction.withdrawAssets(tokenIds, amounts);
-        vm.stopPrank();
-    }
-
-    function test_withdrawAssets_RevertWhen_InsufficientBalance() public {
-        vm.startPrank(user2);
-        factory.setApprovalForAll(address(auction), true);
-
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        tokenIds[0] = ASSET_ONE_ID;
-        amounts[0] = DEPOSIT_ONE;
-
+        // Check that the function reverts with the AssetAuctionArraysLengthMismatch error
         vm.expectRevert(
             abi.encodeWithSelector(
-                AssetAuction.AssetAuctionInsufficientBalance.selector, user2, 0, DEPOSIT_ONE, ASSET_ONE_ID
+                AssetAuction.AssetAuctionArraysLengthMismatch.selector, assetIds.length, invalid.length
             )
         );
-        auction.withdrawAssets(tokenIds, amounts);
+        auction.withdrawAssets(assetIds, invalid);
         vm.stopPrank();
+    }
+
+    function test_withdrawAssets_RevertsIf_InsufficientBalance() public {
+        amountSingle[0] = ONE_MILLION;
+
+        vm.prank(user1);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetAuction.AssetAuctionInsufficientBalance.selector, user1, 0, ONE_MILLION, ASSET_ONE_ID
+            )
+        );
+        auction.withdrawAssets(asset1Single, amountSingle);
     }
 }
 
-contract AssetAuctionWithdrawIGCTest is AssetAuctionSetupHelper {
+contract AssetAuctionWithdrawIGCTest is AssetAuctionHelper {
     function test_withdrawIGCAfterDeposit() public {
         uint256 startingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
         uint256 startingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
 
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.depositIGC(MINT_10);
+        auction.depositIGC(TEN);
 
         uint256 afterDepositUser1AuctionIGCBalance = auction.getIGCBalance(user1);
         uint256 afterDepositUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
-        assertEq(startingUser1AuctionIGCBalance + MINT_10, afterDepositUser1AuctionIGCBalance);
-        assertEq(startingUser1IGCBalance - MINT_10, afterDepositUser1IGCBalance);
 
-        auction.withdrawIGC(MINT_10);
+        // Check that the user's balances were updated correctly
+        assertEq(startingUser1AuctionIGCBalance + TEN, afterDepositUser1AuctionIGCBalance);
+        assertEq(startingUser1IGCBalance - TEN, afterDepositUser1IGCBalance);
+
+        auction.withdrawIGC(TEN);
         vm.stopPrank();
 
         uint256 endingUser1AuctionIGCBalance = auction.getIGCBalance(user1);
         uint256 endingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
+
+        // Check that the user's balances were updated correctly
         assertEq(startingUser1AuctionIGCBalance, endingUser1AuctionIGCBalance);
         assertEq(startingUser1IGCBalance, endingUser1IGCBalance);
     }
 
     function test_withdrawIGCAfterAssetSold() public {
-        vm.startPrank(user1);
-        factory.setApprovalForAll(address(auction), true);
-        auction.createAuction(ASSET_ONE_ID, MINT_10, ONE_HOUR, AssetAuction.Style.English);
-        vm.stopPrank();
+        createAuction();
 
         vm.prank(user2);
-        auction.placeBid(1, MINT_10);
+        auction.placeBid(ONE, TEN);
 
-        vm.warp(ONE_HOUR + 1);
+        vm.warp(ONE_HOUR + ONE);
 
         vm.prank(user1);
-        auction.completeAuction(1);
+        auction.completeAuction(ONE);
 
         uint256 startingUser2IGCBalance = factory.balanceOf(user2, IGC_TOKEN_ID);
-        assertEq(MINT_1000000, startingUser2IGCBalance);
+
+        // Check the bidders's IGC balance before withdrawing
+        assertEq(ONE_MILLION, startingUser2IGCBalance);
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
-        auction.claimAsset(1);
+        auction.claimAsset(ONE);
         vm.stopPrank();
 
         uint256 user2IGCBalanceAfterClaim = factory.balanceOf(user2, IGC_TOKEN_ID);
-        assertEq(MINT_1000000 - MINT_10, user2IGCBalanceAfterClaim);
+
+        // Check the bidders's IGC balance after claiming the asset
+        assertEq(ONE_MILLION - TEN, user2IGCBalanceAfterClaim);
 
         uint256 startingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
 
         vm.prank(user1);
-        auction.withdrawIGC(MINT_10);
+        auction.withdrawIGC(TEN);
 
         uint256 endingUser1IGCBalance = factory.balanceOf(user1, IGC_TOKEN_ID);
-        assertEq(startingUser1IGCBalance + MINT_10, endingUser1IGCBalance);
+
+        // Check the seller's IGC balance after withdrawing
+        assertEq(startingUser1IGCBalance + TEN, endingUser1IGCBalance);
     }
 
     function test_withdrawIGC_EmitEvent() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
-        auction.depositIGC(MINT_10);
+        auction.depositIGC(TEN);
+
+        // Check that the IGCWithdrawn event was emitted
         vm.expectEmit(false, false, false, false, address(auction));
-        emit IGCWithdrawn(user1, MINT_10);
-        auction.withdrawIGC(MINT_10);
+        emit AssetAuction.IGCWithdrawn(user1, TEN);
+        auction.withdrawIGC(TEN);
         vm.stopPrank();
     }
 
     function test_withdrawIGC_RevertWhen_InsufficientBalance() public {
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
+
+        // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetAuction.AssetAuctionInsufficientBalance.selector, user2, 0, 10 ** 18, IGC_TOKEN_ID
-            )
+            abi.encodeWithSelector(AssetAuction.AssetAuctionInsufficientBalance.selector, user2, 0, ONE, IGC_TOKEN_ID)
         );
-        auction.withdrawIGC(10 ** 18);
+        auction.withdrawIGC(ONE);
         vm.stopPrank();
     }
 }
@@ -980,53 +875,158 @@ contract AssetAuctionWithdrawIGCTest is AssetAuctionSetupHelper {
 ///                VIEW FUNCTION TESTS                  ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionViewFunctionsTest is AssetAuctionSetupHelper {
-    function test_getAuction() public { }
+contract AssetAuctionViewFunctionsTest is AssetAuctionHelper {
+    function setUp() public override {
+        super.setUp();
+        createAuction();
+    }
 
-    function test_getAuctionSeller() public { }
+    function test_getAuction() public view {
+        AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
-    function test_getAuctionHighestBidder() public { }
+        // Check that the auction data is correct
+        assertEq(user1, auctionData.seller);
+        assertEq(ASSET_ONE_ID, auctionData.assetTokenId);
+        assertEq(TEN, auctionData.reservePrice);
+        assertEq(ONE_HOUR, auctionData.deadline);
+        assertEq(englishStyle, uint256(auctionData.style));
+        assertEq(0, auctionData.highestBid);
+        assertEq(address(0), auctionData.highestBidder);
+        assertEq(0, auctionData.winningBid);
+        assertEq(address(0), auctionData.winningBidder);
+        assertEq(openStatus, uint256(auctionData.status));
+    }
 
-    function test_getAuctionWinningBidder() public { }
+    function test_getAuctionSeller() public view {
+        address seller = auction.getAuctionSeller(ONE);
 
-    function test_getAuctionAssetTokenId() public { }
+        // Check that the seller is correct
+        assertEq(user1, seller);
+    }
 
-    function test_getAuctionReservePrice() public { }
+    function test_getAuctionHighestBidder() public view {
+        address highestBidder = auction.getAuctionHighestBidder(ONE);
 
-    function test_getAuctionDeadline() public { }
+        // Check that the highest bidder is correct
+        assertEq(address(0), highestBidder);
+    }
 
-    function test_getAuctionHighestBid() public { }
+    function test_getAuctionWinningBidder() public view {
+        address winningBidder = auction.getAuctionWinningBidder(ONE);
 
-    function test_getAuctionWinningBid() public { }
+        // Check that the winning bidder is correct
+        assertEq(address(0), winningBidder);
+    }
 
-    function test_getAuctionStatus() public { }
+    function test_getAuctionAssetTokenId() public view {
+        uint256 assetTokenId = auction.getAuctionAssetTokenId(ONE);
 
-    function test_getAuctionStyle() public { }
+        // Check that the asset token ID is correct
+        assertEq(ASSET_ONE_ID, assetTokenId);
+    }
 
-    function test_getAuctionBids() public { }
+    function test_getAuctionReservePrice() public view {
+        uint256 reservePrice = auction.getAuctionReservePrice(ONE);
 
-    function test_getAuctionBidCount() public { }
+        // Check that the reserve price is correct
+        assertEq(TEN, reservePrice);
+    }
 
-    function test_getAssetBalance() public { }
+    function test_getAuctionDeadline() public view {
+        uint256 deadline = auction.getAuctionDeadline(ONE);
 
-    function test_getIGCBalance() public { }
+        // Check that the deadline is correct
+        assertEq(ONE_HOUR, deadline);
+    }
 
-    function test_getAuctionCount() public { }
+    function test_getAuctionHighestBid() public view {
+        uint256 highestBid = auction.getAuctionHighestBid(ONE);
 
-    function test_getIGCTokenId() public { }
+        // Check that the highest bid is correct
+        assertEq(0, highestBid);
+    }
 
-    function test_getAssetsContract() public { }
+    function test_getAuctionWinningBid() public view {
+        uint256 winningBid = auction.getAuctionWinningBid(ONE);
+
+        // Check that the winning bid is correct
+        assertEq(0, winningBid);
+    }
+
+    function test_getAuctionStatus() public view {
+        uint256 status = uint256(auction.getAuctionStatus(ONE));
+
+        // Check that the status is correct
+        assertEq(openStatus, status);
+    }
+
+    function test_getAuctionStyle() public view {
+        AssetAuction.Style style = auction.getAuctionStyle(ONE);
+
+        // Check that the style is correct
+        assertEq(englishStyle, uint256(style));
+    }
+
+    function test_getAuctionBids() public view {
+        AssetAuction.Bid[] memory bids = auction.getAuctionBids(ONE);
+
+        // Check that there are no bids
+        assertEq(0, bids.length);
+    }
+
+    function test_getAuctionBidCount() public view {
+        uint256 bidCount = auction.getAuctionBidCount(ONE);
+
+        // Check that there are no bids
+        assertEq(0, bidCount);
+    }
+
+    function test_getAssetBalance() public view {
+        uint256 user1Asset1Balance = auction.getAssetBalance(user1, ASSET_ONE_ID);
+
+        // Check that the user has no assets
+        assertEq(0, user1Asset1Balance);
+    }
+
+    function test_getIGCBalance() public view {
+        uint256 user1IGCBalance = auction.getIGCBalance(user1);
+
+        // Check that the user has no IGC
+        assertEq(0, user1IGCBalance);
+    }
+
+    function test_getAuctionCount() public view {
+        uint256 auctionCount = auction.getAuctionCount();
+
+        // Check that there is one auction
+        assertEq(ONE, auctionCount);
+    }
+
+    function test_getIGCTokenId() public view {
+        uint256 igcTokenId = auction.getIGCTokenId();
+
+        // Check that the IGC token ID is correct
+        assertEq(IGC_TOKEN_ID, igcTokenId);
+    }
+
+    function test_getAssetsContract() public view {
+        address assetsContract = auction.getAssetsContract();
+
+        // Check that the assets contract is correct
+        assertEq(address(factory), assetsContract);
+    }
 }
 
 ///////////////////////////////////////////////////////////
 ///                ERC1155 RECEIVER TESTS               ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionERC1155ReceiverTest is AssetAuctionSetupHelper {
+contract AssetAuctionERC1155ReceiverTest is AssetAuctionHelper {
     function test_onERC1155Received() public view {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
         bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
 
+        // Check that the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
     }
 
@@ -1035,6 +1035,7 @@ contract AssetAuctionERC1155ReceiverTest is AssetAuctionSetupHelper {
         bytes4 returnedSelector =
             factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
 
+        // Check that the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
     }
 }
@@ -1043,11 +1044,12 @@ contract AssetAuctionERC1155ReceiverTest is AssetAuctionSetupHelper {
 ///               IERC165 INTERFACE TESTS               ///
 ///////////////////////////////////////////////////////////
 
-contract AssetAuctionERC165Test is AssetAuctionSetupHelper {
+contract AssetAuctionERC165Test is AssetAuctionHelper {
     function test_supportsInterfaceIdIERC165() public view {
         bytes4 expectedSelector = 0x01ffc9a7;
         bool returnedSelector = auction.supportsInterface(expectedSelector);
 
+        // Check that the contract supports the IERC165 interface
         assertEq(returnedSelector, true);
     }
 
@@ -1055,6 +1057,7 @@ contract AssetAuctionERC165Test is AssetAuctionSetupHelper {
         bytes4 expectedSelector = 0x4e2312e0;
         bool returnedSelector = auction.supportsInterface(expectedSelector);
 
+        // Check that the contract supports the IERC1155Receiver interface
         assertEq(returnedSelector, true);
     }
 
@@ -1062,6 +1065,7 @@ contract AssetAuctionERC165Test is AssetAuctionSetupHelper {
         bytes4 badSelector = bytes4(keccak256("badSelector"));
         bool returnedSelector = auction.supportsInterface(badSelector);
 
+        // Check that the contract throws false for an unsupported interface
         assertEq(returnedSelector, false);
     }
 }
