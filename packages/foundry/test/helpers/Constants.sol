@@ -30,6 +30,7 @@ contract Constants {
     uint256 constant ONE_THOUSAND = 1000;
     uint256 constant ONE_MILLION = 1000000;
     uint256 constant ONE_ETHER = 1 ether;
+    uint256 constant ONE_HOUR = 3600;
 
     // Used to pass in asset IDs to functions requiring an array of asset IDs
     uint256[] assetIds = [ASSET_ONE_ID, ASSET_TWO_ID, ASSET_THREE_ID];

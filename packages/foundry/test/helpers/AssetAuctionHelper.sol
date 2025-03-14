@@ -21,8 +21,6 @@ contract AssetAuctionHelper is AssetFactoryHelper {
     uint256 blindStyle = uint256(AssetAuction.Style.Blind);
     uint256 candleStyle = uint256(AssetAuction.Style.Candle);
 
-    uint256 constant ONE_HOUR = 3600;
-
     // Set up the testing environment using the AssetFactoryHelper functions
     function setUp() public virtual {
         setAssetsHelper();
