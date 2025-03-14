@@ -659,8 +659,8 @@ contract AssetSwapViewFunctionsTest is AssetSwapHelper {
         assertEq(proposalCount, ONE);
     }
 
-    function test_getAssetsContract() public view {
-        address assetsContract = swap.getAssetsContract();
+    function test_getAssetsContractAddress() public view {
+        address assetsContract = swap.getAssetsContractAddress();
 
         // Check that the assets contract address is correct
         assertEq(address(factory), assetsContract);
