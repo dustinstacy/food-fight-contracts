@@ -130,7 +130,7 @@ contract AssetRental {
     /// @param deposit The deposit required to rent the asset.
     /// @param duration The duration of the rental.
     /// @param returnTime The time to return the asset and be refunded the deposit.
-    function postAssetForRent(uint256 tokenId, uint256 price, uint256 deposit, uint256 duration, uint256 returnTime)
+    function createRental(uint256 tokenId, uint256 price, uint256 deposit, uint256 duration, uint256 returnTime)
         external
     {
         // Check if the caller has any of the tokenId deposited
