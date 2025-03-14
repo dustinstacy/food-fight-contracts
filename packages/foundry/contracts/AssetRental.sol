@@ -2,10 +2,12 @@
 pragma solidity ^0.8.28;
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title AssetRental
 /// @notice A contract that allows users to put their assets up for rent and allows other users to rent them.
-contract AssetRental {
+contract AssetRental is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
     ///                     ERRORS                          ///
     ///////////////////////////////////////////////////////////
@@ -533,5 +535,40 @@ contract AssetRental {
     /// @return address The assets contract address.
     function getAssetsContractAddress() external view returns (address) {
         return address(assetsContract);
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               ERC1155 RECEIVER FUNCTIONS              ///
+    /////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155Received(
+        address, /*operator*/
+        address, /*from*/
+        uint256, /*id*/
+        uint256, /*value*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155BatchReceived(
+        address, /*operator*/
+        address, /*from*/
+        uint256[] memory, /*ids*/
+        uint256[] memory, /*values*/
+        bytes calldata /*data*/
+    ) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+    }
+
+    /////////////////////////////////////////////////////////////
+    ///               IERC165 INTERFACE FUNCTIONS             ///
+    /////////////////////////////////////////////////////////////
+
+    // Implement supportsInterface
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
