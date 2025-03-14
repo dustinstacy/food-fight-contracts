@@ -64,3 +64,8 @@ lint:
 verify:
 	forge script script/VerifyAll.s.sol --ffi --rpc-url $(RPC_URL)
 
+# Coverage report of contracts and tests
+coverage:
+	forge coverage --no-match-coverage "(script|reference|test)"
+
+
