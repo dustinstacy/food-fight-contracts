@@ -14,7 +14,7 @@ import { AssetSwapHelper } from "./helpers/AssetSwapHelper.sol";
 contract AssetSwapConstructorTest is AssetSwapHelper {
     function test_constructor() public view {
         address expectedAddress = address(factory);
-        address actualAddress = swap.getAssetsContract();
+        address actualAddress = swap.getAssetsContractAddress();
 
         // Check that the assets contract is set correctly
         assertEq(expectedAddress, actualAddress);

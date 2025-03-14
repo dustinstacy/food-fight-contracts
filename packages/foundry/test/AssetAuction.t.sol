@@ -14,7 +14,7 @@ import { AssetAuctionHelper } from "./helpers/AssetAuctionHelper.sol";
 contract AssetAuctionConstructorTest is AssetAuctionHelper {
     function test_constructor() public view {
         address expectedAddress = address(factory);
-        address actualAddress = auction.getAssetsContract();
+        address actualAddress = auction.getAssetsContractAddress();
 
         // Check that the assets contract is set correctly
         assertEq(expectedAddress, actualAddress);
@@ -985,8 +985,8 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionHelper {
         assertEq(IGC_TOKEN_ID, igcTokenId);
     }
 
-    function test_getAssetsContract() public view {
-        address assetsContract = auction.getAssetsContract();
+    function test_getAssetsContractAddress() public view {
+        address assetsContract = auction.getAssetsContractAddress();
 
         // Check that the assets contract is correct
         assertEq(address(factory), assetsContract);

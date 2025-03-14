@@ -556,7 +556,7 @@ contract AssetAuction is IERC1155Receiver {
 
     /// @notice Get the assets contract address
     /// @return address The address of the assets contract
-    function getAssetsContract() public view returns (address) {
+    function getAssetsContractAddress() public view returns (address) {
         return address(assetsContract);
     }
 

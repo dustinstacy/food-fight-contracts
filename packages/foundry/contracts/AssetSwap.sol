@@ -349,7 +349,7 @@ contract AssetSwap is IERC1155Receiver {
 
     /// @notice Get the address of the ERC1155 contract
     /// @return assetsContract The address of the ERC1155 contract
-    function getAssetsContract() public view returns (address) {
+    function getAssetsContractAddress() public view returns (address) {
         return address(assetsContract);
     }
 
