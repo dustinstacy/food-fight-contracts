@@ -25,17 +25,27 @@ contract AssetAuctionHelper is AssetFactoryHelper {
 
     // Set up the testing environment using the AssetFactoryHelper functions
     function setUp() public virtual {
-        setUpAssets();
-        mintInitialIGC(user1, ONE_MILLION);
-        mintInitialIGC(user2, ONE_MILLION);
-        mintInitialIGC(user3, ONE_MILLION);
-        mintInitialAssets(user1, all);
+        setAssetsHelper();
+        mintIGCHelper(user1, ONE_MILLION);
+        mintIGCHelper(user2, ONE_MILLION);
+        mintIGCHelper(user3, ONE_MILLION);
+        mintAssetHelper(user1, all);
     }
 
-    function createAuction() public {
+    function createAuctionHelper() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(auction), true);
         auction.createAuction(ASSET_ONE_ID, TEN, ONE_HOUR, AssetAuction.Style.English);
         vm.stopPrank();
+    }
+
+    function placeBidHelper(address user, uint256 tokenId, uint256 amount) public {
+        vm.prank(user);
+        auction.placeBid(tokenId, amount);
+    }
+
+    function completeAuctionHelper() public {
+        vm.prank(user1);
+        auction.completeAuction(ASSET_ONE_ID);
     }
 }

@@ -138,7 +138,7 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionHelper {
 contract AssetAustionCancelAuctionTest is AssetAuctionHelper {
     function setUp() public override {
         super.setUp();
-        createAuction();
+        createAuctionHelper();
     }
 
     function test_cancelAuction() public {
@@ -204,17 +204,15 @@ contract AssetAustionCancelAuctionTest is AssetAuctionHelper {
 contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
     function setUp() public override {
         super.setUp();
-        createAuction();
+        createAuctionHelper();
     }
 
     function test_completeAuction_WhenReserveMet() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
@@ -223,13 +221,11 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
     }
 
     function test_completeAuction_WhenReserveNotMet() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, ONE);
+        placeBidHelper(user2, ASSET_ONE_ID, ONE);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
@@ -238,8 +234,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
     }
 
     function test_completeAuction_EmitsEvent() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
@@ -252,8 +247,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
     }
 
     function test_completeAuction_RevertsIf_NotOpenStatus() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
@@ -270,8 +264,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
     }
 
     function test_completeAuction_RevertsIf_DeadlineNotPassed() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         uint256 deadline = auctionData.deadline;
@@ -284,8 +277,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
     }
 
     function test_completeAuction_RevertsIf_NotTheSeller() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
@@ -304,12 +296,11 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionHelper {
 contract AssetAuctionPlaceBidTest is AssetAuctionHelper {
     function setUp() public override {
         super.setUp();
-        createAuction();
+        createAuctionHelper();
     }
 
     function test_placeBid() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
@@ -350,8 +341,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionHelper {
     }
 
     function test_placeBid_RevertsIf_BidNotHigherThanHighestBid() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.prank(user3);
         vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionBidNotHigherThanHighestBid.selector, ONE, TEN));
@@ -362,17 +352,15 @@ contract AssetAuctionPlaceBidTest is AssetAuctionHelper {
 contract AssetAuctionClaimAssetTest is AssetAuctionHelper {
     function setUp() public override {
         super.setUp();
-        createAuction();
+        createAuctionHelper();
     }
 
     function test_claimAsset() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         uint256 startingUser1IGCBalance = auction.getIGCBalance(user1);
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
@@ -402,13 +390,11 @@ contract AssetAuctionClaimAssetTest is AssetAuctionHelper {
     }
 
     function test_claimAsset_EmitsEvent() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
@@ -430,16 +416,14 @@ contract AssetAuctionClaimAssetTest is AssetAuctionHelper {
     }
 
     function test_claimAsset_RevertWhen_NotWinningBidder() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.prank(user3);
         auction.placeBid(ONE, TEN + ONE);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
         assertEq(endedStatus, uint256(auctionData.status));
@@ -453,13 +437,11 @@ contract AssetAuctionClaimAssetTest is AssetAuctionHelper {
     }
 
     function test_claimAsset_RevertsIf_AssetAlreadyClaimed() public {
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(auction), true);
@@ -480,8 +462,7 @@ contract AssetAuctionClaimAssetTest is AssetAuctionHelper {
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         AssetAuction.Auction memory auctionData = auction.getAuction(ONE);
 
@@ -684,7 +665,7 @@ contract AssetAuctionWithdrawAssetsTest is AssetAuctionHelper {
     }
 
     function test_withdrawAssets_AfterCancelingAuction() public {
-        createAuction();
+        createAuctionHelper();
         vm.startPrank(user1);
         auction.cancelAuction(ONE);
         auction.withdrawAssets(asset1Single, amountSingle);
@@ -703,19 +684,16 @@ contract AssetAuctionWithdrawAssetsTest is AssetAuctionHelper {
     }
 
     function test_withdrawAssets_AfterClaiming() public {
-        createAuction();
+        createAuctionHelper();
 
-        vm.startPrank(user2);
-        factory.setApprovalForAll(address(auction), true);
-        auction.placeBid(ONE, TEN);
-        vm.stopPrank();
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         vm.startPrank(user2);
+        factory.setApprovalForAll(address(auction), true);
         auction.claimAsset(ONE);
         auction.withdrawAssets(asset1Single, amountSingle);
         vm.stopPrank();
@@ -810,15 +788,13 @@ contract AssetAuctionWithdrawIGCTest is AssetAuctionHelper {
     }
 
     function test_withdrawIGCAfterAssetSold() public {
-        createAuction();
+        createAuctionHelper();
 
-        vm.prank(user2);
-        auction.placeBid(ONE, TEN);
+        placeBidHelper(user2, ASSET_ONE_ID, TEN);
 
         vm.warp(ONE_HOUR + ONE);
 
-        vm.prank(user1);
-        auction.completeAuction(ONE);
+        completeAuctionHelper();
 
         uint256 startingUser2IGCBalance = factory.balanceOf(user2, IGC_TOKEN_ID);
 
@@ -878,7 +854,7 @@ contract AssetAuctionWithdrawIGCTest is AssetAuctionHelper {
 contract AssetAuctionViewFunctionsTest is AssetAuctionHelper {
     function setUp() public override {
         super.setUp();
-        createAuction();
+        createAuctionHelper();
     }
 
     function test_getAuction() public view {
