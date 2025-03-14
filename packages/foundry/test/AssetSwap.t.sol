@@ -130,12 +130,11 @@ contract AssetSwapUser1CreateProposalTest is AssetSwapHelper {
 contract AssetSwapUser1CancelProposalTest is AssetSwapHelper {
     function setUp() public override {
         super.setUp();
-        createProposal();
+        createProposalHelper();
     }
 
     function test_cancelProposal() public {
-        vm.prank(user1);
-        swap.cancelProposal(ONE);
+        cancelProposalHelper();
 
         AssetSwap.Proposal memory proposal = swap.getProposal(ONE);
         uint256 status = uint256(proposal.status);
@@ -188,7 +187,7 @@ contract AssetSwapUser1CancelProposalTest is AssetSwapHelper {
 contract AssetSwapUser2FunctionsTest is AssetSwapHelper {
     function setUp() public override {
         super.setUp();
-        createProposal();
+        createProposalHelper();
     }
 
     function test_approveProposal_WithAssetDeposited() public {
@@ -276,8 +275,7 @@ contract AssetSwapUser2FunctionsTest is AssetSwapHelper {
     }
 
     function test_approveProposal_RevertsIf_NotPendingStatus() public {
-        vm.prank(user1);
-        swap.cancelProposal(ONE);
+        cancelProposalHelper();
 
         vm.prank(user2);
 
@@ -336,8 +334,7 @@ contract AssetSwapUser2FunctionsTest is AssetSwapHelper {
     }
 
     function test_rejectProposal_RevertIf_NotPendingStatus() public {
-        vm.prank(user1);
-        swap.cancelProposal(ONE);
+        cancelProposalHelper();
 
         vm.prank(user2);
 
@@ -486,7 +483,8 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapHelper {
     }
 
     function test_withdrawAssets_AfterCancelingProposal() public {
-        createProposal();
+        createProposalHelper();
+
         vm.startPrank(user1);
         swap.cancelProposal(ONE);
         swap.withdrawAssets(asset1Single, amountSingle);
@@ -505,7 +503,7 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapHelper {
     }
 
     function test_withdrawAssets_AfterApproval() public {
-        createProposal();
+        createProposalHelper();
 
         vm.startPrank(user2);
         factory.setApprovalForAll(address(swap), true);
@@ -597,7 +595,7 @@ contract AssetSwapWithdrawAssetsTest is AssetSwapHelper {
 contract AssetSwapViewFunctionsTest is AssetSwapHelper {
     function setUp() public override {
         super.setUp();
-        createProposal();
+        createProposalHelper();
     }
 
     function test_getProposal() public view {

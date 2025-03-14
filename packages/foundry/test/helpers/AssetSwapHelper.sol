@@ -16,18 +16,24 @@ contract AssetSwapHelper is AssetFactoryHelper {
 
     // Set up the testing environment using the AssetFactoryHelper functions
     function setUp() public virtual {
-        setUpAssets();
-        mintInitialIGC(user1, ONE_MILLION);
-        mintInitialIGC(user2, ONE_MILLION);
-        mintInitialAssets(user1, all);
-        mintInitialAssets(user2, all);
+        setAssetsHelper();
+        mintIGCHelper(user1, ONE_MILLION);
+        mintIGCHelper(user2, ONE_MILLION);
+        mintAssetHelper(user1, all);
+        mintAssetHelper(user2, all);
     }
 
     // Create a proposal for the swap of two assets
-    function createProposal() public {
+    function createProposalHelper() public {
         vm.startPrank(user1);
         factory.setApprovalForAll(address(swap), true);
         swap.createProposal(user2, ASSET_ONE_ID, ASSET_TWO_ID);
         vm.stopPrank();
+    }
+
+    // Cancel a proposal
+    function cancelProposalHelper() public {
+        vm.prank(user1);
+        swap.cancelProposal(ONE);
     }
 }
