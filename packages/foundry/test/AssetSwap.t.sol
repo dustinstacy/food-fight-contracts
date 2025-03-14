@@ -674,7 +674,7 @@ contract AssetSwapViewFunctionsTest is AssetSwapHelper {
 contract AssetSwapERC1155ReceiverTest is AssetSwapHelper {
     function test_onERC1155Received() public view {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
-        bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
+        bytes4 returnedSelector = swap.onERC1155Received(address(0), address(0), 0, 0, "");
 
         // Check that the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
@@ -683,7 +683,7 @@ contract AssetSwapERC1155ReceiverTest is AssetSwapHelper {
     function test_onERC1155BatchReceived() public view {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
         bytes4 returnedSelector =
-            factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
+            swap.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
 
         // Check that the correct selector was returned
         assertEq(returnedSelector, expectedSelector);

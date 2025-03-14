@@ -1000,7 +1000,7 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionHelper {
 contract AssetAuctionERC1155ReceiverTest is AssetAuctionHelper {
     function test_onERC1155Received() public view {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
-        bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
+        bytes4 returnedSelector = auction.onERC1155Received(address(0), address(0), 0, 0, "");
 
         // Check that the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
@@ -1009,7 +1009,7 @@ contract AssetAuctionERC1155ReceiverTest is AssetAuctionHelper {
     function test_onERC1155BatchReceived() public view {
         bytes4 expectedSelector = bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
         bytes4 returnedSelector =
-            factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
+            auction.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
 
         // Check that the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
