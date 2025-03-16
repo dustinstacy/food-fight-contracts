@@ -10,44 +10,45 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title AssetFactory
 /// @notice This is a factory contract for creating ERC1155 assets.
+/// @notice It will handle minting the IGC (in game currency) and the game assets.
 contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
 
-    /// Emitted when the URI of the metadata for a asset is set.
+    /// @notice Emitted when the URI of an asset is set.
     event AssetURISet(string uri, uint256 id);
 
-    /// Emitted when the price of a asset is set.
+    /// @notice Emitted when the price of an asset is set.
     event AssetPriceSet(uint256 id, uint256 price);
 
-    /// Emitted when an assets URI and price are set.
+    /// @notice Emitted when the URI and price of an asset are set.
     event AssetDataSet(string uri, uint256 id, uint256 price);
 
-    /// Emitted when a asset is burnt.
+    /// @notice Emitted when a single asset is burnt
     event BurntSingle(address indexed account, uint256 id, uint256 amount);
 
-    /// Emitted when assets are burnt
+    /// @notice Emitted when multiple assets are burnt
     event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
-    /// Mapping of the asset ID to the URI of the metadata.
+    /// @notice Mapping of the asset ID to the URI of the metadata.
     mapping(uint256 assetID => string uri) private assetURIs;
 
-    /// Mapping of the asset ID to the price of the asset.
+    /// @notice Mapping of the asset ID to the price of the asset.
     mapping(uint256 assetID => uint256 price) private assetPrices;
 
-    /// ID of the IGC asset.
+    /// @notice The token ID of the IGC token.
     uint256 private igcTokenId = 0;
 
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Initializes the contract with the provided owner.
+    /// @notice Construct the AssetFactory contract.
     /// @param _owner The address that will be set as the owner of the contract.
     /// @dev The ERC1155 constructor is an empty string as we will be using a URI mapping instead of ID substitution.
     constructor(address _owner) ERC1155("") Ownable(_owner) { }
@@ -105,11 +106,10 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
         _mintBatch(to, ids, amounts, data);
     }
 
-    /// @notice Burns a given amount of a asset.
+    /// @notice Burns a given amount of an asset.
     /// @param account Address to burn the asset from.
     /// @param id ID of the asset to burn.
     /// @param amount Amount of the asset to burn.
-    /// @dev Need to implement balance checking.
     function burnAsset(address account, uint256 id, uint256 amount) external {
         if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
