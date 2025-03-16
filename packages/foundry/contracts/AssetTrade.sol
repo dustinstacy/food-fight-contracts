@@ -1,8 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// Remove when deploying to a live network.
-import "forge-std/console.sol";
+// Remove unnecessary functions, imports, and checks, implement AssetVault, update function arguments, update NATSPEC, and improve code clarity.
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -16,9 +15,6 @@ contract AssetTrade is IERC1155Receiver {
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Thrown when the caller lacks the required balance to perform an action.
-    error AssetTradeInsufficientBalance(address caller, uint256 tokenId);
-
     /// @notice Thrown when the proposal is not in a pending state.
     error AssetTradeProposalNotPending(ProposalStatus status);
 
@@ -26,7 +22,7 @@ contract AssetTrade is IERC1155Receiver {
     error AssetTradeNotProposer(address caller, address proposer);
 
     /// @notice Thrown when the caller, who is not the receiver, tries to address the proposal.
-    error AssetTradeNotUser2(address caller, address receiver);
+    error AssetTradeNotReceiver(address caller, address receiver);
 
     ///////////////////////////////////////////////////////////
     ///                    EVENTS                           ///
@@ -60,7 +56,7 @@ contract AssetTrade is IERC1155Receiver {
     ///                     STRUCTS                         ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice The proposal object.
+    /// @notice The details of a proposal.
     struct Proposal {
         address proposer;
         address receiver;
@@ -103,12 +99,9 @@ contract AssetTrade is IERC1155Receiver {
     /// @param receiver The address of the user to trade with.
     /// @param assetAId The token ID of the asset being traded.
     /// @param assetBId The token ID of the asset being traded for.
+    /// @dev Will throw an error when the user lacks the required balance of the asset to trade. (AssetVaultInsufficientBalance).
     //!! Update to allow users to trade larger amounts of assets.
     function createProposal(address receiver, uint256 assetAId, uint256 assetBId) external {
-        if (vault.balanceOf(msg.sender, assetAId) == 0) {
-            revert AssetTradeInsufficientBalance(msg.sender, assetAId);
-        }
-
         proposalCount++;
         proposals[proposalCount] = Proposal({
             proposer: msg.sender,
@@ -118,7 +111,7 @@ contract AssetTrade is IERC1155Receiver {
             status: ProposalStatus.Pending
         });
 
-        vault.lockAsset(msg.sender, assetAId);
+        vault.lockAsset(msg.sender, assetAId, 1);
 
         emit ProposalCreated(proposalCount);
     }
@@ -138,13 +131,14 @@ contract AssetTrade is IERC1155Receiver {
 
         proposal.status = ProposalStatus.Canceled;
 
-        vault.unlockAsset(proposal.proposer, proposal.assetAId);
+        vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
 
         emit ProposalCanceled(proposalId);
     }
 
     /// @notice Approve a proposal to trade assets.
     /// @param proposalId The ID of the proposal to approve.
+    /// @dev Will throw an error when the user lacks the required balance of the asset to trade. (AssetVaultInsufficientBalance).
     function approveProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
 
@@ -153,19 +147,15 @@ contract AssetTrade is IERC1155Receiver {
         }
 
         if (proposal.receiver != msg.sender) {
-            revert AssetTradeNotUser2(msg.sender, proposal.receiver);
-        }
-
-        if (vault.balanceOf(proposal.receiver, proposal.assetBId) == 0) {
-            revert AssetTradeInsufficientBalance(proposal.receiver, proposal.assetBId);
+            revert AssetTradeNotReceiver(msg.sender, proposal.receiver);
         }
 
         proposal.status = ProposalStatus.Approved;
 
-        // Executes swap by updating the balances in the AssetVault contract
-        vault.lockAsset(proposal.receiver, proposal.assetBId);
-        vault.unlockAsset(proposal.proposer, proposal.assetBId);
-        vault.unlockAsset(proposal.receiver, proposal.assetAId);
+        // Execute the exchange of assets by updating the balances in the AssetVault contract
+        vault.lockAsset(proposal.receiver, proposal.assetBId, 1);
+        vault.unlockAsset(proposal.proposer, proposal.assetBId, 1);
+        vault.unlockAsset(proposal.receiver, proposal.assetAId, 1);
 
         emit ProposalApproved(proposalId);
     }
@@ -179,12 +169,12 @@ contract AssetTrade is IERC1155Receiver {
             revert AssetTradeProposalNotPending(proposal.status);
         }
         if (proposal.receiver != msg.sender) {
-            revert AssetTradeNotUser2(msg.sender, proposal.receiver);
+            revert AssetTradeNotReceiver(msg.sender, proposal.receiver);
         }
 
         proposal.status = ProposalStatus.Rejected;
 
-        vault.unlockAsset(proposal.proposer, proposal.assetAId);
+        vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
 
         emit ProposalRejected(proposalId);
     }
@@ -210,21 +200,21 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Get the receiver of a proposal.
     /// @param proposalId The ID of the proposal.
     /// @return receiver The address of the receiver.
-    function getProposalUser2(uint256 proposalId) public view returns (address receiver) {
+    function getProposalReceiver(uint256 proposalId) public view returns (address receiver) {
         return proposals[proposalId].receiver;
     }
 
     /// @notice Get the asset1 token ID of a proposal.
     /// @param proposalId The ID of the proposal.
     /// @return assetAId The token ID of the asset1.
-    function getProposalAsset1TokenId(uint256 proposalId) public view returns (uint256 assetAId) {
+    function getProposalAssetATokenId(uint256 proposalId) public view returns (uint256 assetAId) {
         return proposals[proposalId].assetAId;
     }
 
     /// @notice Get the asset2 token ID of a proposal.
     /// @param proposalId The ID of the proposal.
     /// @return assetBId The token ID of the asset2.
-    function getProposalAsset2TokenId(uint256 proposalId) public view returns (uint256 assetBId) {
+    function getProposalAssetBTokenId(uint256 proposalId) public view returns (uint256 assetBId) {
         return proposals[proposalId].assetBId;
     }
 
@@ -241,10 +231,16 @@ contract AssetTrade is IERC1155Receiver {
         return proposalCount;
     }
 
-    /// @notice Get the address of the ERC1155 contract.
-    /// @return factory The address of the ERC1155 contract.
-    function getFactoryAddress() public view returns (address) {
+    /// @notice Get the factory contract address.
+    /// @return factoryAddress The address of the assets contract.
+    function getFactoryAddress() public view returns (address factoryAddress) {
         return address(factory);
+    }
+
+    /// @notice Get the vault contract address.
+    /// @return vaultAddress The address of the vault contract.
+    function getAssetVaultAddress() public view returns (address vaultAddress) {
+        return address(vault);
     }
 
     /////////////////////////////////////////////////////////////
