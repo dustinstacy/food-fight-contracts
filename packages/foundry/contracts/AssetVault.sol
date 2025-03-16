@@ -10,72 +10,74 @@ contract AssetVault is IERC1155Receiver {
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
 
-    /// Emitted when the token IDs and amounts arrays have different lengths.
+    /// @notice Thrown when the length of the tokenIds and amounts arrays are different.
     error AssetVaultArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
 
-    /// Emitted when the caller tries to withdraw more assets than they own.
+    /// @notice Thrown when the user lacks the required balance to perform an action.
     error AssetVaultInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
 
     ///////////////////////////////////////////////////////////
     ///                    EVENTS                           ///
     ///////////////////////////////////////////////////////////
 
-    // Emitted when assets are withdrawn from the contract.
-    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
+    /// @notice Emitted when IGC is deposited into the contract.
+    event IGCDeposited(address from, uint256 amount);
 
-    // Emitted when IGC is withdrawn from the contract.
-    event IGCWithdrawn(address to, uint256 amount);
-
-    // Emitted when assets are deposited into the contract.
+    /// @notice Emitted when assets are deposited into the contract.
     event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
 
-    // Emitted when IGC is deposited into the contract.
-    event IGCDeposited(address from, uint256 amount);
+    /// @notice Emitted when IGC is withdrawn from the contract.
+    event IGCWithdrawn(address to, uint256 amount);
+
+    /// @notice Emitted when assets are withdrawn from the contract.
+    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Mapping of a user to their balances of each token ID.
     mapping(address user => mapping(uint256 tokenId => uint256 balance)) private balances;
 
+    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
+    IERC1155 private factory;
+
+    /// @notice The token ID of the IGC token.
     uint8 private igcTokenId = 0;
-    IERC1155 private assetsContract;
 
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
-    constructor(address _assetsContract) {
-        assetsContract = IERC1155(_assetsContract);
+    /// @notice Construct the AssetVault contract.
+    /// @param _factory The address of the ERC1155 contract that is responsible for minting assets.
+    constructor(address _factory) {
+        factory = IERC1155(_factory);
     }
 
     ///////////////////////////////////////////////////////////
     ///                   DEPOSIT FUNCTIONS                 ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Deposit IGC into the contract
-    /// @param amount The amount of IGC to deposit
-    /// @dev Will throw an error if the user doesn't have enough IGC (ERC1155InsufficientBalance)
+    /// @notice Deposit IGC into the contract.
+    /// @param amount The amount of IGC to deposit.
+    /// @dev Will throw an error when the user lacks the required balance to deposit the IGC. (ERC1155InsufficientBalance).
     function depositIGC(uint256 amount) external {
-        // Transfer the IGC to the contract
-        assetsContract.safeTransferFrom(msg.sender, address(this), igcTokenId, amount, "");
+        factory.safeTransferFrom(msg.sender, address(this), igcTokenId, amount, "");
 
-        // Update the user's balance
         balances[msg.sender][igcTokenId] += amount;
 
         emit IGCDeposited(msg.sender, amount);
     }
 
-    /// @notice Deposit assets into a contract
-    /// @param tokenIds The token IDs of the assets to deposit
-    /// @param amounts The amounts of the assets to deposit
-    /// @dev Will throw an error if the user doesn't have enough assets (ERC1155InsufficientBalance)
-    /// @dev Will throw an error if the tokenIds and amounts arrays are different lengths (ERC1155ArraysLengthMismatch)
+    /// @notice Deposit assets into a contract.
+    /// @param tokenIds The token IDs of the assets to deposit.
+    /// @param amounts The amounts of the assets to deposit.
+    /// @dev Will throw an error when the user lacks the required balance to deposit the assets.(ERC1155InsufficientBalance).
+    /// @dev Will throw an error when the length of the tokenIds and amounts arrays are different. (ERC1155InvalidArrayLength).
     function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
-        // Transfer the assets to the contract
-        assetsContract.safeBatchTransferFrom(msg.sender, address(this), tokenIds, amounts, "");
+        factory.safeBatchTransferFrom(msg.sender, address(this), tokenIds, amounts, "");
 
-        // Update the user's balances
         for (uint256 i = 0; i < tokenIds.length; i++) {
             balances[msg.sender][tokenIds[i]] += amounts[i];
         }
@@ -87,52 +89,81 @@ contract AssetVault is IERC1155Receiver {
     ///                   WITHDRAW FUNCTIONS                ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Withdraw IGC to a target address
-    /// @param to The address to withdraw the IGC to
-    /// @param amount The amount of IGC to withdraw
+    /// @notice Withdraw IGC to a target address.
+    /// @param to The address to withdraw the IGC to.
+    /// @param amount The amount of IGC to withdraw.
     function withdrawIGC(address to, uint256 amount) external {
-        // Check if the user has enough IGC in their balance
         if (balances[msg.sender][igcTokenId] < amount) {
             revert AssetVaultInsufficientBalance(msg.sender, balances[msg.sender][igcTokenId], amount, igcTokenId);
         }
 
-        // Update the user's balance
         balances[msg.sender][igcTokenId] -= amount;
 
-        // Transfer the IGC to the user
-        assetsContract.safeTransferFrom(address(this), to, igcTokenId, amount, "");
+        factory.safeTransferFrom(address(this), to, igcTokenId, amount, "");
 
         emit IGCWithdrawn(to, amount);
     }
 
-    /// @notice Withdraw assets to a target address
-    /// @param to The address to withdraw the assets to
-    /// @param tokenIds The token IDs of the assets to withdraw
-    /// @param amounts The amounts of the assets to withdraw
+    /// @notice Withdraw assets to a target address.
+    /// @param to The address to withdraw the assets to.
+    /// @param tokenIds The token IDs of the assets to withdraw.
+    /// @param amounts The amounts of the assets to withdraw.
     function withdrawAssets(address to, uint256[] memory tokenIds, uint256[] memory amounts) external {
-        // Check if the tokenIds and amounts arrays are the same length
         if (tokenIds.length != amounts.length) {
             revert AssetVaultArraysLengthMismatch(tokenIds.length, amounts.length);
         }
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            // Check if the user has enough of the assets in their balances
             if (balances[msg.sender][tokenIds[i]] < amounts[i]) {
                 revert AssetVaultInsufficientBalance(
                     msg.sender, balances[msg.sender][tokenIds[i]], amounts[i], tokenIds[i]
                 );
             }
-        }
 
-        // Update the user's balances
-        for (uint256 i = 0; i < tokenIds.length; i++) {
             balances[msg.sender][tokenIds[i]] -= amounts[i];
         }
 
-        // Transfer the assets to the user
-        assetsContract.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
+        factory.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
 
         emit AssetsWithdrawn(to, tokenIds, amounts);
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                  LOCK FUNCTIONS                     ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Lock assets in the contract.
+    /// @param account The address of the account to lock the assets for.
+    /// @param tokenId The token IDs of the assets to lock.
+    //!! Consider making a batch version of this function.
+    function lockAsset(address account, uint256 tokenId) external {
+        balances[account][tokenId] -= 1;
+    }
+
+    /// @notice Unlock assets in the contract.
+    /// @param account The address of the account to unlock the assets for.
+    /// @param tokenId The token IDs of the assets to unlock.
+    //!! Consider making a batch version of this function.
+    function unlockAsset(address account, uint256 tokenId) external {
+        balances[account][tokenId] += 1;
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                   VIEW FUNCTIONS                    ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Get the balance of a user for a specific token ID.
+    /// @param user The address of the user.
+    /// @param tokenId The token ID to get the balance of.
+    /// @return balance The balance of the user for the token ID.
+    function balanceOf(address user, uint256 tokenId) external view returns (uint256 balance) {
+        return balances[user][tokenId];
+    }
+
+    /// @notice Get the address of the factory contract.
+    /// @return factoryAddress The address of the factory contract.
+    function getFactoryAddress() external view returns (address factoryAddress) {
+        return address(factory);
     }
 
     /////////////////////////////////////////////////////////////
@@ -165,7 +196,7 @@ contract AssetVault is IERC1155Receiver {
     ///               IERC165 INTERFACE FUNCTIONS             ///
     /////////////////////////////////////////////////////////////
 
-    // Implement supportsInterface
+    /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
         return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
