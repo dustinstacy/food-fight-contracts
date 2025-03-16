@@ -142,7 +142,7 @@ contract AssetVault is IERC1155Receiver {
     /// @param account The address of the account to lock the assets for.
     /// @param tokenId The token IDs of the assets to lock.
     /// @param amount The amount of the assets to lock.
-    /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a swap.
+    /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a trade.
     //!! Consider making a batch version of this function.
     function lockAsset(address account, uint256 tokenId, uint256 amount) external {
         if (balances[account][tokenId] == 0) {
@@ -156,7 +156,7 @@ contract AssetVault is IERC1155Receiver {
     /// @param account The address of the account to unlock the assets for.
     /// @param tokenId The token IDs of the assets to unlock.
     /// @param amount The amount of the assets to unlock.
-    /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a swap.
+    /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
     //!! Consider making a batch version of this function.
     function unlockAsset(address account, uint256 tokenId, uint256 amount) external {
         balances[account][tokenId] += amount;
