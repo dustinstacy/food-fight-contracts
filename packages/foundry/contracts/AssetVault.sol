@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// Add a balance check to lockAsset function and improve code clarity.
+
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -8,6 +10,7 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 /// @title AssetVault
 /// @notice This contract handles user asset storage.
 /// @notice Users must have a balance of a given asset to perform certain actions.
+//!! Create an interface for this contract.
 contract AssetVault is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
@@ -138,19 +141,25 @@ contract AssetVault is IERC1155Receiver {
     /// @notice Lock assets in the contract.
     /// @param account The address of the account to lock the assets for.
     /// @param tokenId The token IDs of the assets to lock.
+    /// @param amount The amount of the assets to lock.
     /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a swap.
     //!! Consider making a batch version of this function.
-    function lockAsset(address account, uint256 tokenId) external {
-        balances[account][tokenId] -= 1;
+    function lockAsset(address account, uint256 tokenId, uint256 amount) external {
+        if (balances[account][tokenId] == 0) {
+            revert AssetVaultInsufficientBalance(account, balances[account][tokenId], 1, tokenId);
+        }
+
+        balances[account][tokenId] -= amount;
     }
 
     /// @notice Unlock assets in the contract.
     /// @param account The address of the account to unlock the assets for.
     /// @param tokenId The token IDs of the assets to unlock.
+    /// @param amount The amount of the assets to unlock.
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a swap.
     //!! Consider making a batch version of this function.
-    function unlockAsset(address account, uint256 tokenId) external {
-        balances[account][tokenId] += 1;
+    function unlockAsset(address account, uint256 tokenId, uint256 amount) external {
+        balances[account][tokenId] += amount;
     }
 
     ///////////////////////////////////////////////////////////
@@ -165,9 +174,9 @@ contract AssetVault is IERC1155Receiver {
         return balances[user][tokenId];
     }
 
-    /// @notice Get the address of the factory contract.
-    /// @return factoryAddress The address of the factory contract.
-    function getFactoryAddress() external view returns (address factoryAddress) {
+    /// @notice Get the factory contract address.
+    /// @return factoryAddress The address of the assets contract.
+    function getFactoryAddress() public view returns (address factoryAddress) {
         return address(factory);
     }
 
