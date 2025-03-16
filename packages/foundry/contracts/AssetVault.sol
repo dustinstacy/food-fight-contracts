@@ -6,7 +6,7 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title AssetVault
-/// @notice This contract is responsible for creating user asset storage.
+/// @notice This contract handles user asset storage.
 /// @notice Users must have a balance of a given asset to perform certain actions.
 contract AssetVault is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
