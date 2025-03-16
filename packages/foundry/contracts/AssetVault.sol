@@ -5,6 +5,9 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
+/// @title AssetVault
+/// @notice This contract is responsible for creating user asset storage.
+/// @notice Users must have a balance of a given asset to perform certain actions.
 contract AssetVault is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
@@ -135,6 +138,7 @@ contract AssetVault is IERC1155Receiver {
     /// @notice Lock assets in the contract.
     /// @param account The address of the account to lock the assets for.
     /// @param tokenId The token IDs of the assets to lock.
+    /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a swap.
     //!! Consider making a batch version of this function.
     function lockAsset(address account, uint256 tokenId) external {
         balances[account][tokenId] -= 1;
@@ -143,6 +147,7 @@ contract AssetVault is IERC1155Receiver {
     /// @notice Unlock assets in the contract.
     /// @param account The address of the account to unlock the assets for.
     /// @param tokenId The token IDs of the assets to unlock.
+    /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a swap.
     //!! Consider making a batch version of this function.
     function unlockAsset(address account, uint256 tokenId) external {
         balances[account][tokenId] += 1;
