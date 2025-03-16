@@ -9,18 +9,8 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title AssetFactory
-/// @notice This contract is a factory for creating ERC1155 assets.
+/// @notice This is a factory contract for creating ERC1155 assets.
 contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
-    ///////////////////////////////////////////////////////////
-    ///                      ERRORS                         ///
-    ///////////////////////////////////////////////////////////
-
-    /// Emitted when an owner tries to withdraw more funds than the contract balance.
-    error AssetFactoryWithdrawalExceedsBalance(uint256 amount, uint256 balance);
-
-    /// Emitted when an owner tries to withdraw funds from the contract and the transfer fails.
-    error AssetFactoryWithdrawalFailed(address to, uint256 amount);
-
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
@@ -35,13 +25,10 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     event AssetDataSet(string uri, uint256 id, uint256 price);
 
     /// Emitted when a asset is burnt.
-    event AssetBurnt(address indexed account, uint256 id, uint256 amount);
+    event BurntSingle(address indexed account, uint256 id, uint256 amount);
 
     /// Emitted when assets are burnt
-    event AssetsBurnt(address indexed account, uint256[] ids, uint256[] amounts);
-
-    /// Emitted when an owner withdraws funds from the contract.
-    event Withdrawal(address indexed to, uint256 amount);
+    event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
@@ -72,7 +59,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @notice Mints a given amount of IGC.
     /// @param account Address to mint the IGC to.
     /// @param amount Amount of IGC to mint.
-    /// @dev Simple placehold pricing model. Needs to be updated.
+    //!! Simple placehold pricing model. Needs to be updated.
     function mintIGC(address account, uint256 amount) external payable {
         _mint(account, 0, amount, "");
     }
@@ -82,7 +69,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param id ID of the asset to mint.
     /// @param amount Amount of the asset to mint.
     /// @param data Custom data to pass to the receiver on the mint.
-    /// @dev Simple placehold pricing model. Needs to be updated.
+    //!! Simple placehold pricing model. Needs to be updated.
     function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external {
         uint256 price = assetPrices[id];
         uint256 totalPrice = price * amount;
@@ -96,12 +83,9 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param to Address to mint the assets to.
     /// @param ids IDs of the assets to mint.
     /// @param amounts Amounts of the assets to mint.
-    /// @param data Custom data to pass to the receiver on the mint.
-    /// @dev The IDs and amounts arrays must be the same length.
-    /// @dev Simple placehold pricing model. Needs to be updated.
+    //!! Simple placehold pricing model. Needs to be updated.
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external {
-        // Same error would get thrown in the _mintBatch function
-        // This is to precede the error that would be thrown in the for loop.
+        // Precedes the array length check in _update() (nested inside _mintBatch()) to prevent reverts in the for loop.
         if (ids.length != amounts.length) {
             revert ERC1155InvalidArrayLength(ids.length, amounts.length);
         }
@@ -139,7 +123,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
 
         _burn(account, id, amount);
 
-        emit AssetBurnt(account, id, amount);
+        emit BurntSingle(account, id, amount);
     }
 
     /// @notice Burns given amounts of multiple assets.
@@ -151,8 +135,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
 
-        // Same error would get thrown in the _burnBatch function
-        // This is to precede the error that would be thrown in the for loop.
+        // Precedes the array length check in _update() (nested inside _burnBatch()) to prevent reverts in the for loop.
         if (ids.length != amounts.length) {
             revert ERC1155InvalidArrayLength(ids.length, amounts.length);
         }
@@ -169,7 +152,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
 
         _burnBatch(account, ids, amounts);
 
-        emit AssetsBurnt(account, ids, amounts);
+        emit BurntBatch(account, ids, amounts);
     }
 
     ///////////////////////////////////////////////////////////
