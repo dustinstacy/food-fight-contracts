@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// renamed contract, functions, and variables for clarity - updated NATSPEC comments
-
 import { Test } from "forge-std/Test.sol";
 import { TestingVariables } from "./TestingVariables.sol";
 

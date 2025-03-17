@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// renamed contract and variables for clarity - removed unnecessary variables - updated comments
-
 import { ERC1155InvalidReceiverHelper } from "./ERC1155InvalidReceiverHelper.sol";
 import { AssetFactory } from "@contracts/AssetFactory.sol";
 import { AssetVault } from "@contracts/AssetVault.sol";
