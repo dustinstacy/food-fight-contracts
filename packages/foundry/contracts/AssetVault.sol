@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// Add a balance check to lockAsset function and improve code clarity.
-
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -143,6 +141,7 @@ contract AssetVault is IERC1155Receiver {
     /// @param tokenId The token IDs of the assets to lock.
     /// @param amount The amount of the assets to lock.
     /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a trade.
+    //!! Need to set up access control on these functions
     //!! Consider making a batch version of this function.
     function lockAsset(address account, uint256 tokenId, uint256 amount) external {
         if (balances[account][tokenId] == 0) {
@@ -157,6 +156,7 @@ contract AssetVault is IERC1155Receiver {
     /// @param tokenId The token IDs of the assets to unlock.
     /// @param amount The amount of the assets to unlock.
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
+    //!! Need to set up access control on these functions
     //!! Consider making a batch version of this function.
     function unlockAsset(address account, uint256 tokenId, uint256 amount) external {
         balances[account][tokenId] += amount;
