@@ -3,12 +3,25 @@ pragma solidity ^0.8.28;
 
 import { AssetFactoryTestHelper } from "./AssetFactoryTestHelper.sol";
 
-/// @dev Helper contract for interacting with the AssetVault contract
+/// @dev Helper contract for interacting with the AssetVault contract.
 contract AssetVaultTestHelper is AssetFactoryTestHelper {
+    /// @dev The starting balance of IGC and Assets in user A's vault.
+    // Used in AssetVault.t.sol, AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
     uint256 userAStartingVaultIGCBalance;
     uint256 userAStartingVaultAssetOneBalance;
     uint256 userAStartingVaultAssetTwoBalance;
     uint256 userAStartingVaultAssetThreeBalance;
+
+    /// @dev Initialize storage variables for user B's vault balances.
+    // Used AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
+    uint256 userBStartingVaultIGCBalance;
+    uint256 userBStartingVaultAssetOneBalance;
+    uint256 userBStartingVaultAssetTwoBalance;
+    uint256 userBStartingVaultAssetThreeBalance;
+
+    /// @dev Initialize storage variables for user C's vault balances.
+    // AssetAuction.t.sol, and AssetRental.t.sol
+    uint256 userCStartingVaultIGCBalance;
 
     /// @dev Sets the assets, mints IGC for users, and mints assets for users.
     function setUp() public virtual {
