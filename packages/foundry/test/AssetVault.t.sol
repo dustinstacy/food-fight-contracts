@@ -14,7 +14,7 @@ import { AssetVaultTestHelper } from "./helpers/AssetVaultTestHelper.sol";
 contract AssetVaultConstructorTest is AssetVaultTestHelper {
     function test_constructor() public view {
         address expectedAddress = address(factory);
-        address actualAddress = vault.getFactoryAddress();
+        address actualAddress = vault.getAssetFactoryAddress();
 
         // Check that the factory contract address was set correctly
         assertEq(expectedAddress, actualAddress);
@@ -383,8 +383,8 @@ contract AssetVaultViewFunctionsTest is AssetVaultTestHelper {
         assertEq(userAStartingVaultIGCBalance, userAVaultIGCBalance);
     }
 
-    function test_getFactoryAddress() public view {
-        address factoryAddress = vault.getFactoryAddress();
+    function test_getAssetFactoryAddress() public view {
+        address factoryAddress = vault.getAssetFactoryAddress();
 
         // Check that the factory contract address was returned correctly
         assertEq(address(factory), factoryAddress);
