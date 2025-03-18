@@ -22,7 +22,6 @@ contract AssetTradeTestHelper is AssetFactoryTestHelper, AssetVaultTestHelper {
     // Also updates the starting vault balances for user A and user B
     function setUp() public virtual override {
         super.setUp();
-        setAssetsTestHelper();
         mintIGCTestHelper(userB, ONE_MILLION);
         mintAssetTestHelper(userB, all);
         depositAssetsTestHelper(userA, asset1Single, amountSingle);
