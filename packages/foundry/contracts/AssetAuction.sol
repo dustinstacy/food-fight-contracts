@@ -76,22 +76,12 @@ contract AssetAuction is IERC1155Receiver {
         AuctionStatus status;
     }
 
-    /// @notice The details of a bid.
-    struct Bid {
-        address user;
-        uint256 auctionId;
-        uint256 bid;
-    }
-
     ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Mapping of auction ID to auction details.
     mapping(uint256 auctionId => Auction) private auctions;
-
-    /// @notice Mapping of the auction ID to the bids.
-    mapping(uint256 auctionId => Bid[]) private bids;
 
     /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
     IERC1155 private factory;
@@ -195,7 +185,6 @@ contract AssetAuction is IERC1155Receiver {
 
         auction.highestBid = amount;
         auction.highestBidder = msg.sender;
-        bids[auctionId].push(Bid({ user: msg.sender, auctionId: auctionId, bid: amount }));
 
         emit BidPlaced(msg.sender, auctionId, amount);
     }
@@ -306,20 +295,6 @@ contract AssetAuction is IERC1155Receiver {
     /// @return status The status of the auction.
     function getAuctionStatus(uint256 auctionId) public view returns (AuctionStatus status) {
         return auctions[auctionId].status;
-    }
-
-    /// @notice Get the bids of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return bidsArray The bids of the auction.
-    function getAuctionBids(uint256 auctionId) public view returns (Bid[] memory bidsArray) {
-        return bids[auctionId];
-    }
-
-    /// @notice Get the count of bids of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return count The count of bids of the auction.
-    function getAuctionBidCount(uint256 auctionId) public view returns (uint256 count) {
-        return bids[auctionId].length;
     }
 
     /// @notice Get the auction count.
