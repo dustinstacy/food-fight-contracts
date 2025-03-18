@@ -144,8 +144,8 @@ contract AssetVault is IERC1155Receiver {
     //!! Need to set up access control on these functions
     //!! Consider making a batch version of this function.
     function lockAsset(address account, uint256 tokenId, uint256 amount) external {
-        if (balances[account][tokenId] == 0) {
-            revert AssetVaultInsufficientBalance(account, balances[account][tokenId], 1, tokenId);
+        if (balances[account][tokenId] < amount) {
+            revert AssetVaultInsufficientBalance(account, balances[account][tokenId], amount, tokenId);
         }
 
         balances[account][tokenId] -= amount;
