@@ -176,7 +176,7 @@ contract AssetVault is IERC1155Receiver {
 
     /// @notice Get the factory contract address.
     /// @return factoryAddress The address of the assets contract.
-    function getFactoryAddress() public view returns (address factoryAddress) {
+    function getAssetFactoryAddress() public view returns (address factoryAddress) {
         return address(factory);
     }
 

@@ -238,17 +238,16 @@ contract AssetRental is IERC1155Receiver {
     }
 
     /// @notice Get the factory contract address.
-    /// @return factoryAddress The factory contract address.
-    function getFactoryAddress() external view returns (address factoryAddress) {
+    /// @return factoryAddress The address of the assets contract.
+    function getAssetFactoryAddress() public view returns (address factoryAddress) {
         return address(factory);
     }
 
     /// @notice Get the vault contract address.
-    /// @return vaultAddress The vault contract address.
-    function getVaultAddress() external view returns (address vaultAddress) {
+    /// @return vaultAddress The address of the vault contract.
+    function getAssetVaultAddress() public view returns (address vaultAddress) {
         return address(vault);
     }
-
     /////////////////////////////////////////////////////////////
     ///               ERC1155 RECEIVER FUNCTIONS              ///
     /////////////////////////////////////////////////////////////
