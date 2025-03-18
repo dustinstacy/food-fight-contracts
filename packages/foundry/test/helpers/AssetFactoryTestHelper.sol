@@ -6,13 +6,25 @@ import { TestingVariables } from "./TestingVariables.sol";
 
 // renamed contract and functions for clarity - updated NATSPEC comments
 
-/// @dev Helper contract for interacting with the AssetFactory contract
+/// @dev Helper contract for interacting with the AssetFactory contract.
 contract AssetFactoryTestHelper is TestingVariables, Test {
-    /// @dev Initialize storage variables for userA balances.
+    /// @dev Initialize storage variables for userA's factory balances.
+    // Used in AssetFactory.t.sol, AssetVault.t.sol, AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
     uint256 userAStartingFactoryIGCBalance;
     uint256 userAStartingFactoryAssetOneBalance;
     uint256 userAStartingFactoryAssetTwoBalance;
     uint256 userAStartingFactoryAssetThreeBalance;
+
+    /// @dev Initialize storage variables for user B's vault balances.
+    // Used AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
+    uint256 userBStartingFactoryIGCBalance;
+    uint256 userBStartingFactoryAssetOneBalance;
+    uint256 userBStartingFactoryAssetTwoBalance;
+    uint256 userBStartingFactoryAssetThreeBalance;
+
+    /// @dev Initialize storage variables for user C's vault balances.
+    // AssetAuction.t.sol, and AssetRental.t.sol
+    uint256 userCStartingFactoryIGCBalance;
 
     /// @dev Sets the assets, mints IGC for users, and mints assets for users.
     function setInitialFactoryState() public {
