@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Test, console } from "forge-std/Test.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { AssetVault } from "@contracts/AssetVault.sol";
@@ -14,11 +13,14 @@ import { AssetTradeTestHelper } from "./helpers/AssetTradeTestHelper.sol";
 
 contract AssetTradeConstructorTest is AssetTradeTestHelper {
     function test_constructor() public view {
-        address expectedAddress = address(factory);
-        address actualAddress = trade.getAssetFactoryAddress();
+        address expectedFactoryAddress = address(factory);
+        address expectedVaultAddress = address(vault);
+        address actualFactoryAddress = trade.getAssetFactoryAddress();
+        address actualVaultAddress = trade.getAssetVaultAddress();
 
-        // Check that the assets contract is set correctly
-        assertEq(expectedAddress, actualAddress);
+        // Check that the factory and vault addresses are correct
+        assertEq(expectedFactoryAddress, actualFactoryAddress);
+        assertEq(expectedVaultAddress, actualVaultAddress);
         // Check the proposal count is 0
         assertEq(0, trade.getProposalCount());
     }
