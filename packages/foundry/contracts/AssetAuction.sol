@@ -10,45 +10,7 @@ import { AssetVault } from "./AssetVault.sol";
 /// @notice This contract allows users to create and participate in auctions for ERC1155 assets.
 contract AssetAuction is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
-    ///                     ERRORS                          ///
-    ///////////////////////////////////////////////////////////
-
-    /// @notice Thrown when the auction is not open.
-    error AssetAuctionNotOpen(AuctionStatus status);
-
-    /// @notice Thrown when the deadline has passed.
-    error AssetAuctionDeadlineHasPassed(uint256 deadline);
-
-    /// @notice Thrown when the caller is not the seller.
-    error AssetAuctionNotTheSeller(address caller, address seller);
-
-    /// @notice Thrown when the deadline has not passed.
-    error AssetAuctionDeadlineNotPassed(uint256 deadline);
-
-    /// @notice Thrown when the bid is not higher than the highest bid.
-    error AssetAuctionBidNotHigherThanHighestBid(uint256 amount, uint256 highestBid);
-
-    ///////////////////////////////////////////////////////////
-    ///                     EVENTS                          ///
-    ///////////////////////////////////////////////////////////
-
-    /// @notice Emitted when an auction is created.
-    event AuctionCreated(address seller, uint256 auctionId, uint256 assetId, uint256 reservePrice, uint256 deadline);
-
-    /// @notice Emitted when an auction is ended.
-    event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
-
-    /// @notice Emitted when an auction is canceled.
-    event AuctionCanceled(uint256 auctionId);
-
-    /// @notice Emitted when an auction ends without meeting the reserve price.
-    event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
-
-    /// @notice Emitted when a bid is placed.
-    event BidPlaced(address bidder, uint256 auctionId, uint256 amount);
-
-    ///////////////////////////////////////////////////////////
-    ///                     ENUMS                           ///
+    ///                  TYPE DECLARATIONS                  ///
     ///////////////////////////////////////////////////////////
 
     /// @notice The status of an auction
@@ -58,10 +20,6 @@ contract AssetAuction is IERC1155Receiver {
         Ended,
         ReserveNotMet
     }
-
-    ///////////////////////////////////////////////////////////
-    ///                     STRUCTS                         ///
-    ///////////////////////////////////////////////////////////
 
     /// @notice The details of an auction.
     struct Auction {
@@ -96,6 +54,44 @@ contract AssetAuction is IERC1155Receiver {
     uint256 private auctionCount;
 
     ///////////////////////////////////////////////////////////
+    ///                     EVENTS                          ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Emitted when an auction is created.
+    event AuctionCreated(address seller, uint256 auctionId, uint256 assetId, uint256 reservePrice, uint256 deadline);
+
+    /// @notice Emitted when an auction is ended.
+    event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
+
+    /// @notice Emitted when an auction is canceled.
+    event AuctionCanceled(uint256 auctionId);
+
+    /// @notice Emitted when an auction ends without meeting the reserve price.
+    event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
+
+    /// @notice Emitted when a bid is placed.
+    event BidPlaced(address bidder, uint256 auctionId, uint256 amount);
+
+    ///////////////////////////////////////////////////////////
+    ///                     ERRORS                          ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Thrown when the auction is not open.
+    error AssetAuctionNotOpen(AuctionStatus status);
+
+    /// @notice Thrown when the deadline has passed.
+    error AssetAuctionDeadlineHasPassed(uint256 deadline);
+
+    /// @notice Thrown when the caller is not the seller.
+    error AssetAuctionNotTheSeller(address caller, address seller);
+
+    /// @notice Thrown when the deadline has not passed.
+    error AssetAuctionDeadlineNotPassed(uint256 deadline);
+
+    /// @notice Thrown when the bid is not higher than the highest bid.
+    error AssetAuctionBidNotHigherThanHighestBid(uint256 amount, uint256 highestBid);
+
+    ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
@@ -108,7 +104,7 @@ contract AssetAuction is IERC1155Receiver {
     }
 
     ///////////////////////////////////////////////////////////
-    ///                    CORE FUNCTIONS                   ///
+    ///                  SELLER FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Create a new auction.
@@ -160,6 +156,10 @@ contract AssetAuction is IERC1155Receiver {
         emit AuctionCanceled(auctionId);
     }
 
+    ///////////////////////////////////////////////////////////
+    ///                  BIDDER FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
+
     /// @notice Bid on an auction.
     /// @param auctionId The ID of the auction.
     /// @param amount The amount to bid.
@@ -188,6 +188,10 @@ contract AssetAuction is IERC1155Receiver {
 
         emit BidPlaced(msg.sender, auctionId, amount);
     }
+
+    ///////////////////////////////////////////////////////////
+    ///                 ANY CALLER FUNCTIONS                ///
+    ///////////////////////////////////////////////////////////
 
     /// @notice Complete an auction.
     /// @param auctionId The ID of the auction to complete.
