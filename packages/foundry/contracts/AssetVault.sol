@@ -4,24 +4,31 @@ pragma solidity ^0.8.28;
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title AssetVault
 /// @notice This contract handles user asset storage.
 /// @notice Users must have a balance of a given asset to perform certain actions.
 //!! Create an interface for this contract.
-contract AssetVault is IERC1155Receiver {
+contract AssetVault is IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
-    ///                      ERRORS                         ///
+    ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Thrown when the length of the tokenIds and amounts arrays are different.
-    error AssetVaultArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
+    /// @notice Mapping of a user to their balances of each token ID.
+    mapping(address user => mapping(uint256 tokenId => uint256 balance)) private balances;
 
-    /// @notice Thrown when the user lacks the required balance to perform an action.
-    error AssetVaultInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
+    /// @notice Mapping of approved callers.
+    mapping(address => bool) private approvedCallers;
+
+    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
+    IERC1155 private factory;
+
+    /// @notice The token ID of the IGC token.
+    uint8 private igcTokenId = 0;
 
     ///////////////////////////////////////////////////////////
-    ///                    EVENTS                           ///
+    ///                       EVENTS                        ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Emitted when IGC is deposited into the contract.
@@ -37,17 +44,29 @@ contract AssetVault is IERC1155Receiver {
     event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
-    ///                   STATE VARIABLES                   ///
+    ///                       ERRORS                        ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Mapping of a user to their balances of each token ID.
-    mapping(address user => mapping(uint256 tokenId => uint256 balance)) private balances;
+    /// @notice Thrown when the length of the tokenIds and amounts arrays are different.
+    error AssetVaultArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
 
-    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
-    IERC1155 private factory;
+    /// @notice Thrown when the user lacks the required balance to perform an action.
+    error AssetVaultInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
 
-    /// @notice The token ID of the IGC token.
-    uint8 private igcTokenId = 0;
+    /// @notice Thrown when the caller is not approved to perform an action.
+    error AssetVaultUnauthorizedCaller(address caller);
+
+    /////////////////////////////////////////////////////////////
+    ///                      MODIFIERS                        ///
+    /////////////////////////////////////////////////////////////
+
+    /// @notice Modifier to restrict access to approved callers.
+    modifier onlyApprovedCaller() {
+        if (!getIsApprovedCaller(msg.sender)) {
+            revert AssetVaultUnauthorizedCaller(msg.sender);
+        }
+        _;
+    }
 
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
@@ -55,7 +74,8 @@ contract AssetVault is IERC1155Receiver {
 
     /// @notice Construct the AssetVault contract.
     /// @param _factory The address of the ERC1155 contract that is responsible for minting assets.
-    constructor(address _factory) {
+    /// @param _owner The address of the owner of the contract.
+    constructor(address _factory, address _owner) Ownable(_owner) {
         factory = IERC1155(_factory);
     }
 
@@ -143,7 +163,7 @@ contract AssetVault is IERC1155Receiver {
     /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a trade.
     //!! Need to set up access control on these functions
     //!! Consider making a batch version of this function.
-    function lockAsset(address account, uint256 tokenId, uint256 amount) external {
+    function lockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
         if (balances[account][tokenId] < amount) {
             revert AssetVaultInsufficientBalance(account, balances[account][tokenId], amount, tokenId);
         }
@@ -158,8 +178,18 @@ contract AssetVault is IERC1155Receiver {
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
     //!! Need to set up access control on these functions
     //!! Consider making a batch version of this function.
-    function unlockAsset(address account, uint256 tokenId, uint256 amount) external {
+    function unlockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
         balances[account][tokenId] += amount;
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///                  ACCESS CONTROL                     ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Approve a caller to perform actions on behalf of a user.
+    /// @param caller The address of the caller to approve.
+    function approveCaller(address caller) external onlyOwner {
+        approvedCallers[caller] = true;
     }
 
     ///////////////////////////////////////////////////////////
@@ -170,7 +200,7 @@ contract AssetVault is IERC1155Receiver {
     /// @param user The address of the user.
     /// @param tokenId The token ID to get the balance of.
     /// @return balance The balance of the user for the token ID.
-    function balanceOf(address user, uint256 tokenId) external view returns (uint256 balance) {
+    function balanceOf(address user, uint256 tokenId) public view returns (uint256 balance) {
         return balances[user][tokenId];
     }
 
@@ -178,6 +208,19 @@ contract AssetVault is IERC1155Receiver {
     /// @return factoryAddress The address of the assets contract.
     function getAssetFactoryAddress() public view returns (address factoryAddress) {
         return address(factory);
+    }
+
+    /// @notice Get the IGC token ID.
+    /// @return igcTokenId The token ID of the IGC token.
+    function getIGCTokenId() public view returns (uint8) {
+        return igcTokenId;
+    }
+
+    /// @notice Get the approved caller status.
+    /// @param caller The address of the caller.
+    /// @return approved The approved caller status.
+    function getIsApprovedCaller(address caller) public view returns (bool approved) {
+        return approvedCallers[caller];
     }
 
     /////////////////////////////////////////////////////////////
