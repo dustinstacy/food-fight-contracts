@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// Remove unnecessary imports
-
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,6 +9,19 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice This is a factory contract for creating ERC1155 assets.
 /// @notice It will handle minting the IGC (in game currency) and the game assets.
 contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
+    ///////////////////////////////////////////////////////////
+    ///                   STATE VARIABLES                   ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Mapping of the asset ID to the URI of the metadata.
+    mapping(uint256 assetID => string uri) private assetURIs;
+
+    /// @notice Mapping of the asset ID to the price of the asset.
+    mapping(uint256 assetID => uint256 price) private assetPrices;
+
+    /// @notice The token ID of the IGC token.
+    uint256 private igcTokenId = 0;
+
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
@@ -31,19 +42,6 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
-    ///                   STATE VARIABLES                   ///
-    ///////////////////////////////////////////////////////////
-
-    /// @notice Mapping of the asset ID to the URI of the metadata.
-    mapping(uint256 assetID => string uri) private assetURIs;
-
-    /// @notice Mapping of the asset ID to the price of the asset.
-    mapping(uint256 assetID => uint256 price) private assetPrices;
-
-    /// @notice The token ID of the IGC token.
-    uint256 private igcTokenId = 0;
-
-    ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
@@ -53,7 +51,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     constructor(address _owner) ERC1155("") Ownable(_owner) { }
 
     ///////////////////////////////////////////////////////////
-    ///                    CORE FUNCTIONS                   ///
+    ///                    MINT FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Mints a given amount of IGC.
@@ -104,6 +102,10 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
 
         _mintBatch(to, ids, amounts, data);
     }
+
+    ///////////////////////////////////////////////////////////
+    ///                    BURN FUNCTIONS                   ///
+    ///////////////////////////////////////////////////////////
 
     /// @notice Burns a given amount of an asset.
     /// @param account Address to burn the asset from.
