@@ -10,36 +10,7 @@ import { AssetVault } from "./AssetVault.sol";
 /// @notice This contract allows users to trade ERC1155 assets with each other.
 contract AssetTrade is IERC1155Receiver {
     ///////////////////////////////////////////////////////////
-    ///                      ERRORS                         ///
-    ///////////////////////////////////////////////////////////
-
-    /// @notice Thrown when the proposal is not in a pending state.
-    error AssetTradeProposalNotPending(ProposalStatus status);
-
-    /// @notice Thrown when the caller, who is not the proposer, tries to cancel the proposal.
-    error AssetTradeNotProposer(address caller, address proposer);
-
-    /// @notice Thrown when the caller, who is not the receiver, tries to address the proposal.
-    error AssetTradeNotReceiver(address caller, address receiver);
-
-    ///////////////////////////////////////////////////////////
-    ///                    EVENTS                           ///
-    ///////////////////////////////////////////////////////////
-
-    /// @notice Emitted when a proposal is created.
-    event ProposalCreated(uint256 proposalId);
-
-    /// @notice Emitted when a proposal is approved.
-    event ProposalApproved(uint256 proposalId);
-
-    /// @notice Emitted when a proposal is rejected.
-    event ProposalRejected(uint256 proposalId);
-
-    /// @notice Emitted when a proposal is canceled.
-    event ProposalCanceled(uint256 proposalId);
-
-    ///////////////////////////////////////////////////////////
-    ///                     ENUMS                           ///
+    ///                   TYPE DECLARATIONS                 ///
     ///////////////////////////////////////////////////////////
 
     /// @notice The status of a proposal.
@@ -49,10 +20,6 @@ contract AssetTrade is IERC1155Receiver {
         Rejected,
         Canceled
     }
-
-    ///////////////////////////////////////////////////////////
-    ///                     STRUCTS                         ///
-    ///////////////////////////////////////////////////////////
 
     /// @notice The details of a proposal.
     struct Proposal {
@@ -80,6 +47,35 @@ contract AssetTrade is IERC1155Receiver {
     uint256 private proposalCount;
 
     ///////////////////////////////////////////////////////////
+    ///                      EVENTS                         ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Emitted when a proposal is created.
+    event ProposalCreated(uint256 proposalId);
+
+    /// @notice Emitted when a proposal is approved.
+    event ProposalApproved(uint256 proposalId);
+
+    /// @notice Emitted when a proposal is rejected.
+    event ProposalRejected(uint256 proposalId);
+
+    /// @notice Emitted when a proposal is canceled.
+    event ProposalCanceled(uint256 proposalId);
+
+    ///////////////////////////////////////////////////////////
+    ///                      ERRORS                         ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Thrown when the proposal is not in a pending state.
+    error AssetTradeProposalNotPending(ProposalStatus status);
+
+    /// @notice Thrown when the caller, who is not the proposer, tries to cancel the proposal.
+    error AssetTradeNotProposer(address caller, address proposer);
+
+    /// @notice Thrown when the caller, who is not the receiver, tries to address the proposal.
+    error AssetTradeNotReceiver(address caller, address receiver);
+
+    ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
@@ -90,7 +86,7 @@ contract AssetTrade is IERC1155Receiver {
     }
 
     ///////////////////////////////////////////////////////////
-    ///                    CORE FUNCTIONS                   ///
+    ///                  PROPOSER FUNCTIONS                 ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Create a proposal to trade assets.
@@ -133,6 +129,10 @@ contract AssetTrade is IERC1155Receiver {
 
         emit ProposalCanceled(proposalId);
     }
+
+    ///////////////////////////////////////////////////////////
+    ///                    RECEIVER FUNCTIONS               ///
+    ///////////////////////////////////////////////////////////
 
     /// @notice Approve a proposal to trade assets.
     /// @param proposalId The ID of the proposal to approve.
