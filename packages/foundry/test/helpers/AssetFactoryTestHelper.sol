@@ -8,7 +8,7 @@ import { TestingVariables } from "./TestingVariables.sol";
 /// @dev Is also repsonsible for extending the TestingVariables and Test contracts to all inheriting contracts.
 contract AssetFactoryTestHelper is TestingVariables, Test {
     ////////////////////////////////////////////////
-    /// Setter Functions                         ///
+    /// Setter Function                         ///
     ////////////////////////////////////////////////
 
     /// @dev Sets the asset data, mints IGC and assets for userA, and stores the starting balances for userA.
