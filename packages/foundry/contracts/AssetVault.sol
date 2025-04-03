@@ -192,6 +192,12 @@ contract AssetVault is IERC1155Receiver, Ownable {
         approvedCallers[caller] = true;
     }
 
+    /// @notice Revoke approval for a caller to perform actions on behalf of a user.
+    /// @param caller The address of the caller to revoke approval for.
+    function revokeCaller(address caller) external onlyOwner {
+        approvedCallers[caller] = false;
+    }
+
     ///////////////////////////////////////////////////////////
     ///                   VIEW FUNCTIONS                    ///
     ///////////////////////////////////////////////////////////
