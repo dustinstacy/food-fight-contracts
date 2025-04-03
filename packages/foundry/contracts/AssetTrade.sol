@@ -16,7 +16,7 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice The status of a proposal.
     enum ProposalStatus {
         Pending,
-        Approved,
+        Accepted,
         Rejected,
         Canceled
     }
@@ -54,7 +54,7 @@ contract AssetTrade is IERC1155Receiver {
     event ProposalCreated(uint256 proposalId);
 
     /// @notice Emitted when a proposal is approved.
-    event ProposalApproved(uint256 proposalId);
+    event ProposalAccepted(uint256 proposalId);
 
     /// @notice Emitted when a proposal is rejected.
     event ProposalRejected(uint256 proposalId);
@@ -134,10 +134,10 @@ contract AssetTrade is IERC1155Receiver {
     ///                    RECEIVER FUNCTIONS               ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Approve a proposal to trade assets.
+    /// @notice Accept a proposal to trade assets.
     /// @param proposalId The ID of the proposal to approve.
     /// @dev Will throw an error when the user lacks the required balance of the asset to trade. (AssetVaultInsufficientBalance).
-    function approveProposal(uint256 proposalId) external {
+    function acceptProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
 
         if (proposal.status != ProposalStatus.Pending) {
@@ -148,14 +148,14 @@ contract AssetTrade is IERC1155Receiver {
             revert AssetTradeNotReceiver(msg.sender, proposal.receiver);
         }
 
-        proposal.status = ProposalStatus.Approved;
+        proposal.status = ProposalStatus.Accepted;
 
         // Execute the exchange of assets by updating the balances in the AssetVault contract
         vault.lockAsset(proposal.receiver, proposal.assetBId, 1);
         vault.unlockAsset(proposal.proposer, proposal.assetBId, 1);
         vault.unlockAsset(proposal.receiver, proposal.assetAId, 1);
 
-        emit ProposalApproved(proposalId);
+        emit ProposalAccepted(proposalId);
     }
 
     /// @notice Reject a proposal to trade two assets.
