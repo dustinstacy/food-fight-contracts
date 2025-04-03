@@ -238,69 +238,6 @@ contract AssetAuction is IERC1155Receiver {
         return auctions[auctionId];
     }
 
-    /// @notice Get the seller of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return seller The address of the seller.
-    function getAuctionSeller(uint256 auctionId) public view returns (address seller) {
-        return auctions[auctionId].seller;
-    }
-
-    /// @notice Get the highest bidder of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return highestBidder The address of the highest bidder.
-    function getAuctionHighestBidder(uint256 auctionId) public view returns (address highestBidder) {
-        return auctions[auctionId].highestBidder;
-    }
-
-    /// @notice Get the winning bidder of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return winningBidder The address of the winning bidder.
-    function getAuctionWinningBidder(uint256 auctionId) public view returns (address winningBidder) {
-        return auctions[auctionId].winningBidder;
-    }
-
-    /// @notice Get the asset ID of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return assetId The ID of the asset.
-    function getAuctionAssetId(uint256 auctionId) public view returns (uint256 assetId) {
-        return auctions[auctionId].assetId;
-    }
-
-    /// @notice Get the reserve price of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return reservePrice The reserve price.
-    function getAuctionReservePrice(uint256 auctionId) public view returns (uint256 reservePrice) {
-        return auctions[auctionId].reservePrice;
-    }
-
-    /// @notice Get the deadline of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return deadline The deadline.
-    function getAuctionDeadline(uint256 auctionId) public view returns (uint256 deadline) {
-        return auctions[auctionId].deadline;
-    }
-
-    /// @notice Get the highest bid of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return highestBid The highest bid.
-    function getAuctionHighestBid(uint256 auctionId) public view returns (uint256 highestBid) {
-        return auctions[auctionId].highestBid;
-    }
-
-    /// @notice Get the winning bid of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return winningBid The winning bid.
-    function getAuctionWinningBid(uint256 auctionId) public view returns (uint256 winningBid) {
-        return auctions[auctionId].winningBid;
-    }
-
-    /// @notice Get the status of an auction.
-    /// @param auctionId The ID of the auction.
-    /// @return status The status of the auction.
-    function getAuctionStatus(uint256 auctionId) public view returns (AuctionStatus status) {
-        return auctions[auctionId].status;
-    }
-
     /// @notice Get the auction count.
     /// @return count The auction count.
     function getAuctionCount() public view returns (uint256 count) {
