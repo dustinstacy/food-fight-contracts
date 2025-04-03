@@ -188,41 +188,6 @@ contract AssetTrade is IERC1155Receiver {
         return proposals[proposalId];
     }
 
-    /// @notice Get the proposer of a proposal.
-    /// @param proposalId The ID of the proposal.
-    /// @return proposer The address of the proposer.
-    function getProposalProposer(uint256 proposalId) public view returns (address proposer) {
-        return proposals[proposalId].proposer;
-    }
-
-    /// @notice Get the receiver of a proposal.
-    /// @param proposalId The ID of the proposal.
-    /// @return receiver The address of the receiver.
-    function getProposalReceiver(uint256 proposalId) public view returns (address receiver) {
-        return proposals[proposalId].receiver;
-    }
-
-    /// @notice Get the asset1 token ID of a proposal.
-    /// @param proposalId The ID of the proposal.
-    /// @return assetAId The token ID of the asset1.
-    function getProposalAssetATokenId(uint256 proposalId) public view returns (uint256 assetAId) {
-        return proposals[proposalId].assetAId;
-    }
-
-    /// @notice Get the asset2 token ID of a proposal.
-    /// @param proposalId The ID of the proposal.
-    /// @return assetBId The token ID of the asset2.
-    function getProposalAssetBTokenId(uint256 proposalId) public view returns (uint256 assetBId) {
-        return proposals[proposalId].assetBId;
-    }
-
-    /// @notice Get the status of a proposal.
-    /// @param proposalId The ID of the proposal.
-    /// @return status The status of the proposal.
-    function getProposalStatus(uint256 proposalId) public view returns (ProposalStatus status) {
-        return proposals[proposalId].status;
-    }
-
     /// @notice Get the number of proposals.
     /// @return proposalCount The number of proposals.
     function getProposalCount() public view returns (uint256) {
