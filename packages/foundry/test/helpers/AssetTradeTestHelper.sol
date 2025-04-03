@@ -33,7 +33,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
 
     /// @dev Set up the initial state for the AssetTrade contract
     // Sets the asset data, mints IGC and assets for userA & userB, deposits single assets into the vault for trade,
-    // and stores the starting balances for userA & userB.
+    // approves the AssetTrade contract to lock and unlock assets in the vault, and stores the starting balances for userA & userB.
     function setUp() public virtual override {
         // Calls the setup function from the parent class
         super.setUp();
@@ -46,6 +46,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
         vm.prank(owner);
         vault.approveCaller(address(trade));
 
+        // Update the starting vault balances for userA & userB
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
         userBStartingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
