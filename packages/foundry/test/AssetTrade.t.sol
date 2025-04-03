@@ -62,7 +62,7 @@ contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
     function test_createProposal_AssetLocked() public {
         createProposalHelper();
 
-        // Check that userA's asset vault balance was updated
+        // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance - 1);
     }
@@ -104,7 +104,7 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
         uint256 status = uint256(trade.getProposal(1).status);
         assertEq(status, canceledStatus);
 
-        // Check that userA's asset balance was updated
+        // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
     }
@@ -132,7 +132,7 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
     function test_cancelProposal_RevertsIf_NotProposer() public {
         vm.prank(userB);
 
-        // Check that the call reverts when the user is not the proposer
+        // Check that the call reverts with the AssetTradeNotProposer error
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeNotProposer.selector, userB, userA));
         trade.cancelProposal(1);
     }
