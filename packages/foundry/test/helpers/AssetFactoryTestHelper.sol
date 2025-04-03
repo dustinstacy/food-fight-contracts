@@ -4,29 +4,14 @@ pragma solidity ^0.8.28;
 import { Test } from "forge-std/Test.sol";
 import { TestingVariables } from "./TestingVariables.sol";
 
-// renamed contract and functions for clarity - updated NATSPEC comments
-
 /// @dev Helper contract for interacting with the AssetFactory contract.
+/// @dev Is also repsonsible for extending the TestingVariables and Test contracts to all inheriting contracts.
 contract AssetFactoryTestHelper is TestingVariables, Test {
-    /// @dev Initialize storage variables for userA's factory balances.
-    // Used in AssetFactory.t.sol, AssetVault.t.sol, AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
-    uint256 userAStartingFactoryIGCBalance;
-    uint256 userAStartingFactoryAssetOneBalance;
-    uint256 userAStartingFactoryAssetTwoBalance;
-    uint256 userAStartingFactoryAssetThreeBalance;
+    ////////////////////////////////////////////////
+    /// Setter Functions                         ///
+    ////////////////////////////////////////////////
 
-    /// @dev Initialize storage variables for user B's vault balances.
-    // Used AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
-    uint256 userBStartingFactoryIGCBalance;
-    uint256 userBStartingFactoryAssetOneBalance;
-    uint256 userBStartingFactoryAssetTwoBalance;
-    uint256 userBStartingFactoryAssetThreeBalance;
-
-    /// @dev Initialize storage variables for user C's vault balances.
-    // AssetAuction.t.sol, and AssetRental.t.sol
-    uint256 userCStartingFactoryIGCBalance;
-
-    /// @dev Sets the assets, mints IGC for users, and mints assets for users.
+    /// @dev Sets the asset data, mints IGC and assets for userA, and stores the starting balances for userA.
     function setInitialFactoryState() public {
         setAssetsTestHelper();
         mintIGCTestHelper(userA, ONE_MILLION);
@@ -38,6 +23,10 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
         userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
     }
 
+    /////////////////////////////////////////////////
+    /// Contract Call Helpers                     ///
+    /////////////////////////////////////////////////
+
     /// @dev Sets the asset data for the factory.
     //!! Modify to accept an array of asset data for custom asset data.
     function setAssetsTestHelper() public {
@@ -48,17 +37,17 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
         vm.stopPrank();
     }
 
+    /// @dev Mints IGC for a user.
     /// @param minter The address of the user to mint IGC for.
     /// @param amount The amount of IGC to mint.
-    /// @dev Mints IGC for a user.
     function mintIGCTestHelper(address minter, uint256 amount) public {
         vm.prank(minter);
         factory.mintIGC(minter, amount);
     }
 
+    /// @dev Mints assets for a user. Currently using static arrays found in TestingVariables.sol for amounts.
     /// @param minter The address of the user to mint assets for.
     /// @param amounts The amounts of each asset to mint.
-    /// @dev Mints assets for a user. Currently using static arrays found in TestingVariables.sol for amounts.
     //!! Modify to accept an array of assetIds and an array of amounts for batch minting.
     function mintAssetTestHelper(address minter, uint256[] memory amounts) public {
         vm.startPrank(minter);

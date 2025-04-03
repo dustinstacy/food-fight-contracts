@@ -4,28 +4,20 @@ pragma solidity ^0.8.28;
 import { AssetFactoryTestHelper } from "./AssetFactoryTestHelper.sol";
 
 /// @dev Helper contract for interacting with the AssetVault contract.
+/// Inheritance Tree:
+/// AssetVaultTestHelper -> AssetFactoryTestHelper -> TestingVariables & Test
 contract AssetVaultTestHelper is AssetFactoryTestHelper {
-    /// @dev The starting balance of IGC and Assets in user A's vault.
-    // Used in AssetVault.t.sol, AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
-    uint256 userAStartingVaultIGCBalance;
-    uint256 userAStartingVaultAssetOneBalance;
-    uint256 userAStartingVaultAssetTwoBalance;
-    uint256 userAStartingVaultAssetThreeBalance;
+    ////////////////////////////////////////////////
+    /// Setup Function                           ///
+    ////////////////////////////////////////////////
 
-    /// @dev Initialize storage variables for user B's vault balances.
-    // Used AssetTrade.t.sol, AssetAuction.t.sol, and AssetRental.t.sol
-    uint256 userBStartingVaultIGCBalance;
-    uint256 userBStartingVaultAssetOneBalance;
-    uint256 userBStartingVaultAssetTwoBalance;
-    uint256 userBStartingVaultAssetThreeBalance;
-
-    /// @dev Initialize storage variables for user C's vault balances.
-    // AssetAuction.t.sol, and AssetRental.t.sol
-    uint256 userCStartingVaultIGCBalance;
-
-    /// @dev Sets the assets, mints IGC for users, and mints assets for users.
+    /// @dev Sets the assets data, mints IGC and assets for userA & userB, and stores the starting balances for userA & userB.
     function setUp() public virtual {
+        // Called from AssetFactoryTestHelper
         setInitialFactoryState();
+
+        // Set approved caller for vault lock and unlock functions
+        approveCallerHelper(approvedCaller);
 
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -33,9 +25,13 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
         userAStartingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
     }
 
+    ////////////////////////////////////////////////
+    /// Contract Call Helpers                    ///
+    ////////////////////////////////////////////////
+
+    /// @dev Deposits IGC for a user.
     /// @param user The address of the user depositing IGC.
     /// @param amount The amount of IGC to deposit.
-    /// @dev Deposits IGC for a user.
     function depositIGCTestHelper(address user, uint256 amount) public {
         vm.startPrank(user);
         factory.setApprovalForAll(address(vault), true);
@@ -43,10 +39,10 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
         vm.stopPrank();
     }
 
+    /// @dev Deposits an asset for a user.
     /// @param user The address of the user depositing assets.
     /// @param assetIds The IDs of the asset to deposit.
     /// @param amounts The amounts of the assets to deposit.
-    /// @dev Deposits an asset for a user.
     function depositAssetsTestHelper(address user, uint256[] memory assetIds, uint256[] memory amounts) public {
         vm.startPrank(user);
         factory.setApprovalForAll(address(vault), true);
@@ -54,20 +50,20 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
         vm.stopPrank();
     }
 
+    /// @dev Withdraws IGC to a target address.
     /// @param user The address of the user withdrawing IGC.
     /// @param to The address to withdraw the IGC to.
     /// @param amount The amount of IGC to withdraw.
-    /// @dev Withdraws IGC to a target address.
     function withdrawIGCTestHelper(address user, address to, uint256 amount) public {
         vm.prank(user);
         vault.withdrawIGC(to, amount);
     }
 
+    /// @dev Withdraws assets to a target address.
     /// @param user The address of the user withdrawing assets.
     /// @param to The address to withdraw the assets to.
     /// @param assetIds The IDs of the assets to withdraw.
     /// @param amounts The amounts of the assets to withdraw.
-    /// @dev Withdraws assets to a target address.
     function withdrawAssetsTestHelper(address user, address to, uint256[] memory assetIds, uint256[] memory amounts)
         public
     {
@@ -75,21 +71,32 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
         vault.withdrawAssets(to, assetIds, amounts);
     }
 
+    /// @dev Locks assets for a user.
+    /// @param caller The address of the caller that is locking the assets.
     /// @param user The address of the user whose assets are being locked.
     /// @param assetId The ID of the asset to lock.
     /// @param amount The amount of the asset to lock.
-    /// @dev Locks assets for a user.
-    function lockAssetTestHelper(address user, uint256 assetId, uint256 amount) public {
-        vm.prank(user);
+    function lockAssetTestHelper(address caller, address user, uint256 assetId, uint256 amount) public {
+        vm.prank(caller);
         vault.lockAsset(user, assetId, amount);
     }
 
+    /// @dev Unlocks assets for a user.
+    /// @param caller The address of the caller that is unlocking the assets.
     /// @param user The address of the user to unlock assets for.
     /// @param assetId The ID of the asset to unlock.
     /// @param amount The amount of the asset to unlock.
-    /// @dev Unlocks assets for a user.
-    function unlockAssetTestHelper(address user, uint256 assetId, uint256 amount) public {
-        vm.prank(user);
+    function unlockAssetTestHelper(address caller, address user, uint256 assetId, uint256 amount) public {
+        vm.prank(caller);
         vault.unlockAsset(user, assetId, amount);
+    }
+
+    /// @dev Approves a caller to interact with the lock/unlock functions.
+    /// @dev This function is only callable by the owner of the vault.
+    /// @param caller The address of the caller to approve.
+    function approveCallerHelper(address caller) public {
+        vm.startPrank(owner);
+        vault.approveCaller(caller);
+        vm.stopPrank();
     }
 }
