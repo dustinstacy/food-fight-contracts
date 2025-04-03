@@ -19,6 +19,7 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
         // Set approved caller for vault lock and unlock functions
         approveCallerHelper(approvedCaller);
 
+        // Update the starting vault balances for userA
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);

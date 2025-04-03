@@ -17,6 +17,7 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
         mintIGCTestHelper(userA, ONE_MILLION);
         mintAssetTestHelper(userA, all);
 
+        // Update the starting factory balances for userA
         userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         userAStartingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
