@@ -14,8 +14,11 @@ import { AssetFactoryTestHelper } from "./helpers/AssetFactoryTestHelper.sol";
 ///////////////////////////////////////////////////////////
 contract AssetFactoryConstructorTest is AssetFactoryTestHelper {
     function test_assetFactoryConstructor() public view {
-        // Check the owner was set correctly
-        assertEq(factory.owner(), owner);
+        address expectedOwner = owner;
+        address actualOwner = factory.owner();
+
+        // Check that the owner is set correctly
+        assertEq(actualOwner, expectedOwner);
     }
 }
 
@@ -24,10 +27,6 @@ contract AssetFactoryConstructorTest is AssetFactoryTestHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetFactoryIGCFunctionsTest is AssetFactoryTestHelper {
-    function setUp() public {
-        userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-    }
-
     function test_mintIGC() public {
         vm.prank(userA);
         factory.mintIGC(userA, 1);
@@ -65,7 +64,7 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
         userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
 
-        // Based on minting 1 of asset 1, 5 of asset 2, and 10 of asset 3
+        // Based on the allVarying array found in TestingVariables ( [1, 5, 10] )
         mintBatchTotalCost = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * 5) + (ASSET_THREE_PRICE * 10);
     }
 
@@ -123,7 +122,6 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         // assetIds = [ASSET_ONE_ID, ASSET_TWO_ID, ASSET_THREE_ID]
         // allVarying = [1, 5, 10]
-        // This allows us to test both arrays with different values
         factory.mintBatch(userA, assetIds, allVarying, "");
 
         uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
@@ -160,6 +158,7 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
     function test_mintBatch_RevertsIf_InsufficientBalance() public {
         vm.prank(userB);
+
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userB, 0, mintBatchTotalCost, 0)
@@ -192,14 +191,7 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
 contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
     function setUp() public {
-        setAssetsTestHelper();
-        mintIGCTestHelper(userA, ONE_MILLION);
-        mintAssetTestHelper(userA, allVarying);
-
-        userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        userAStartingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-        userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
-        userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
+        setInitialFactoryState();
     }
 
     function test_burnAsset() public {
@@ -234,9 +226,9 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 
     function test_burnAsset_WithApproval() public {
         vm.prank(userA);
-        factory.setApprovalForAll(owner, true);
+        factory.setApprovalForAll(approvedCaller, true);
 
-        vm.prank(owner);
+        vm.prank(approvedCaller);
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
         uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
@@ -263,13 +255,13 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
     }
 
     function test_burn_RevertsIf_InsufficientBalance() public {
-        vm.prank(userB);
+        vm.prank(userA);
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userB, 0, 1, ASSET_ONE_ID)
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userA, 10, 11, ASSET_ONE_ID)
         );
-        factory.burnAsset(userB, ASSET_ONE_ID, 1);
+        factory.burnAsset(userA, ASSET_ONE_ID, 11);
     }
 
     function test_burnBatch() public {
@@ -288,9 +280,9 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 
     function test_burnBatch_WithApproval() public {
         vm.prank(userA);
-        factory.setApprovalForAll(owner, true);
+        factory.setApprovalForAll(approvedCaller, true);
 
-        vm.prank(owner);
+        vm.prank(approvedCaller);
         factory.burnBatch(userA, assetIds, allVarying);
 
         uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
@@ -335,9 +327,10 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userA, 1, 10, ASSET_ONE_ID)
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userA, 10, 11, ASSET_ONE_ID)
         );
         // all = [10, 10, 10]
+        all[0] = 11;
         factory.burnBatch(userA, assetIds, all);
     }
 }
