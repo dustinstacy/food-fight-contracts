@@ -14,10 +14,9 @@ import { AssetFactoryTestHelper } from "./helpers/AssetFactoryTestHelper.sol";
 ///////////////////////////////////////////////////////////
 contract AssetFactoryConstructorTest is AssetFactoryTestHelper {
     function test_assetFactoryConstructor() public view {
+        // Check that the owner is set correctly
         address expectedOwner = owner;
         address actualOwner = factory.owner();
-
-        // Check that the owner is set correctly
         assertEq(actualOwner, expectedOwner);
     }
 }
@@ -31,9 +30,8 @@ contract AssetFactoryIGCFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         factory.mintIGC(userA, 1);
 
-        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-
         // Check that userA's IGC balance has increased
+        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance + 1);
     }
 
@@ -59,6 +57,7 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         setAssetsTestHelper();
         mintIGCTestHelper(userA, ONE_MILLION);
 
+        // Update the starting factory balances for userA
         userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         userAStartingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
@@ -72,12 +71,12 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         factory.mintAsset(userA, ASSET_ONE_ID, 1, "");
 
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-
         // Check that userA's asset balance has increased
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance + 1);
+
         // Check that userA's IGC balance has decreased
+        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - ASSET_ONE_PRICE);
     }
 
@@ -124,16 +123,18 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         // allVarying = [1, 5, 10]
         factory.mintBatch(userA, assetIds, allVarying, "");
 
-        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
-        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
-
         // Check that userA's IGC balance has decreased
+        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - mintBatchTotalCost);
+
         // Check that userA's asset balances have increased
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance + 1);
+
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
         assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance + 5);
+
+        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
         assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance + 10);
     }
 
@@ -198,9 +199,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-
         // Check that userA's asset balance has decreased
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
     }
 
@@ -208,9 +208,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         factory.burnAsset(userA, ASSET_TWO_ID, 5);
 
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
-
         // Check that userA's asset balance has decreased
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
         assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
     }
 
@@ -218,9 +217,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         factory.burnAsset(userA, IGC_TOKEN_ID, 1000);
 
-        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-
         // Check that userA's IGC balance has decreased
+        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - 1000);
     }
 
@@ -231,9 +229,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.prank(approvedCaller);
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-
         // Check that userA's asset balance has decreased
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
     }
 
@@ -268,13 +265,14 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
         factory.burnBatch(userA, assetIds, allVarying);
 
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
-        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
-
         // Check that userA's asset balances have decreased
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
+
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
         assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
+
+        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
         assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance - 10);
     }
 
@@ -285,13 +283,14 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.prank(approvedCaller);
         factory.burnBatch(userA, assetIds, allVarying);
 
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
-        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
-
         // Check that userA's asset balances have decreased
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
+
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
         assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
+
+        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
         assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance - 10);
     }
 
@@ -418,14 +417,18 @@ contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
         setAssetsTestHelper();
 
         // Check the URI of the asset
-        assertEq(factory.getAssetURI(ASSET_ONE_ID), "ipfs://asset1");
+        string memory expectedURI = "ipfs://asset1";
+        string memory actualURI = factory.getAssetURI(ASSET_ONE_ID);
+        assertEq(actualURI, expectedURI);
     }
 
     function test_getAssetPrice() public {
         setAssetsTestHelper();
 
         // Check the price of the asset
-        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ASSET_ONE_PRICE);
+        uint256 expectedPrice = ASSET_ONE_PRICE;
+        uint256 actualPrice = factory.getAssetPrice(ASSET_ONE_ID);
+        assertEq(actualPrice, expectedPrice);
     }
 }
 
@@ -435,19 +438,17 @@ contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
 
 contract AssetFactoryERC1155ReceiverTest is AssetFactoryTestHelper {
     function test_onERC1155Received() public view {
+        // Check the correct selector was returned
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
         bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
-
-        // Check the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
     }
 
     function test_onERC1155BatchReceived() public view {
+        // Check the correct selector was returned
         bytes4 expectedSelector = bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
         bytes4 returnedSelector =
             factory.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
-
-        // Check the correct selector was returned
         assertEq(returnedSelector, expectedSelector);
     }
 }
