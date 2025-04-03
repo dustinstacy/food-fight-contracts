@@ -27,8 +27,8 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
     /// Contract Call Helpers                     ///
     /////////////////////////////////////////////////
 
-    /// @dev Sets the asset data for the factory.
     //!! Modify to accept an array of asset data for custom asset data.
+    /// @dev Sets the asset data for the factory.
     function setAssetsTestHelper() public {
         vm.startPrank(owner);
         factory.setAssetData(1, "ipfs://asset1", 100);
@@ -45,10 +45,10 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
         factory.mintIGC(minter, amount);
     }
 
+    //!! Modify to accept an array of assetIds and an array of amounts for batch minting.
     /// @dev Mints assets for a user. Currently using static arrays found in TestingVariables.sol for amounts.
     /// @param minter The address of the user to mint assets for.
     /// @param amounts The amounts of each asset to mint.
-    //!! Modify to accept an array of assetIds and an array of amounts for batch minting.
     function mintAssetTestHelper(address minter, uint256[] memory amounts) public {
         vm.startPrank(minter);
         factory.mintAsset(minter, ASSET_ONE_ID, amounts[0], "");
