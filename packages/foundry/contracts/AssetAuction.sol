@@ -89,7 +89,7 @@ contract AssetAuction is IERC1155Receiver {
     error AssetAuctionDeadlineNotPassed(uint256 deadline);
 
     /// @notice Thrown when the bid is not higher than the highest bid.
-    error AssetAuctionBidNotHigherThanHighestBid(uint256 amount, uint256 highestBid);
+    error AssetAuctionBidBelowHighestBid(uint256 amount, uint256 highestBid);
 
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
@@ -176,7 +176,7 @@ contract AssetAuction is IERC1155Receiver {
         }
 
         if (amount <= auction.highestBid) {
-            revert AssetAuctionBidNotHigherThanHighestBid(amount, auction.highestBid);
+            revert AssetAuctionBidBelowHighestBid(amount, auction.highestBid);
         }
 
         // Lock the IGC tokens of the bidder and unlock the IGC tokens of the previous highest bidder
