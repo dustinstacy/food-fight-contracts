@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { AssetVault } from "@contracts/AssetVault.sol";
@@ -331,7 +332,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
     }
 
     function test_lockAsset() public {
-        vm.prank(userA);
+        vm.prank(approvedCaller);
         vault.lockAsset(userA, IGC_TOKEN_ID, 10);
 
         uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
@@ -341,7 +342,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
     }
 
     function test_lockAsset_RevertsIf_InsufficientBalance() public {
-        vm.prank(userB);
+        vm.prank(approvedCaller);
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
@@ -350,16 +351,72 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
         vault.lockAsset(userB, IGC_TOKEN_ID, 1);
     }
 
-    function test_unlockAsset() public {
-        lockAssetTestHelper(userA, IGC_TOKEN_ID, 10);
-
+    function test_lockAsset_RevertsIf_UnauthorizedCaller() public {
         vm.prank(userA);
+
+        // Check that the function reverts with the AssetVaultUnauthorizedCaller error
+        vm.expectRevert(abi.encodeWithSelector(AssetVault.AssetVaultUnauthorizedCaller.selector, userA));
+        vault.lockAsset(userA, IGC_TOKEN_ID, 10);
+    }
+
+    function test_unlockAsset() public {
+        lockAssetTestHelper(approvedCaller, userA, IGC_TOKEN_ID, 10);
+
+        vm.prank(approvedCaller);
         vault.unlockAsset(userA, IGC_TOKEN_ID, 10);
 
         uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
 
         // Check that the user's balance was updated correctly
         assertEq(userAStartingVaultIGCBalance, userAEndingVaultIGCBalance);
+    }
+
+    function test_unlockAsset_RevertsIf_UnauthorizedCaller() public {
+        vm.prank(userA);
+
+        // Check that the function reverts with the AssetVaultUnauthorizedCaller error
+        vm.expectRevert(abi.encodeWithSelector(AssetVault.AssetVaultUnauthorizedCaller.selector, userA));
+        vault.unlockAsset(userA, IGC_TOKEN_ID, 10);
+    }
+}
+
+///////////////////////////////////////////////////////////
+///              APPROVAL FUNCTION TESTS                ///
+///////////////////////////////////////////////////////////
+
+contract AssetVaultApproveFunctionsTest is AssetVaultTestHelper {
+    function test_approveCaller() public {
+        vm.prank(owner);
+        vault.approveCaller(userA);
+
+        // Check that the approved caller was set correctly
+        assertEq(vault.getIsApprovedCaller(userA), true);
+    }
+
+    function test_approveCaller_RevertsIf_NotTheOwner() public {
+        vm.prank(userA);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
+        vault.approveCaller(userA);
+    }
+
+    function test_revokeCaller() public {
+        approveCallerHelper(userA);
+
+        vm.prank(owner);
+        vault.revokeCaller(userA);
+
+        // Check that the approved caller was revoked correctly
+        assertEq(vault.getIsApprovedCaller(userA), false);
+    }
+
+    function test_revokeCaller_RevertsIf_NotTheOwner() public {
+        vm.prank(userA);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
+        vault.revokeCaller(userA);
     }
 }
 
