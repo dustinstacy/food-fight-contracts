@@ -15,16 +15,16 @@ contract AssetTradeConstructorTest is AssetTradeTestHelper {
     function test_constructor() public view {
         // Check that the factory address is correct
         address expectedFactoryAddress = address(factory);
-        address actualFactoryAddress = trade.getAssetFactoryAddress();
+        address actualFactoryAddress = tradeContract.getAssetFactoryAddress();
         assertEq(expectedFactoryAddress, actualFactoryAddress);
 
         // Check that the vault address is correct
         address expectedVaultAddress = address(vault);
-        address actualVaultAddress = trade.getAssetVaultAddress();
+        address actualVaultAddress = tradeContract.getAssetVaultAddress();
         assertEq(expectedVaultAddress, actualVaultAddress);
 
         // Check the proposal count is 0
-        assertEq(0, trade.getProposalCount());
+        assertEq(0, tradeContract.getProposalCount());
     }
 }
 
@@ -35,11 +35,11 @@ contract AssetTradeConstructorTest is AssetTradeTestHelper {
 contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
     function test_createProposal() public {
         vm.prank(userA);
-        trade.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
+        tradeContract.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
 
         // Destructure the Proposal struct to get all it's values
         // Note: The proposal ID is 1 because it is the first proposal created
-        AssetTrade.Proposal memory proposal = trade.getProposal(1);
+        AssetTrade.Proposal memory proposal = tradeContract.getProposal(1);
         (address proposer, address receiver, uint256 assetAId, uint256 assetBId, uint256 proposalStatus) =
             (proposal.proposer, proposal.receiver, proposal.assetAId, proposal.assetBId, uint256(proposal.status));
 
@@ -55,7 +55,7 @@ contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
         createProposalHelper();
 
         // Check that the proposal count was incremented
-        uint256 proposalCount = trade.getProposalCount();
+        uint256 proposalCount = tradeContract.getProposalCount();
         assertEq(proposalCount, 1);
     }
 
@@ -71,9 +71,9 @@ contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
         vm.prank(userA);
 
         // Check that the ProposalCreated event was emitted
-        vm.expectEmit(false, false, false, false, address(trade));
+        vm.expectEmit(false, false, false, false, address(tradeContract));
         emit AssetTrade.ProposalCreated(1);
-        trade.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
+        tradeContract.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
     }
 
     function test_createProposal_RevertsIf_InsufficientBalance() public {
@@ -83,7 +83,7 @@ contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(AssetVault.AssetVaultInsufficientBalance.selector, userA, 0, 1, ASSET_THREE_ID)
         );
-        trade.createProposal(userB, ASSET_THREE_ID, ASSET_TWO_ID);
+        tradeContract.createProposal(userB, ASSET_THREE_ID, ASSET_TWO_ID);
     }
 }
 
@@ -98,10 +98,10 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
 
     function test_cancelProposal() public {
         vm.prank(userA);
-        trade.cancelProposal(1);
+        tradeContract.cancelProposal(1);
 
         // Check that the proposal status was updated
-        uint256 status = uint256(trade.getProposal(1).status);
+        uint256 status = uint256(tradeContract.getProposal(1).status);
         assertEq(status, canceledStatus);
 
         // Check that userA's vault balance was updated
@@ -113,19 +113,19 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
         vm.prank(userA);
 
         // Check that the ProposalCanceled event was emitted
-        vm.expectEmit(false, false, false, false, address(trade));
+        vm.expectEmit(false, false, false, false, address(tradeContract));
         emit AssetTrade.ProposalCanceled(1);
-        trade.cancelProposal(1);
+        tradeContract.cancelProposal(1);
     }
 
     function test_cancelProposal_RevertsIf_NotPendingStatus() public {
         vm.startPrank(userA);
         // Note: The proposal status is now canceled after the first call
-        trade.cancelProposal(1);
+        tradeContract.cancelProposal(1);
 
         // Check that the call reverts when the proposal status is not pending
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeProposalNotPending.selector, canceledStatus));
-        trade.cancelProposal(1);
+        tradeContract.cancelProposal(1);
         vm.stopPrank();
     }
 
@@ -134,7 +134,7 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
 
         // Check that the call reverts with the AssetTradeNotProposer error
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeNotProposer.selector, userB, userA));
-        trade.cancelProposal(1);
+        tradeContract.cancelProposal(1);
     }
 }
 
@@ -153,10 +153,10 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
     function test_acceptProposal() public {
         vm.prank(userB);
-        trade.acceptProposal(1);
+        tradeContract.acceptProposal(1);
 
         // Check that the proposal status was updated
-        uint256 status = uint256(trade.getProposal(1).status);
+        uint256 status = uint256(tradeContract.getProposal(1).status);
         assertEq(status, approvedStatus);
 
         // Check that both userA's vault balances were updated
@@ -179,9 +179,9 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
         vm.prank(userB);
 
         // Check that the ProposalAccepted event was emitted
-        vm.expectEmit(false, false, false, false, address(trade));
+        vm.expectEmit(false, false, false, false, address(tradeContract));
         emit AssetTrade.ProposalAccepted(1);
-        trade.acceptProposal(1);
+        tradeContract.acceptProposal(1);
     }
 
     function test_acceptProposal_RevertsIf_NotPendingStatus() public {
@@ -191,7 +191,7 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
         // Check that the call reverts when the proposal status is not pending
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeProposalNotPending.selector, canceledStatus));
-        trade.acceptProposal(1);
+        tradeContract.acceptProposal(1);
     }
 
     function test_acceptProposal_RevertsIf_NotReceiver() public {
@@ -199,15 +199,15 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
         // Check that the call reverts when the user is not the proposal receiver
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeNotReceiver.selector, userC, userB));
-        trade.acceptProposal(1);
+        tradeContract.acceptProposal(1);
     }
 
     function test_rejectProposal() public {
         vm.prank(userB);
-        trade.rejectProposal(1);
+        tradeContract.rejectProposal(1);
 
         // Check that the proposal status was updated
-        uint256 status = uint256(trade.getProposal(1).status);
+        uint256 status = uint256(tradeContract.getProposal(1).status);
         assertEq(status, rejectedStatus);
 
         // Check that userA's asset balance was updated
@@ -219,9 +219,9 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
         vm.prank(userB);
 
         // Check that the ProposalRejected event was emitted
-        vm.expectEmit(false, false, false, false, address(trade));
+        vm.expectEmit(false, false, false, false, address(tradeContract));
         emit AssetTrade.ProposalRejected(1);
-        trade.rejectProposal(1);
+        tradeContract.rejectProposal(1);
     }
 
     function test_rejectProposal_RevertIf_NotPendingStatus() public {
@@ -231,7 +231,7 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
         // Check that the call reverts when the proposal status is not pending
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeProposalNotPending.selector, canceledStatus));
-        trade.rejectProposal(1);
+        tradeContract.rejectProposal(1);
     }
 
     function test_rejectProposal_RevertsIf_NotReceiver() public {
@@ -239,7 +239,7 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
         // Check that the call reverts when the user is not the proposal receiver
         vm.expectRevert(abi.encodeWithSelector(AssetTrade.AssetTradeNotReceiver.selector, userC, userB));
-        trade.rejectProposal(1);
+        tradeContract.rejectProposal(1);
     }
 }
 
@@ -254,7 +254,7 @@ contract AssetTradeViewFunctionsTest is AssetTradeTestHelper {
     }
 
     function test_getProposal() public view {
-        AssetTrade.Proposal memory proposal = trade.getProposal(1);
+        AssetTrade.Proposal memory proposal = tradeContract.getProposal(1);
         (address proposer, address receiver, uint256 assetAId, uint256 assetBId, uint256 status) =
             (proposal.proposer, proposal.receiver, proposal.assetAId, proposal.assetBId, uint256(proposal.status));
 
@@ -268,19 +268,19 @@ contract AssetTradeViewFunctionsTest is AssetTradeTestHelper {
 
     function test_getProposalCount() public view {
         // Check that the proposal count is correct
-        uint256 proposalCount = trade.getProposalCount();
+        uint256 proposalCount = tradeContract.getProposalCount();
         assertEq(proposalCount, 1);
     }
 
     function test_getFactoryAddress() public view {
         // Check that the factory contract address is correct
-        address factory = trade.getAssetFactoryAddress();
+        address factory = tradeContract.getAssetFactoryAddress();
         assertEq(address(factory), factory);
     }
 
     function test_getVaultAddress() public view {
         // Check that the vault contract address is correct
-        address vault = trade.getAssetVaultAddress();
+        address vault = tradeContract.getAssetVaultAddress();
         assertEq(address(vault), vault);
     }
 }
@@ -293,7 +293,7 @@ contract AssetTradeERC1155ReceiverTest is AssetTradeTestHelper {
     function test_onERC1155Received() public view {
         // Check that the correct selector was returned
         bytes4 expectedSelector = bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
-        bytes4 returnedSelector = trade.onERC1155Received(address(0), address(0), 0, 0, "");
+        bytes4 returnedSelector = tradeContract.onERC1155Received(address(0), address(0), 0, 0, "");
         assertEq(returnedSelector, expectedSelector);
     }
 
@@ -301,7 +301,7 @@ contract AssetTradeERC1155ReceiverTest is AssetTradeTestHelper {
         // Check that the correct selector was returned
         bytes4 expectedSelector = bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
         bytes4 returnedSelector =
-            trade.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
+            tradeContract.onERC1155BatchReceived(address(0), address(0), new uint256[](0), new uint256[](0), "");
         assertEq(returnedSelector, expectedSelector);
     }
 }
@@ -314,21 +314,21 @@ contract AssetTradeERC165Test is AssetTradeTestHelper {
     function test_supportsInterfaceIdIERC165() public view {
         // Check that the contract supports the IERC165 interface
         bytes4 expectedSelector = 0x01ffc9a7;
-        bool returnedSelector = trade.supportsInterface(expectedSelector);
+        bool returnedSelector = tradeContract.supportsInterface(expectedSelector);
         assertEq(returnedSelector, true);
     }
 
     function test_supportsInterfaceIdIERC1155Receiver() public view {
         // Check that the contract supports the IERC1155Receiver interface
         bytes4 expectedSelector = 0x4e2312e0;
-        bool returnedSelector = trade.supportsInterface(expectedSelector);
+        bool returnedSelector = tradeContract.supportsInterface(expectedSelector);
         assertEq(returnedSelector, true);
     }
 
     function test_supportsInterfaceBadSelector() public view {
         // Check that the contract throws false for an unsupported interface
         bytes4 badSelector = bytes4(keccak256("badSelector"));
-        bool returnedSelector = trade.supportsInterface(badSelector);
+        bool returnedSelector = tradeContract.supportsInterface(badSelector);
         assertEq(returnedSelector, false);
     }
 }

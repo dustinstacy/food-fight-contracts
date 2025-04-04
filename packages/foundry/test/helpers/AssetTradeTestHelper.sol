@@ -15,7 +15,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     ////////////////////////////////////////////////
 
     /// @dev Instance of the AssetTrade contract.
-    AssetTrade trade = new AssetTrade(address(factory), address(vault));
+    AssetTrade tradeContract = new AssetTrade(address(factory), address(vault));
 
     ////////////////////////////////////////////////
     /// Enums                                    ///
@@ -44,7 +44,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
 
         // Approve the AssetTrade contract to lock and unlock assets in the vault
         vm.prank(owner);
-        vault.approveCaller(address(trade));
+        vault.approveCaller(address(tradeContract));
 
         // Update the starting vault balances for userA & userB
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -61,13 +61,13 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     /// @dev Create a proposal
     function createProposalHelper() public {
         vm.prank(userA);
-        trade.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
+        tradeContract.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
     }
 
     //!! Update to accept a user and proposalId
     /// @dev Cancel a proposal
     function cancelProposalHelper() public {
         vm.prank(userA);
-        trade.cancelProposal(1);
+        tradeContract.cancelProposal(1);
     }
 }

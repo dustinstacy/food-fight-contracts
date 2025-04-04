@@ -14,7 +14,7 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     ////////////////////////////////////////////////
 
     /// @dev Instance of the AssetAuction contract.
-    AssetAuction auction = new AssetAuction(address(factory), address(vault));
+    AssetAuction auctionContract = new AssetAuction(address(factory), address(vault));
 
     ////////////////////////////////////////////////
     /// Enums                                    ///
@@ -44,7 +44,7 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
 
         // Approve the AssetAuction contract to lock and unlock assets in the vault
         vm.prank(owner);
-        vault.approveCaller(address(auction));
+        vault.approveCaller(address(auctionContract));
 
         // Update the starting vault balances for userA, userB, & userC
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -63,14 +63,14 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     /// @dev Create an auction.
     function createAuctionHelper() public {
         vm.prank(userA);
-        auction.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
+        auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
     }
 
     //!! Update to accept a user and assetId
     /// @dev Cancel an auction.
     function cancelAuctionHelper() public {
         vm.prank(userA);
-        auction.cancelAuction(ASSET_ONE_ID);
+        auctionContract.cancelAuction(ASSET_ONE_ID);
     }
 
     /// @dev Place a bid on an auction.
@@ -79,13 +79,13 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     /// @param amount The amount of the bid.
     function placeBidHelper(address user, uint256 auctionId, uint256 amount) public {
         vm.prank(user);
-        auction.placeBid(auctionId, amount);
+        auctionContract.placeBid(auctionId, amount);
     }
 
     //!! Update to accept a user and assetId
     /// @dev Complete an auction.
     function completeAuctionHelper() public {
         vm.prank(userA);
-        auction.completeAuction(ASSET_ONE_ID);
+        auctionContract.completeAuction(ASSET_ONE_ID);
     }
 }
