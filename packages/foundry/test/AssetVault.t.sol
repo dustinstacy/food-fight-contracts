@@ -462,6 +462,18 @@ contract AssetVaultViewFunctionsTest is AssetVaultTestHelper {
         address factoryAddress = vault.getAssetFactoryAddress();
         assertEq(address(factory), factoryAddress);
     }
+
+    function test_getIGCTokenId() public view {
+        // Check that the IGC token ID was returned correctly
+        uint256 igcTokenId = vault.getIGCTokenId();
+        assertEq(igcTokenId, IGC_TOKEN_ID);
+    }
+
+    function test_getIsApprovedCaller() public view {
+        // Check that the approved caller was returned correctly
+        bool isApproved = vault.getIsApprovedCaller(approvedCaller);
+        assertEq(isApproved, true);
+    }
 }
 
 ///////////////////////////////////////////////////////////
