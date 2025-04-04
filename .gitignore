@@ -10,6 +10,9 @@ out/
 /broadcast/*/31337/
 /broadcast/**/dry-run/
 
+# Ignore all other deployments while in development
+deployments/
+
 # Docs
 docs/
 
