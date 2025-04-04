@@ -14,14 +14,14 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     /// Contract Instance                        ///
     ////////////////////////////////////////////////
 
-    /// @dev Instance of the AssetTrade contract
+    /// @dev Instance of the AssetTrade contract.
     AssetTrade trade = new AssetTrade(address(factory), address(vault));
 
     ////////////////////////////////////////////////
     /// Enums                                    ///
     ////////////////////////////////////////////////
 
-    /// @dev Convert the proposal status enum to integers for testing
+    /// @dev Convert the proposal status enum to integers for testing.
     uint256 pendingStatus = uint256(AssetTrade.ProposalStatus.Pending);
     uint256 approvedStatus = uint256(AssetTrade.ProposalStatus.Accepted);
     uint256 rejectedStatus = uint256(AssetTrade.ProposalStatus.Rejected);
@@ -31,7 +31,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     /// Setup Function                           ///
     ////////////////////////////////////////////////
 
-    /// @dev Set up the initial state for the AssetTrade contract
+    /// @dev Set up the initial state for the AssetTrade contract.
     // Sets the asset data, mints IGC and assets for userA & userB, deposits single assets into the vault for trade,
     // approves the AssetTrade contract to lock and unlock assets in the vault, and stores the starting balances for userA & userB.
     function setUp() public virtual override {
@@ -58,14 +58,14 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     ////////////////////////////////////////////////
 
     //!! Update this to be accept a receiver, assetToTrade, and assetToReceive
-    /// @dev Create a proposal for user A to trade asset one for asset two with user B
+    /// @dev Create a proposal
     function createProposalHelper() public {
         vm.prank(userA);
         trade.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
     }
 
     //!! Update to accept a user and proposalId
-    /// @dev Cancel the proposal for user A
+    /// @dev Cancel a proposal
     function cancelProposalHelper() public {
         vm.prank(userA);
         trade.cancelProposal(1);

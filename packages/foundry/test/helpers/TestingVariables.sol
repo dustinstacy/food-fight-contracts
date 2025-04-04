@@ -79,7 +79,7 @@ contract TestingVariables {
     /// User Starting Factory Balances         ///
     ////////////////////////////////////////////////
 
-    // Initialize storage variables for users' Factory balances.
+    // Initialize storage variables for users' Factory balances
     uint256 userAStartingFactoryIGCBalance;
     uint256 userAStartingFactoryAssetOneBalance;
     uint256 userAStartingFactoryAssetTwoBalance;
@@ -99,7 +99,7 @@ contract TestingVariables {
     /// User Starting Vault Balances             ///
     ////////////////////////////////////////////////
 
-    // Initialize storage variables for users' Vault balances.
+    // Initialize storage variables for users' Vault balances
     uint256 userAStartingVaultIGCBalance;
     uint256 userAStartingVaultAssetOneBalance;
     uint256 userAStartingVaultAssetTwoBalance;
