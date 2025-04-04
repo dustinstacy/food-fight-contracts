@@ -1,3 +1,7 @@
+
+# dependencies
+node_modules
+
 # Compiler files
 cache/
 out/
@@ -12,3 +16,20 @@ docs/
 # Dotenv file
 .env
 localhost.json
+
+# eslint
+.eslintcache
+
+# misc
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# cli
+dist
+
+# stored files
+reference/
+data/
