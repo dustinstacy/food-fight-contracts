@@ -38,30 +38,19 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
         vm.prank(userA);
         auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
 
-        // Destructure the Auction struct to get all it's values
+        // Note: Destructuring not possible here due to "Stack Too Deep" error
         // Note: The auction ID is 1 because it is the first auction created
         AssetAuction.Auction memory auctionData = auctionContract.getAuction(1);
-        (
-            address seller,
-            address highestBidder,
-            address winningBidder,
-            uint256 assetId,
-            uint256 reservePrice,
-            uint256 deadline,
-            uint256 highestBid,
-            uint256 winningBid,
-            uint256 status
-        ) = (
-            auctionData.seller,
-            auctionData.highestBidder,
-            auctionData.winningBidder,
-            auctionData.assetId,
-            auctionData.reservePrice,
-            auctionData.deadline,
-            auctionData.highestBid,
-            auctionData.winningBid,
-            uint256(auctionData.status)
-        );
+        address seller = auctionData.seller;
+        address highestBidder = auctionData.highestBidder;
+        address winningBidder = auctionData.winningBidder;
+        uint256 assetId = auctionData.assetId;
+        uint256 reservePrice = auctionData.reservePrice;
+        uint256 deadline = auctionData.deadline;
+        uint256 highestBid = auctionData.highestBid;
+        uint256 winningBid = auctionData.winningBid;
+        // Note: The status is an enum, so we need to cast it to uint256
+        uint256 status = uint256(auctionData.status);
 
         // Check that the auction was created correctly
         assertEq(userA, seller);
@@ -375,27 +364,15 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
 
     function test_getAuction() public view {
         AssetAuction.Auction memory auctionData = auctionContract.getAuction(1);
-        (
-            address seller,
-            address highestBidder,
-            address winningBidder,
-            uint256 assetId,
-            uint256 reservePrice,
-            uint256 deadline,
-            uint256 highestBid,
-            uint256 winningBid,
-            uint256 status
-        ) = (
-            auctionData.seller,
-            auctionData.highestBidder,
-            auctionData.winningBidder,
-            auctionData.assetId,
-            auctionData.reservePrice,
-            auctionData.deadline,
-            auctionData.highestBid,
-            auctionData.winningBid,
-            uint256(auctionData.status)
-        );
+        address seller = auctionData.seller;
+        address highestBidder = auctionData.highestBidder;
+        address winningBidder = auctionData.winningBidder;
+        uint256 assetId = auctionData.assetId;
+        uint256 reservePrice = auctionData.reservePrice;
+        uint256 deadline = auctionData.deadline;
+        uint256 highestBid = auctionData.highestBid;
+        uint256 winningBid = auctionData.winningBid;
+        uint256 status = uint256(auctionData.status);
 
         // Check that the auction was retrieved correctly
         assertEq(userA, seller);
