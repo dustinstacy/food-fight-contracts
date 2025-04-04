@@ -1,8 +1,8 @@
-import fs from "fs"
-import path from "path"
-import toml from "toml"
-import { ethers } from "ethers"
-import { fileURLToPath } from "url"
+import fs from "fs";
+import path from "path";
+import toml from "toml";
+import { ethers } from "ethers";
+import { fileURLToPath } from "url";
 
 /**
  * @notice Get the Asset Factory contract address from the deployment.
@@ -10,16 +10,16 @@ import { fileURLToPath } from "url"
  * @returns {Promise<string|null>} The Contract contract address.
  */
 export async function getContractAddress(filePath, contractName) {
-    // Read the deployment data JSON file
-    const deploymentData = JSON.parse(fs.readFileSync(filePath, "utf8"))
-    // Iterate through the transactions in the deployment data
-    for (const transaction of deploymentData.transactions) {
-        if (transaction.contractName === contractName) {
-            return transaction.contractAddress
-        }
+  // Read the deployment data JSON file
+  const deploymentData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  // Iterate through the transactions in the deployment data
+  for (const transaction of deploymentData.transactions) {
+    if (transaction.contractName === contractName) {
+      return transaction.contractAddress;
     }
-    // Return null if the contract address is not found
-    return null
+  }
+  // Return null if the contract address is not found
+  return null;
 }
 
 /**
@@ -28,7 +28,7 @@ export async function getContractAddress(filePath, contractName) {
  * @returns {number} The chain ID.
  */
 export function getChainId(filePath) {
-    return parseInt(path.basename(path.dirname(filePath)))
+  return parseInt(path.basename(path.dirname(filePath)));
 }
 
 /**
@@ -38,17 +38,17 @@ export function getChainId(filePath) {
  * @dev Update this function to add support for additional networks.
  */
 export function getNetworkName(chainId) {
-    // Map the chain ID to the network name using a switch statement
-    switch (chainId) {
-        case 1:
-            return "mainnet"
-        case 11155111:
-            return "sepolia"
-        case 31337:
-            return "localhost"
-        default:
-            return "default_network"
-    }
+  // Map the chain ID to the network name using a switch statement
+  switch (chainId) {
+    case 1:
+      return "mainnet";
+    case 11155111:
+      return "sepolia";
+    case 31337:
+      return "localhost";
+    default:
+      return "default_network";
+  }
 }
 
 /**
@@ -57,12 +57,12 @@ export function getNetworkName(chainId) {
  * @returns {string} The RPC URL.
  */
 export function getRpcUrl(networkName) {
-    // Read the foundry.toml file
-    const tomlData = fs.readFileSync("foundry.toml", "utf8")
-    // Parse the TOML data
-    const config = toml.parse(tomlData)
+  // Read the foundry.toml file
+  const tomlData = fs.readFileSync("foundry.toml", "utf8");
+  // Parse the TOML data
+  const config = toml.parse(tomlData);
 
-    return config.rpc_endpoints[networkName]
+  return config.rpc_endpoints[networkName];
 }
 
 /**
@@ -72,15 +72,15 @@ export function getRpcUrl(networkName) {
  * @dev Update to keystore or other secure method for production.
  */
 export function getSigner(rpcUrl) {
-    const privateKey = process.env.DEPLOYER_PRIVATE_KEY
-    // Check if the private key is set
-    if (!privateKey) {
-        throw new Error("DEPLOYER_PRIVATE_KEY not set.")
-    }
-    // Create a provider from the RPC URL
-    const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
-    // Create and return a signer from the private key and provider
-    return new ethers.Wallet(privateKey, provider)
+  const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
+  // Check if the private key is set
+  if (!privateKey) {
+    throw new Error("DEPLOYER_PRIVATE_KEY not set.");
+  }
+  // Create a provider from the RPC URL
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+  // Create and return a signer from the private key and provider
+  return new ethers.Wallet(privateKey, provider);
 }
 
 /**
@@ -91,15 +91,18 @@ export function getSigner(rpcUrl) {
  * @returns {ethers.Contract} The ethers.Contract instance.
  */
 export function getContract(contractAddress, signer, contractName) {
-    // Get the current file's filename and directory
-    const __filename = fileURLToPath(import.meta.url)
-    const __dirname = path.dirname(__filename)
-    // Construct the path to the ABI JSON file
-    const abiPath = path.join(__dirname, `../../out/${contractName}.sol/${contractName}.json`)
-    // Read the ABI JSON file
-    const abiData = fs.readFileSync(abiPath, "utf8")
-    // Parse the ABI JSON data
-    const contractABI = JSON.parse(abiData)
-    // Create and return an ethers.Contract instance
-    return new ethers.Contract(contractAddress, contractABI.abi, signer)
+  // Get the current file's filename and directory
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  // Construct the path to the ABI JSON file
+  const abiPath = path.join(
+    __dirname,
+    `../../out/${contractName}.sol/${contractName}.json`
+  );
+  // Read the ABI JSON file
+  const abiData = fs.readFileSync(abiPath, "utf8");
+  // Parse the ABI JSON data
+  const contractABI = JSON.parse(abiData);
+  // Create and return an ethers.Contract instance
+  return new ethers.Contract(contractAddress, contractABI.abi, signer);
 }
