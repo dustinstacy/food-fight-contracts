@@ -28,6 +28,10 @@ contract AssetFactoryConstructorTest is AssetFactoryTestHelper {
 contract AssetFactoryIGCFunctionsTest is AssetFactoryTestHelper {
     function test_mintIGC() public {
         vm.prank(userA);
+
+        // Check for the TransferSingle event when minting IGC
+        vm.expectEmit(true, false, false, false, address(factory));
+        emit IERC1155.TransferSingle(userA, address(0), userA, IGC_TOKEN_ID, 1);
         factory.mintIGC(userA, 1);
 
         // Check that userA's IGC balance has increased
@@ -63,12 +67,16 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
         userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
 
-        // Based on the allVarying array found in TestingVariables ( [1, 5, 10] )
+        // Calculate mint cost based on the allVarying array found in TestingVariables ( [1, 5, 10] )
         mintBatchTotalCost = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * 5) + (ASSET_THREE_PRICE * 10);
     }
 
     function test_mintAsset() public {
         vm.prank(userA);
+
+        // Check for the TransferSingle event when minting an asset
+        vm.expectEmit(true, false, false, false, address(factory));
+        emit IERC1155.TransferSingle(userA, address(0), userA, ASSET_ONE_ID, 1);
         factory.mintAsset(userA, ASSET_ONE_ID, 1, "");
 
         // Check that userA's asset balance has increased
@@ -78,15 +86,6 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         // Check that userA's IGC balance has decreased
         uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - ASSET_ONE_PRICE);
-    }
-
-    function test_mintAsset_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check for the TransferSingle event when minting an asset
-        vm.expectEmit(true, false, false, false, address(factory));
-        emit IERC1155.TransferSingle(userA, address(0), userA, ASSET_ONE_ID, 1);
-        factory.mintAsset(userA, ASSET_ONE_ID, 1, "");
     }
 
     function test_mintAsset_RevertsIf_InsufficientBalance() public {
@@ -119,6 +118,10 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
     function test_mintBatch() public {
         vm.prank(userA);
+
+        // Check for the TransferBatch event when minting multiple assets
+        vm.expectEmit(false, true, false, false, address(factory));
+        emit IERC1155.TransferBatch(userA, address(0), userA, assetIds, allVarying);
         // assetIds = [ASSET_ONE_ID, ASSET_TWO_ID, ASSET_THREE_ID]
         // allVarying = [1, 5, 10]
         factory.mintBatch(userA, assetIds, allVarying, "");
@@ -136,15 +139,6 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
         uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
         assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance + 10);
-    }
-
-    function test_mintBatch_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check for the TransferBatch event when minting multiple assets
-        vm.expectEmit(false, true, false, false, address(factory));
-        emit IERC1155.TransferBatch(userA, address(0), userA, assetIds, allVarying);
-        factory.mintBatch(userA, assetIds, allVarying, "");
     }
 
     function test_mintBatch_RevertsIf_InvalidArrayLength() public {
@@ -195,8 +189,25 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         setInitialFactoryState();
     }
 
-    function test_burnAsset() public {
+    function test_burnAsset_IGC() public {
         vm.prank(userA);
+
+        // Check for the BurntSingle event when burning IGC
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.BurntSingle(userA, IGC_TOKEN_ID, 1000);
+        factory.burnAsset(userA, IGC_TOKEN_ID, 1000);
+
+        // Check that userA's IGC balance has decreased
+        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
+        assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - 1000);
+    }
+
+    function test_burnAsset_Single() public {
+        vm.prank(userA);
+
+        // Check for the BurntSingle event when burning an asset
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.BurntSingle(userA, ASSET_ONE_ID, 1);
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
         // Check that userA's asset balance has decreased
@@ -206,6 +217,10 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 
     function test_burnAsset_Multiple() public {
         vm.prank(userA);
+
+        // Check for the BurntSingle event when burning an asset
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.BurntSingle(userA, ASSET_TWO_ID, 5);
         factory.burnAsset(userA, ASSET_TWO_ID, 5);
 
         // Check that userA's asset balance has decreased
@@ -213,34 +228,18 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
     }
 
-    function test_burnAsset_IGC() public {
-        vm.prank(userA);
-        factory.burnAsset(userA, IGC_TOKEN_ID, 1000);
-
-        // Check that userA's IGC balance has decreased
-        uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - 1000);
-    }
-
     function test_burnAsset_WithApproval() public {
-        vm.prank(userA);
-        factory.setApprovalForAll(approvedCaller, true);
-
+        setApprovalForAllHelper(userA, approvedCaller, true);
         vm.prank(approvedCaller);
+
+        // Check for the BurntSingle event when burning an asset
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.BurntSingle(userA, ASSET_ONE_ID, 1);
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
         // Check that userA's asset balance has decreased
         uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
-    }
-
-    function test_burnAsset_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check for the BurntSingle event when burning an asset
-        vm.expectEmit(true, false, false, false, address(factory));
-        emit AssetFactory.BurntSingle(userA, ASSET_ONE_ID, 1);
-        factory.burnAsset(userA, ASSET_ONE_ID, 1);
     }
 
     function test_burnAsset_RevertsIf_MissingApprovalForAll() public {
@@ -263,6 +262,10 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 
     function test_burnBatch() public {
         vm.prank(userA);
+
+        // Check for the BurntBatch event when burning multiple assets
+        vm.expectEmit(false, false, true, false, address(factory));
+        emit AssetFactory.BurntBatch(userA, assetIds, allVarying);
         factory.burnBatch(userA, assetIds, allVarying);
 
         // Check that userA's asset balances have decreased
@@ -277,10 +280,12 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
     }
 
     function test_burnBatch_WithApproval() public {
-        vm.prank(userA);
-        factory.setApprovalForAll(approvedCaller, true);
-
+        setApprovalForAllHelper(userA, approvedCaller, true);
         vm.prank(approvedCaller);
+
+        // Check for the BurntBatch event when burning multiple assets
+        vm.expectEmit(false, false, true, false, address(factory));
+        emit AssetFactory.BurntBatch(userA, assetIds, allVarying);
         factory.burnBatch(userA, assetIds, allVarying);
 
         // Check that userA's asset balances have decreased
@@ -292,15 +297,6 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 
         uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
         assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance - 10);
-    }
-
-    function test_burnBatch_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check for the BurntBatch event when burning multiple assets
-        vm.expectEmit(false, false, true, false, address(factory));
-        emit AssetFactory.BurntBatch(userA, assetIds, allVarying);
-        factory.burnBatch(userA, assetIds, allVarying);
     }
 
     function test_burnBatch_RevertsIf_MissingApprovalForAll() public {
@@ -328,7 +324,7 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userA, 10, 11, ASSET_ONE_ID)
         );
-        // all = [10, 10, 10]
+        // all = [10, 10, 10]. Update the first index to 11 to trigger the revert
         all[0] = 11;
         factory.burnBatch(userA, assetIds, all);
     }
@@ -343,19 +339,14 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
 
     function test_setAssetURI() public {
         vm.prank(owner);
-        factory.setAssetURI(ASSET_ONE_ID, newURI);
-
-        // Check the URI was set correctly
-        assertEq(factory.getAssetURI(ASSET_ONE_ID), newURI);
-    }
-
-    function test_setAssetURI_EmitsEvent() public {
-        vm.prank(owner);
 
         // Check for the AssetURISet event when setting the new URI
         vm.expectEmit(false, false, false, false, address(factory));
         emit AssetFactory.AssetURISet(newURI, ASSET_ONE_ID);
         factory.setAssetURI(ASSET_ONE_ID, newURI);
+
+        // Check the URI was set correctly
+        assertEq(factory.getAssetURI(ASSET_ONE_ID), newURI);
     }
 
     function test_setAssetURI_ReverstIf_NotTheOwner() public {
@@ -413,19 +404,19 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
 ///////////////////////////////////////////////////////////
 
 contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
-    function test_getAssetUri() public {
+    function setUp() public {
         setAssetsTestHelper();
+    }
 
-        // Check the URI of the asset
+    function test_getAssetUri() public view {
+        // Check the URI is retrieved correctly
         string memory expectedURI = "ipfs://asset1";
         string memory actualURI = factory.getAssetURI(ASSET_ONE_ID);
         assertEq(actualURI, expectedURI);
     }
 
-    function test_getAssetPrice() public {
-        setAssetsTestHelper();
-
-        // Check the price of the asset
+    function test_getAssetPrice() public view {
+        // Check the price is retrieved correctly
         uint256 expectedPrice = ASSET_ONE_PRICE;
         uint256 actualPrice = factory.getAssetPrice(ASSET_ONE_ID);
         assertEq(actualPrice, expectedPrice);
