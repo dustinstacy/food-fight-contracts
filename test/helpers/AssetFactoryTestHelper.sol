@@ -57,4 +57,9 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
         factory.mintAsset(minter, ASSET_THREE_ID, amounts[2], "");
         vm.stopPrank();
     }
+
+    function setApprovalForAllHelper(address user, address operator, bool approved) public {
+        vm.prank(user);
+        factory.setApprovalForAll(operator, approved);
+    }
 }
