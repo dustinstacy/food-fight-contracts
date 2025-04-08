@@ -114,7 +114,6 @@ contract AssetRental is IERC1155Receiver {
     /// @param price The price to rent the asset.
     /// @param duration The duration of the rental.
     /// @dev Will throw an error if the user lacks the required balance of the asset to post for rent. (AssetVaultInsufficientBalance).
-    //!! Consider bounds for price and duration.
     function createRental(uint256 assetId, uint256 price, uint256 duration) external {
         rentalAssetCount++;
         rentalAssets[rentalAssetCount] = RentalAsset({

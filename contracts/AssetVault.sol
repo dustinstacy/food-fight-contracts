@@ -9,7 +9,6 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 /// @title AssetVault
 /// @notice This contract handles user asset storage.
 /// @notice Users must have a balance of a given asset to perform certain actions.
-//!! Create an interface for this contract.
 contract AssetVault is IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
@@ -173,8 +172,6 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @param tokenId The token IDs of the assets to lock.
     /// @param amount The amount of the assets to lock.
     /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a trade.
-    //!! Need to set up access control on these functions
-    //!! Consider making a batch version of this function.
     function lockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
         if (balances[account][tokenId] < amount) {
             revert AssetVaultInsufficientBalance(account, balances[account][tokenId], amount, tokenId);
@@ -190,8 +187,6 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @param tokenId The token IDs of the assets to unlock.
     /// @param amount The amount of the assets to unlock.
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
-    //!! Need to set up access control on these functions
-    //!! Consider making a batch version of this function.
     function unlockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
         if (factory.balanceOf(address(this), tokenId) < amount) {
             revert AssetVaultInsufficientBalance(

@@ -112,7 +112,6 @@ contract AssetAuction is IERC1155Receiver {
     /// @param reservePrice The reserve price of the auction.
     /// @param deadline The deadline of the auction.
     /// @dev Will throw an error if the user lacks the required balance of the asset to auction. (AssetVaultInsufficientBalance).
-    //!! Consider bounds for reservePrice and deadline.
     function createAuction(uint256 assetId, uint256 reservePrice, uint256 deadline) public {
         auctionCount++;
         auctions[auctionCount] = Auction({

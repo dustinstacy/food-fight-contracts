@@ -94,7 +94,6 @@ contract AssetTrade is IERC1155Receiver {
     /// @param assetAId The token ID of the asset being traded.
     /// @param assetBId The token ID of the asset being traded for.
     /// @dev Will throw an error when the user lacks the required balance of the asset to trade. (AssetVaultInsufficientBalance).
-    //!! Update to allow users to trade larger amounts of assets.
     function createProposal(address receiver, uint256 assetAId, uint256 assetBId) external {
         proposalCount++;
         proposals[proposalCount] = Proposal({
