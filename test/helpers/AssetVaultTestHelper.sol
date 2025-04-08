@@ -96,8 +96,7 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @dev This function is only callable by the owner of the vault.
     /// @param caller The address of the caller to approve.
     function approveCallerHelper(address caller) public {
-        vm.startPrank(owner);
+        vm.prank(owner);
         vault.approveCaller(caller);
-        vm.stopPrank();
     }
 }
