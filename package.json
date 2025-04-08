@@ -10,6 +10,7 @@
         "compile": "make compile",
         "coverage": "make coverage",
         "deploy": "node scripts-js/parseArgs.js",
+        "dev": "make dev",
         "flatten": "make flatten",
         "fork": "make fork FORK_URL=${1:-mainnet}",
         "format": "make format",
