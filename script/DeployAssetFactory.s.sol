@@ -11,8 +11,8 @@ import "../contracts/AssetFactory.sol";
  *      - Includes ScaffoldEthDeployerRunner modifier
  *      - Provides `deployer` variable
  * Example:
- * yarn deploy --file DeployAssetFactory.s.sol  # local anvil chain
- * yarn deploy --file DeployAssetFactory.s.sol --network optimism # live network (requires keystore)
+ * npm run deploy --file DeployAssetFactory.s.sol  # local anvil chain
+ * npm run deploy --file DeployAssetFactory.s.sol --network optimism # live network (requires keystore)
  */
 contract DeployAssetFactory is ScaffoldETHDeploy {
     function run() external ScaffoldEthDeployerRunner {
