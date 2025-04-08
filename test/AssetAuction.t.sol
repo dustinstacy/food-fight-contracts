@@ -36,7 +36,15 @@ contract AssetAuctionConstructorTest is AssetAuctionTestHelper {
 contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
     function test_createAuction() public {
         vm.prank(userA);
+
+        // Check for the AuctionCreated event when creating an auction
+        vm.expectEmit(false, false, false, false, address(auctionContract));
+        emit AssetAuction.AuctionCreated(userA, 1, ASSET_ONE_ID, 10, ONE_HOUR);
         auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
+
+        // Check that the auction count was incremented
+        uint256 auctionCount = auctionContract.getAuctionCount();
+        assertEq(1, auctionCount);
 
         // Note: Destructuring not possible here due to "Stack Too Deep" error
         // Note: The auction ID is 1 because it is the first auction created
@@ -62,31 +70,10 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
         assertEq(0, winningBid);
         assertEq(address(0), winningBidder);
         assertEq(openStatus, status);
-    }
-
-    function test_createAuction_AuctionCountIncremented() public {
-        createAuctionHelper();
-
-        // Check that the auction count was incremented
-        uint256 auctionCount = auctionContract.getAuctionCount();
-        assertEq(1, auctionCount);
-    }
-
-    function test_createAuction_AssetLocked() public {
-        createAuctionHelper();
 
         // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance - 1);
-    }
-
-    function test_createAuction_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check that the AuctionCreated event was emitted
-        vm.expectEmit(false, false, false, false, address(auctionContract));
-        emit AssetAuction.AuctionCreated(userA, 1, ASSET_ONE_ID, 10, ONE_HOUR);
-        auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
     }
 
     function test_createAuction_RevertsIf_InsufficientBalance() public {
@@ -111,6 +98,10 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
 
     function test_cancelAuction() public {
         vm.prank(userA);
+
+        // Check for the AuctionCanceled event when canceling an auction
+        vm.expectEmit(false, false, false, false, address(auctionContract));
+        emit AssetAuction.AuctionCanceled(1);
         auctionContract.cancelAuction(1);
 
         // Check that the auction status was updated
@@ -120,15 +111,6 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
         // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
-    }
-
-    function test_cancelAuction_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check that the AuctionCanceled event is emitted
-        vm.expectEmit(false, false, false, false, address(auctionContract));
-        emit AssetAuction.AuctionCanceled(1);
-        auctionContract.cancelAuction(1);
     }
 
     function test_cancelAuction_RevertsIf_NotOpenStatus() public {
@@ -175,6 +157,10 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
 
     function test_placeBid() public {
         vm.prank(userB);
+
+        // Check for the BidPlaced event when placing a bid
+        vm.expectEmit(false, false, false, false, address(auctionContract));
+        emit AssetAuction.BidPlaced(userB, 1, 10);
         auctionContract.placeBid(1, 10);
 
         // Check that the highest bidder was updated
@@ -185,11 +171,6 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
         // Note: The highest bid is 10 as userB placed a bid of 10
         uint256 highestBid = auctionContract.getAuction(1).highestBid;
         assertEq(10, highestBid);
-    }
-
-    function test_placedBid_AssetLocked() public {
-        vm.prank(userB);
-        auctionContract.placeBid(1, 10);
 
         // Check that userB's IGC balance was updated
         uint256 userBEndingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
@@ -203,15 +184,6 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
         // Check that userB's IGC balance was updated to return the locked assets
         uint256 userBEndingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
         assertEq(userBEndingVaultIGCBalance, userBStartingVaultIGCBalance);
-    }
-
-    function test_placeBid_EventEmitted() public {
-        vm.prank(userB);
-
-        // Check that the BidPlaced event is emitted
-        vm.expectEmit(false, false, false, false, address(auctionContract));
-        emit AssetAuction.BidPlaced(userB, 1, 10);
-        auctionContract.placeBid(1, 10);
     }
 
     function test_placeBid_RevertsIf_NotOpenStatus() public {
@@ -271,8 +243,13 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
 
     function test_completeAuction() public {
         placeBidHelper(userB, ASSET_ONE_ID, 10);
+
         vm.warp(ONE_HOUR + 1);
         vm.prank(userA);
+
+        // Check for the AuctionEnded event when completing an auction
+        vm.expectEmit(false, false, false, false, address(auctionContract));
+        emit AssetAuction.AuctionEnded(1, userB, 10);
         auctionContract.completeAuction(1);
 
         // Check that the auction status was updated
@@ -306,6 +283,12 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
     function test_completeAuction_WhenReserveNotMet() public {
         vm.warp(ONE_HOUR + 1);
         vm.prank(userA);
+
+        // Check for the AuctionReserveNotMet event when completing an auction
+        uint256 reservePrice = auctionContract.getAuction(1).reservePrice;
+        uint256 highestBid = auctionContract.getAuction(1).highestBid;
+        vm.expectEmit(false, false, false, false, address(auctionContract));
+        emit AssetAuction.AuctionReserveNotMet(1, reservePrice, highestBid);
         auctionContract.completeAuction(1);
 
         // Check that the auction status was updated
@@ -315,17 +298,6 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
         // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
-    }
-
-    function test_completeAuction_EventEmitted() public {
-        placeBidHelper(userB, ASSET_ONE_ID, 10);
-        vm.warp(ONE_HOUR + 1);
-        vm.prank(userA);
-
-        // Check that the AuctionEnded event is emitted
-        vm.expectEmit(false, false, false, false, address(auctionContract));
-        emit AssetAuction.AuctionEnded(1, userB, 10);
-        auctionContract.completeAuction(1);
     }
 
     function test_completeAuction_RevertsIf_NotOpenStatus() public {
