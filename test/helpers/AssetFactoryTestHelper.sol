@@ -15,7 +15,7 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
     function setInitialFactoryState() public {
         setAssetsTestHelper();
         mintIGCTestHelper(userA, ONE_MILLION);
-        mintAssetTestHelper(userA, all);
+        mintAssetTestHelper(userA, assetIds, all);
 
         // Update the starting factory balances for userA
         userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
@@ -28,7 +28,6 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
     /// Contract Call Helpers                     ///
     /////////////////////////////////////////////////
 
-    //!! Modify to accept an array of asset data for custom asset data
     /// @dev Sets the asset data for the factory.
     function setAssetsTestHelper() public {
         vm.startPrank(owner);
@@ -46,18 +45,22 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
         factory.mintIGC(minter, amount);
     }
 
-    //!! Modify to accept an array of assetIds
     /// @dev Mints assets for a user. Currently using static arrays found in TestingVariables.sol for amounts.
     /// @param minter The address of the user to mint assets for.
+    /// @param assetIds The IDs of the assets to mint.
     /// @param amounts The amounts of each asset to mint.
-    function mintAssetTestHelper(address minter, uint256[] memory amounts) public {
+    function mintAssetTestHelper(address minter, uint256[] memory assetIds, uint256[] memory amounts) public {
         vm.startPrank(minter);
-        factory.mintAsset(minter, ASSET_ONE_ID, amounts[0], "");
-        factory.mintAsset(minter, ASSET_TWO_ID, amounts[1], "");
-        factory.mintAsset(minter, ASSET_THREE_ID, amounts[2], "");
+        for (uint256 i = 0; i < assetIds.length; i++) {
+            factory.mintAsset(minter, assetIds[i], amounts[i], "");
+        }
         vm.stopPrank();
     }
 
+    /// @dev Sets the approval for all assets for a user to an operator.
+    /// @param user The address of the user to set approval for.
+    /// @param operator The address of the operator to set approval for.
+    /// @param approved The approval status to set.
     function setApprovalForAllHelper(address user, address operator, bool approved) public {
         vm.prank(user);
         factory.setApprovalForAll(operator, approved);

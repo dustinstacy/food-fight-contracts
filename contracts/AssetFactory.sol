@@ -55,19 +55,19 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
 
     /// @notice Mints a given amount of IGC.
+    /// @dev Simple placeholder pricing model. Needs to be updated.
     /// @param account Address to mint the IGC to.
     /// @param amount Amount of IGC to mint.
-    //!! Simple placehold pricing model. Needs to be updated.
     function mintIGC(address account, uint256 amount) external payable {
         _mint(account, 0, amount, "");
     }
 
     /// @notice Mints a given amount of an asset.
+    /// @dev Simple placeholder pricing model. Needs to be updated.
     /// @param account Address to mint the asset to.
     /// @param id ID of the asset to mint.
     /// @param amount Amount of the asset to mint.
     /// @param data Custom data to pass to the receiver on the mint.
-    //!! Simple placehold pricing model. Needs to be updated.
     function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external {
         uint256 price = assetPrices[id];
         uint256 totalPrice = price * amount;
@@ -78,10 +78,10 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     }
 
     /// @notice Mints given amounts of multiple assets.
+    /// @dev Simple placeholder pricing model. Needs to be updated.
     /// @param to Address to mint the assets to.
     /// @param ids IDs of the assets to mint.
     /// @param amounts Amounts of the assets to mint.
-    //!! Simple placehold pricing model. Needs to be updated.
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external {
         // Precedes the array length check in _update() (nested inside _mintBatch()) to prevent reverts in the for loop.
         if (ids.length != amounts.length) {

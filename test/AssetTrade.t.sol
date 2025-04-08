@@ -77,7 +77,7 @@ contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
 contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
     function setUp() public override {
         super.setUp();
-        createProposalHelper();
+        createProposalHelper(userA, userB, ASSET_ONE_ID, ASSET_TWO_ID);
 
         // Update the starting vault balance for userA
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -127,7 +127,7 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
 contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
     function setUp() public override {
         super.setUp();
-        createProposalHelper();
+        createProposalHelper(userA, userB, ASSET_ONE_ID, ASSET_TWO_ID);
 
         // Update the starting vault balance for userA
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -162,7 +162,7 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
     }
 
     function test_acceptProposal_RevertsIf_NotPendingStatus() public {
-        cancelProposalHelper();
+        cancelProposalHelper(userA, 1);
 
         vm.prank(userB);
 
@@ -197,7 +197,7 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
     }
 
     function test_rejectProposal_RevertIf_NotPendingStatus() public {
-        cancelProposalHelper();
+        cancelProposalHelper(userA, 1);
 
         vm.prank(userB);
 
@@ -222,7 +222,7 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 contract AssetTradeViewFunctionsTest is AssetTradeTestHelper {
     function setUp() public override {
         super.setUp();
-        createProposalHelper();
+        createProposalHelper(userA, userB, ASSET_ONE_ID, ASSET_TWO_ID);
     }
 
     function test_getProposal() public view {

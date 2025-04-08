@@ -38,7 +38,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
         // Calls the setup function from the parent class
         super.setUp();
         mintIGCTestHelper(userB, ONE_MILLION);
-        mintAssetTestHelper(userB, all);
+        mintAssetTestHelper(userB, assetIds, all);
         depositAssetsTestHelper(userA, asset1Single, amountSingle);
         depositAssetsTestHelper(userB, asset2Single, amountSingle);
 
@@ -57,17 +57,23 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     /// Contract Call Helpers                    ///
     ////////////////////////////////////////////////
 
-    //!! Update this to be accept a receiver, assetToTrade, and assetToReceive
     /// @dev Create a proposal
-    function createProposalHelper() public {
-        vm.prank(userA);
-        tradeContract.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
+    /// @param proposer The address of the user creating the proposal.
+    /// @param receiver The address of the user receiving the proposal.
+    /// @param assetToTradeId The ID of the asset to trade.
+    /// @param assetToReceiveId The ID of the asset to receive.
+    function createProposalHelper(address proposer, address receiver, uint256 assetToTradeId, uint256 assetToReceiveId)
+        public
+    {
+        vm.prank(proposer);
+        tradeContract.createProposal(receiver, assetToTradeId, assetToReceiveId);
     }
 
-    //!! Update to accept a user and proposalId
     /// @dev Cancel a proposal
-    function cancelProposalHelper() public {
-        vm.prank(userA);
-        tradeContract.cancelProposal(1);
+    /// @param proposer The address of the user who created the proposal.
+    /// @param proposalId The ID of the proposal to cancel.
+    function cancelProposalHelper(address proposer, uint256 proposalId) public {
+        vm.prank(proposer);
+        tradeContract.cancelProposal(proposalId);
     }
 }

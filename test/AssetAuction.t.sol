@@ -90,7 +90,7 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
 contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper();
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
 
         // Update the starting vault balance for userA
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -152,7 +152,7 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
 contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper();
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
     }
 
     function test_placeBid() public {
@@ -187,7 +187,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
     }
 
     function test_placeBid_RevertsIf_NotOpenStatus() public {
-        cancelAuctionHelper();
+        cancelAuctionHelper(userA, 1);
 
         vm.prank(userB);
 
@@ -235,7 +235,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
 contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper();
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
 
         // Update the starting vault balance for userA
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -331,7 +331,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
 contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper();
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
     }
 
     function test_getAuction() public view {

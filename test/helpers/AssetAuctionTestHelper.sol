@@ -59,18 +59,22 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     /// Contract Call Helpers                    ///
     ////////////////////////////////////////////////
 
-    //!! Update to accept a user, assetId, price, and duration
     /// @dev Create an auction.
-    function createAuctionHelper() public {
-        vm.prank(userA);
-        auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
+    /// @param seller The address of the seller.
+    /// @param assetId The ID of the asset being auctioned.
+    /// @param price The starting price of the auction.
+    /// @param duration The duration of the auction in seconds.
+    function createAuctionHelper(address seller, uint256 assetId, uint256 price, uint256 duration) public {
+        vm.prank(seller);
+        auctionContract.createAuction(assetId, price, duration);
     }
 
-    //!! Update to accept a user and assetId
     /// @dev Cancel an auction.
-    function cancelAuctionHelper() public {
-        vm.prank(userA);
-        auctionContract.cancelAuction(ASSET_ONE_ID);
+    /// @param seller The address of the seller.
+    /// @param auctionId The ID of the auction.
+    function cancelAuctionHelper(address seller, uint256 auctionId) public {
+        vm.prank(seller);
+        auctionContract.cancelAuction(auctionId);
     }
 
     /// @dev Place a bid on an auction.
@@ -82,10 +86,11 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
         auctionContract.placeBid(auctionId, amount);
     }
 
-    //!! Update to accept a user and assetId
     /// @dev Complete an auction.
-    function completeAuctionHelper() public {
-        vm.prank(userA);
-        auctionContract.completeAuction(ASSET_ONE_ID);
+    /// @param sender The address of the user completing the auction.
+    /// @param auctionId The ID of the auction.
+    function completeAuctionHelper(address sender, uint256 auctionId) public {
+        vm.prank(sender);
+        auctionContract.completeAuction(auctionId);
     }
 }
