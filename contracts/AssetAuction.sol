@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { AssetVault } from "./AssetVault.sol";
@@ -40,9 +39,6 @@ contract AssetAuction is IERC1155Receiver {
 
     /// @notice Mapping of auction ID to auction details.
     mapping(uint256 auctionId => Auction) private auctions;
-
-    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
-    IERC1155 private factory;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
     AssetVault private vault;
@@ -95,11 +91,8 @@ contract AssetAuction is IERC1155Receiver {
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Construct the AssetAuction contract.
-    /// @param _factoryAddress The address of the ERC1155 contract.
     /// @param _assetVaultAddress The address of the AssetVault contract.
-    constructor(address _factoryAddress, address _assetVaultAddress) {
-        factory = IERC1155(_factoryAddress);
+    constructor(address _assetVaultAddress) {
         vault = AssetVault(_assetVaultAddress);
     }
 
@@ -247,12 +240,6 @@ contract AssetAuction is IERC1155Receiver {
     /// @return tokenId The IGC token ID.
     function getIGCTokenId() public view returns (uint8 tokenId) {
         return igcTokenId;
-    }
-
-    /// @notice Get the factory contract address.
-    /// @return factoryAddress The address of the assets contract.
-    function getAssetFactoryAddress() public view returns (address factoryAddress) {
-        return address(factory);
     }
 
     /// @notice Get the vault contract address.

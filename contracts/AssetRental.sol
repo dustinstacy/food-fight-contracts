@@ -1,9 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// restructured to match Solidity style guide - updated events - implemented functions
-
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { AssetVault } from "./AssetVault.sol";
@@ -42,9 +39,6 @@ contract AssetRental is IERC1155Receiver {
 
     /// @notice Mapping of a user to their rented asset balances.
     mapping(address user => mapping(uint256 assetId => uint256 balance)) private rentedAssets;
-
-    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
-    IERC1155 private factory;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
     AssetVault private vault;
@@ -97,12 +91,9 @@ contract AssetRental is IERC1155Receiver {
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Construct a new AssetRental contract.
-    /// @param _factoryAddress The address of the ERC1155 contract.
-    /// @param _vaultAddress The address of the AssetVault contract.
-    constructor(address _factoryAddress, address _vaultAddress) {
-        factory = IERC1155(_factoryAddress);
-        vault = AssetVault(_vaultAddress);
+    /// @param _assetVaultAddress The address of the AssetVault contract.
+    constructor(address _assetVaultAddress) {
+        vault = AssetVault(_assetVaultAddress);
     }
 
     ///////////////////////////////////////////////////////////
@@ -238,12 +229,6 @@ contract AssetRental is IERC1155Receiver {
     /// @return assetId The IGC token ID.
     function getIGCTokenId() public view returns (uint8 assetId) {
         return igcTokenId;
-    }
-
-    /// @notice Get the factory contract address.
-    /// @return factoryAddress The address of the assets contract.
-    function getAssetFactoryAddress() public view returns (address factoryAddress) {
-        return address(factory);
     }
 
     /// @notice Get the vault contract address.

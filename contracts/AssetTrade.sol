@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { AssetVault } from "./AssetVault.sol";
@@ -36,9 +35,6 @@ contract AssetTrade is IERC1155Receiver {
 
     /// @notice Mapping of the proposal ID to the proposal object.
     mapping(uint256 proposalId => Proposal) private proposals;
-
-    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
-    IERC1155 private factory;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
     AssetVault private vault;
@@ -79,9 +75,8 @@ contract AssetTrade is IERC1155Receiver {
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
-    /// @param _factoryAddress The address of the ERC1155 contract.
-    constructor(address _factoryAddress, address _assetVaultAddress) {
-        factory = IERC1155(_factoryAddress);
+    /// @param _assetVaultAddress The address of the AssetVault contract.
+    constructor(address _assetVaultAddress) {
         vault = AssetVault(_assetVaultAddress);
     }
 
@@ -191,12 +186,6 @@ contract AssetTrade is IERC1155Receiver {
     /// @return proposalCount The number of proposals.
     function getProposalCount() public view returns (uint256) {
         return proposalCount;
-    }
-
-    /// @notice Get the factory contract address.
-    /// @return factoryAddress The address of the assets contract.
-    function getAssetFactoryAddress() public view returns (address factoryAddress) {
-        return address(factory);
     }
 
     /// @notice Get the vault contract address.
