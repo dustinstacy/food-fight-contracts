@@ -43,6 +43,18 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @notice Emitted when assets are withdrawn from the contract.
     event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
 
+    /// @notice Emitted when assets are locked in the contract.
+    event AssetLocked(address account, uint256 tokenId, uint256 amount);
+
+    /// @notice Emitted when assets are unlocked in the contract.
+    event AssetUnlocked(address account, uint256 tokenId, uint256 amount);
+
+    /// @notice Emitted when a caller is approved to perform actions on a lock function.
+    event ApprovedCaller(address caller);
+
+    /// @notice Emitted when a caller is revoked from performing actions on a lock function.
+    event RevokedCaller(address caller);
+
     ///////////////////////////////////////////////////////////
     ///                       ERRORS                        ///
     ///////////////////////////////////////////////////////////
@@ -169,6 +181,8 @@ contract AssetVault is IERC1155Receiver, Ownable {
         }
 
         balances[account][tokenId] -= amount;
+
+        emit AssetLocked(account, tokenId, amount);
     }
 
     /// @notice Unlock assets in the contract.
@@ -179,7 +193,15 @@ contract AssetVault is IERC1155Receiver, Ownable {
     //!! Need to set up access control on these functions
     //!! Consider making a batch version of this function.
     function unlockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
+        if (factory.balanceOf(address(this), tokenId) < amount) {
+            revert AssetVaultInsufficientBalance(
+                address(this), factory.balanceOf(address(this), tokenId), amount, tokenId
+            );
+        }
+
         balances[account][tokenId] += amount;
+
+        emit AssetUnlocked(account, tokenId, amount);
     }
 
     ///////////////////////////////////////////////////////////
@@ -190,12 +212,16 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @param caller The address of the caller to approve.
     function approveCaller(address caller) external onlyOwner {
         approvedCallers[caller] = true;
+
+        emit ApprovedCaller(caller);
     }
 
     /// @notice Revoke approval for a caller to perform actions on behalf of a user.
     /// @param caller The address of the caller to revoke approval for.
     function revokeCaller(address caller) external onlyOwner {
         approvedCallers[caller] = false;
+
+        emit RevokedCaller(caller);
     }
 
     ///////////////////////////////////////////////////////////
