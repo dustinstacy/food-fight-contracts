@@ -35,7 +35,15 @@ contract AssetTradeConstructorTest is AssetTradeTestHelper {
 contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
     function test_createProposal() public {
         vm.prank(userA);
+
+        // Check for the ProposalCreated event when creating a proposal
+        vm.expectEmit(false, false, false, false, address(tradeContract));
+        emit AssetTrade.ProposalCreated(1);
         tradeContract.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
+
+        // Check that the proposal count was incremented
+        uint256 proposalCount = tradeContract.getProposalCount();
+        assertEq(proposalCount, 1);
 
         // Destructure the Proposal struct to get all it's values
         // Note: The proposal ID is 1 because it is the first proposal created
@@ -49,31 +57,10 @@ contract AssetTradeProposerCreateProposalTest is AssetTradeTestHelper {
         assertEq(assetAId, ASSET_ONE_ID);
         assertEq(assetBId, ASSET_TWO_ID);
         assertEq(proposalStatus, pendingStatus);
-    }
-
-    function test_createProposal_ProposalCountIncremented() public {
-        createProposalHelper();
-
-        // Check that the proposal count was incremented
-        uint256 proposalCount = tradeContract.getProposalCount();
-        assertEq(proposalCount, 1);
-    }
-
-    function test_createProposal_AssetLocked() public {
-        createProposalHelper();
 
         // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance - 1);
-    }
-
-    function test_createProposal_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check that the ProposalCreated event was emitted
-        vm.expectEmit(false, false, false, false, address(tradeContract));
-        emit AssetTrade.ProposalCreated(1);
-        tradeContract.createProposal(userB, ASSET_ONE_ID, ASSET_TWO_ID);
     }
 
     function test_createProposal_RevertsIf_InsufficientBalance() public {
@@ -98,6 +85,10 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
 
     function test_cancelProposal() public {
         vm.prank(userA);
+
+        // Check for the ProposalCanceled event when canceling a proposal
+        vm.expectEmit(false, false, false, false, address(tradeContract));
+        emit AssetTrade.ProposalCanceled(1);
         tradeContract.cancelProposal(1);
 
         // Check that the proposal status was updated
@@ -107,15 +98,6 @@ contract AssetTradeProposerCancelProposalTest is AssetTradeTestHelper {
         // Check that userA's vault balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
-    }
-
-    function test_cancelProposal_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check that the ProposalCanceled event was emitted
-        vm.expectEmit(false, false, false, false, address(tradeContract));
-        emit AssetTrade.ProposalCanceled(1);
-        tradeContract.cancelProposal(1);
     }
 
     function test_cancelProposal_RevertsIf_NotPendingStatus() public {
@@ -153,6 +135,10 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
     function test_acceptProposal() public {
         vm.prank(userB);
+
+        // Check for the ProposalAccepted event when accepting a proposal
+        vm.expectEmit(false, false, false, false, address(tradeContract));
+        emit AssetTrade.ProposalAccepted(1);
         tradeContract.acceptProposal(1);
 
         // Check that the proposal status was updated
@@ -175,15 +161,6 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
         assertEq(userBEndingVaultAssetTwoBalance, userBStartingVaultAssetTwoBalance - 1);
     }
 
-    function test_acceptProposal_EventEmitted() public {
-        vm.prank(userB);
-
-        // Check that the ProposalAccepted event was emitted
-        vm.expectEmit(false, false, false, false, address(tradeContract));
-        emit AssetTrade.ProposalAccepted(1);
-        tradeContract.acceptProposal(1);
-    }
-
     function test_acceptProposal_RevertsIf_NotPendingStatus() public {
         cancelProposalHelper();
 
@@ -204,6 +181,10 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
 
     function test_rejectProposal() public {
         vm.prank(userB);
+
+        // Check for the ProposalRejected event when rejecting a proposal
+        vm.expectEmit(false, false, false, false, address(tradeContract));
+        emit AssetTrade.ProposalRejected(1);
         tradeContract.rejectProposal(1);
 
         // Check that the proposal status was updated
@@ -213,15 +194,6 @@ contract AssetTradeReceiverFunctionsTest is AssetTradeTestHelper {
         // Check that userA's asset balance was updated
         uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
-    }
-
-    function test_rejectProposal_EventEmitted() public {
-        vm.prank(userB);
-
-        // Check that the ProposalRejected event was emitted
-        vm.expectEmit(false, false, false, false, address(tradeContract));
-        emit AssetTrade.ProposalRejected(1);
-        tradeContract.rejectProposal(1);
     }
 
     function test_rejectProposal_RevertIf_NotPendingStatus() public {
