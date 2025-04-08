@@ -1,7 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { console } from "forge-std/console.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { AssetVault } from "@contracts/AssetVault.sol";
@@ -27,8 +29,17 @@ contract AssetVaultConstructorTest is AssetVaultTestHelper {
 contract AssetVaultDepositIGCTest is AssetVaultTestHelper {
     function test_depositIGC() public {
         vm.startPrank(userA);
+
+        // Check for the ApprovalForAll event when the user approves the vault
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit IERC1155.ApprovalForAll(userA, address(vault), true);
         factory.setApprovalForAll(address(vault), true);
+
+        // Check for the IGCDeposited event when the user deposits IGC
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.IGCDeposited(userA, 10);
         vault.depositIGC(10);
+
         vm.stopPrank();
 
         // Check that the user's factory balance was updated correctly
@@ -40,45 +51,40 @@ contract AssetVaultDepositIGCTest is AssetVaultTestHelper {
         assertEq(userAStartingVaultIGCBalance + 10, userAEndingVaultIGCBalance);
     }
 
-    function test_depositIGC_EventEmitted() public {
-        vm.startPrank(userA);
-        factory.setApprovalForAll(address(vault), true);
-
-        // Check that the IGCDeposited event was emitted
-        vm.expectEmit(false, false, false, false, address(vault));
-        emit AssetVault.IGCDeposited(userA, 10);
-        vault.depositIGC(10);
-        vm.stopPrank();
-    }
-
     function test_depositIGC_RevertsIf_InsufficientBalance() public {
-        vm.startPrank(userB);
-        factory.setApprovalForAll(address(vault), true);
+        setApprovalForAllHelper(userB, address(vault), true);
+        vm.prank(userB);
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, userB, 0, 1, IGC_TOKEN_ID)
         );
         vault.depositIGC(1);
-        vm.stopPrank();
     }
 
     function test_depositIGC_RevertsIf_MissingApprovalForAll() public {
-        vm.startPrank(userA);
+        vm.prank(userA);
 
         // Check that the function reverts with the ERC1155MissingApprovalForAll error
         vm.expectRevert(
             abi.encodeWithSelector(IERC1155Errors.ERC1155MissingApprovalForAll.selector, address(vault), userA)
         );
         vault.depositIGC(10);
-        vm.stopPrank();
     }
 }
 
 contract AssetVaultDepositAssetsTest is AssetVaultTestHelper {
     function test_depositAssets() public {
         vm.startPrank(userA);
+
+        // Check for the ApprovalForAll event when the user approves the vault
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit IERC1155.ApprovalForAll(userA, address(vault), true);
         factory.setApprovalForAll(address(vault), true);
+
+        // Check for the Assets Deposited event when the user deposits assets
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.AssetsDeposited(userA, asset1Single, amountSingle);
         // asset1Single = [ASSET_ONE_ID]
         // amountSingle = [1]
         vault.depositAssets(asset1Single, amountSingle);
@@ -94,12 +100,15 @@ contract AssetVaultDepositAssetsTest is AssetVaultTestHelper {
     }
 
     function test_depositAssets_MultipleAssets() public {
-        vm.startPrank(userA);
-        factory.setApprovalForAll(address(vault), true);
+        setApprovalForAllHelper(userA, address(vault), true);
+        vm.prank(userA);
+
+        // Check for the Assets Deposited event when the user deposits multiple assets
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.AssetsDeposited(userA, assetIds, all);
         // assetIds = [ASSET_ONE_ID, ASSET_TWO_ID, ASSET_THREE_ID]
         // all = [10, 10, 10]
         vault.depositAssets(assetIds, all);
-        vm.stopPrank();
 
         // Check that the user's factory balances were updated correctly
         uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
@@ -122,20 +131,9 @@ contract AssetVaultDepositAssetsTest is AssetVaultTestHelper {
         assertEq(userAStartingVaultAssetThreeBalance + 10, userAEndingVaultAssetThreeBalance);
     }
 
-    function test_depositAssets_EventEmitted() public {
-        vm.startPrank(userA);
-        factory.setApprovalForAll(address(vault), true);
-
-        // Check that the AssetsDeposited event was emitted
-        vm.expectEmit(false, false, false, false, address(vault));
-        emit AssetVault.AssetsDeposited(userA, asset1Single, amountSingle);
-        vault.depositAssets(asset1Single, amountSingle);
-        vm.stopPrank();
-    }
-
     function test_depositAssets_RevertsIf_InvalidArrayLength() public {
-        vm.startPrank(userA);
-        factory.setApprovalForAll(address(vault), true);
+        setApprovalForAllHelper(userA, address(vault), true);
+        vm.prank(userA);
 
         // Check that the function reverts with the AssetVaultInvalidArrayLength error
         vm.expectRevert(
@@ -146,8 +144,8 @@ contract AssetVaultDepositAssetsTest is AssetVaultTestHelper {
     }
 
     function test_depositAssets_RevertsIf_InsufficientBalance() public {
-        vm.startPrank(userB);
-        factory.setApprovalForAll(address(vault), true);
+        setApprovalForAllHelper(userB, address(vault), true);
+        vm.prank(userB);
 
         // Check that the function reverts with the ERC1155InsufficientBalance error
         vm.expectRevert(
@@ -191,6 +189,10 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
 
     function test_withdrawAssets() public {
         vm.prank(userA);
+
+        // Check for the AssetsWithdrawn event when the user withdraws assets
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.AssetsWithdrawn(userA, asset1Single, amountSingle);
         vault.withdrawAssets(userA, asset1Single, amountSingle);
 
         // Check that the user's factory balance was updated correctly
@@ -204,6 +206,10 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
 
     function test_withdrawAssets_Multiple() public {
         vm.prank(userA);
+
+        // Check for the AssetsWithdrawn event when the user withdraws multiple assets
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.AssetsWithdrawn(userA, assetIds, allVarying);
         vault.withdrawAssets(userA, assetIds, allVarying);
 
         // Check that the user's factory balances were updated correctly
@@ -225,15 +231,6 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
 
         uint256 userAEndingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
         assertEq(userAStartingVaultAssetThreeBalance - 10, userAEndingVaultAssetThreeBalance);
-    }
-
-    function test_withdrawAssets_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check that the AssetsWithdrawn event was emitted
-        vm.expectEmit(false, false, false, false, address(vault));
-        emit AssetVault.AssetsWithdrawn(userA, asset1Single, amountSingle);
-        vault.withdrawAssets(userA, asset1Single, amountSingle);
     }
 
     function test_withdrawAssets_RevertsIf_ArrayLengthMismatch() public {
@@ -289,6 +286,10 @@ contract AssetVaultWithdrawIGCTest is AssetVaultTestHelper {
 
     function test_withdrawIGC() public {
         vm.prank(userA);
+
+        // Check for the IGCWithdrawn event when the user withdraws IGC
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.IGCWithdrawn(userA, 10);
         vault.withdrawIGC(userA, 10);
 
         // Check that the user's factory balance was updated correctly
@@ -298,15 +299,6 @@ contract AssetVaultWithdrawIGCTest is AssetVaultTestHelper {
         // Check that the user's vault balance was updated correctly
         uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAStartingVaultIGCBalance - 10, userAEndingVaultIGCBalance);
-    }
-
-    function test_withdrawIGC_EventEmitted() public {
-        vm.prank(userA);
-
-        // Check that the IGCWithdrawn event was emitted
-        vm.expectEmit(false, false, false, false, address(vault));
-        emit AssetVault.IGCWithdrawn(userA, 10);
-        vault.withdrawIGC(userA, 10);
     }
 
     function test_withdrawIGC_RevertsIf_InsufficientBalance() public {
@@ -353,6 +345,10 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
 
     function test_lockAsset() public {
         vm.prank(approvedCaller);
+
+        // Check for the AssetLocked event when the user locks an asset
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.AssetLocked(userA, IGC_TOKEN_ID, 10);
         vault.lockAsset(userA, IGC_TOKEN_ID, 10);
 
         // Check that the user's balance was updated correctly
@@ -381,12 +377,30 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
     function test_unlockAsset() public {
         lockAssetTestHelper(approvedCaller, userA, IGC_TOKEN_ID, 10);
 
+        console.log("vault balance of IGC: ", factory.balanceOf(address(vault), IGC_TOKEN_ID));
+
         vm.prank(approvedCaller);
+
+        // Check for the AssetUnlocked event when the user unlocks an asset
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.AssetUnlocked(userA, IGC_TOKEN_ID, 10);
         vault.unlockAsset(userA, IGC_TOKEN_ID, 10);
 
         // Check that the user's balance was updated correctly
         uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAStartingVaultIGCBalance, userAEndingVaultIGCBalance);
+    }
+
+    function test_unlockAsset_RevertsIf_InsufficientBalance() public {
+        vm.prank(approvedCaller);
+
+        // Check that the function reverts with the AssetVaultInsufficientBalance error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetVault.AssetVaultInsufficientBalance.selector, address(vault), 0, 1, ASSET_ONE_ID
+            )
+        );
+        vault.unlockAsset(userA, ASSET_ONE_ID, 1);
     }
 
     function test_unlockAsset_RevertsIf_UnauthorizedCaller() public {
@@ -405,6 +419,10 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
 contract AssetVaultApproveFunctionsTest is AssetVaultTestHelper {
     function test_approveCaller() public {
         vm.prank(owner);
+
+        // Check for the ApprovedCaller event when the owner approves a caller
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.ApprovedCaller(userA);
         vault.approveCaller(userA);
 
         // Check that the approved caller was set correctly
@@ -423,6 +441,9 @@ contract AssetVaultApproveFunctionsTest is AssetVaultTestHelper {
         approveCallerHelper(userA);
 
         vm.prank(owner);
+        // Check for the RevokedCaller event when the owner revokes a caller
+        vm.expectEmit(false, false, false, false, address(vault));
+        emit AssetVault.RevokedCaller(userA);
         vault.revokeCaller(userA);
 
         // Check that the approved caller was revoked correctly
