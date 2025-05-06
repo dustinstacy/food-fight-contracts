@@ -29,9 +29,9 @@ contract AssetFactoryIGCFunctionsTest is AssetFactoryTestHelper {
     function test_mintIGC() public {
         vm.prank(userA);
 
-        // Check for the TransferSingle event when minting IGC
+        // Check for the MintIGC event when minting IGC
         vm.expectEmit(true, false, false, false, address(factory));
-        emit IERC1155.TransferSingle(userA, address(0), userA, IGC_TOKEN_ID, 1);
+        emit AssetFactory.IGCminted(userA, 1);
         factory.mintIGC(userA, 1);
 
         // Check that userA's IGC balance has increased
@@ -74,9 +74,9 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
     function test_mintAsset() public {
         vm.prank(userA);
 
-        // Check for the TransferSingle event when minting an asset
+        // Check for the AssetMinted event when minting an asset
         vm.expectEmit(true, false, false, false, address(factory));
-        emit IERC1155.TransferSingle(userA, address(0), userA, ASSET_ONE_ID, 1);
+        emit AssetFactory.AssetMinted(userA, ASSET_ONE_ID, 1);
         factory.mintAsset(userA, ASSET_ONE_ID, 1, "");
 
         // Check that userA's asset balance has increased

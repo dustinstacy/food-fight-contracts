@@ -13,7 +13,7 @@ contract AssetRentalTestHelper is AssetVaultTestHelper {
     ////////////////////////////////////////////////
 
     /// @dev Instance of the AssetRental contract.
-    AssetRental rentalContract = new AssetRental(address(factory), address(vault));
+    AssetRental rentalContract = new AssetRental(address(vault));
 
     ////////////////////////////////////////////////
     /// Enums                                    ///

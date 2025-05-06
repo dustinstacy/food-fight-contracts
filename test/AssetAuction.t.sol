@@ -14,11 +14,6 @@ import { AssetAuctionTestHelper } from "./helpers/AssetAuctionTestHelper.sol";
 
 contract AssetAuctionConstructorTest is AssetAuctionTestHelper {
     function test_constructor() public view {
-        // Check that the factory address is correct
-        address expectedFactoryAddress = address(factory);
-        address actualFactoryAddress = auctionContract.getAssetFactoryAddress();
-        assertEq(expectedFactoryAddress, actualFactoryAddress);
-
         // Check that the vault address is correct
         address expectedVaultAddress = address(vault);
         address actualVaultAddress = auctionContract.getAssetVaultAddress();
@@ -368,12 +363,6 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
         // Check that the IGC token ID is correct
         uint256 igcTokenId = auctionContract.getIGCTokenId();
         assertEq(IGC_TOKEN_ID, igcTokenId);
-    }
-
-    function test_getFactoryAddress() public view {
-        // Check that the factory contract address is correct
-        address factory = auctionContract.getAssetFactoryAddress();
-        assertEq(address(factory), factory);
     }
 
     function test_getVaultAddress() public view {

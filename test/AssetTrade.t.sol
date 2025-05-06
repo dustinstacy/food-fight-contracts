@@ -13,11 +13,6 @@ import { AssetTradeTestHelper } from "./helpers/AssetTradeTestHelper.sol";
 
 contract AssetTradeConstructorTest is AssetTradeTestHelper {
     function test_constructor() public view {
-        // Check that the factory address is correct
-        address expectedFactoryAddress = address(factory);
-        address actualFactoryAddress = tradeContract.getAssetFactoryAddress();
-        assertEq(expectedFactoryAddress, actualFactoryAddress);
-
         // Check that the vault address is correct
         address expectedVaultAddress = address(vault);
         address actualVaultAddress = tradeContract.getAssetVaultAddress();
@@ -242,12 +237,6 @@ contract AssetTradeViewFunctionsTest is AssetTradeTestHelper {
         // Check that the proposal count is correct
         uint256 proposalCount = tradeContract.getProposalCount();
         assertEq(proposalCount, 1);
-    }
-
-    function test_getFactoryAddress() public view {
-        // Check that the factory contract address is correct
-        address factory = tradeContract.getAssetFactoryAddress();
-        assertEq(address(factory), factory);
     }
 
     function test_getVaultAddress() public view {

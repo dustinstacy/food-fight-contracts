@@ -14,14 +14,9 @@ import { AssetRentalTestHelper } from "./helpers/AssetRentalTestHelper.sol";
 
 contract AssetAuctionConstructorTest is AssetRentalTestHelper {
     function test_constructor() public view {
-        // Check that the factory address is set correctly
-        address expectedAddress = address(factory);
-        address actualAddress = rentalContract.getAssetFactoryAddress();
-        assertEq(expectedAddress, actualAddress);
-
         // Check that the vault address is set correctly
-        expectedAddress = address(vault);
-        actualAddress = rentalContract.getAssetVaultAddress();
+        address expectedAddress = address(vault);
+        address actualAddress = rentalContract.getAssetVaultAddress();
         assertEq(expectedAddress, actualAddress);
 
         // Check the rental asset count is 0
@@ -358,12 +353,6 @@ contract AssetRentalViewFunctionsTest is AssetRentalTestHelper {
         // Check that the IGC token ID is correct
         uint256 igcTokenId = rentalContract.getIGCTokenId();
         assertEq(IGC_TOKEN_ID, igcTokenId);
-    }
-
-    function test_getFactoryAddress() public view {
-        // Check that the factory contract address is correct
-        address factory = rentalContract.getAssetFactoryAddress();
-        assertEq(address(factory), factory);
     }
 
     function test_getVaultAddress() public view {

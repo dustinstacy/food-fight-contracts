@@ -15,7 +15,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     ////////////////////////////////////////////////
 
     /// @dev Instance of the AssetTrade contract.
-    AssetTrade tradeContract = new AssetTrade(address(factory), address(vault));
+    AssetTrade tradeContract = new AssetTrade(address(vault));
 
     ////////////////////////////////////////////////
     /// Enums                                    ///

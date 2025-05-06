@@ -14,7 +14,7 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     ////////////////////////////////////////////////
 
     /// @dev Instance of the AssetAuction contract.
-    AssetAuction auctionContract = new AssetAuction(address(factory), address(vault));
+    AssetAuction auctionContract = new AssetAuction(address(vault));
 
     ////////////////////////////////////////////////
     /// Enums                                    ///
