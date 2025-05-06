@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.2.0) (token/ERC20/utils/SafeERC20.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "../IERC20.sol";
 import {IERC1363} from "../../../interfaces/IERC1363.sol";
@@ -115,13 +115,9 @@ library SafeERC20 {
      *
      * Reverts if the returned value is other than `true`.
      */
-    function transferFromAndCallRelaxed(
-        IERC1363 token,
-        address from,
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal {
+    function transferFromAndCallRelaxed(IERC1363 token, address from, address to, uint256 value, bytes memory data)
+        internal
+    {
         if (to.code.length == 0) {
             safeTransferFrom(token, from, to, value);
         } else if (!token.transferFromAndCall(from, to, value, data)) {

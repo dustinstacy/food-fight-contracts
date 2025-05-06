@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC1155Receiver} from "../../token/ERC1155/IERC1155Receiver.sol";
 import {ERC165} from "../../utils/introspection/ERC165.sol";
@@ -20,6 +20,7 @@ contract ERC1155ReceiverMock is ERC165, IERC1155Receiver {
 
     event Received(address operator, address from, uint256 id, uint256 value, bytes data, uint256 gas);
     event BatchReceived(address operator, address from, uint256[] ids, uint256[] values, bytes data, uint256 gas);
+
     error CustomError(bytes4);
 
     constructor(bytes4 recRetval, bytes4 batRetval, RevertType error) {
@@ -28,13 +29,10 @@ contract ERC1155ReceiverMock is ERC165, IERC1155Receiver {
         _error = error;
     }
 
-    function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bytes4) {
+    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data)
+        external
+        returns (bytes4)
+    {
         if (_error == RevertType.RevertWithoutMessage) {
             revert();
         } else if (_error == RevertType.RevertWithMessage) {

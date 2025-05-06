@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC1363Receiver.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 /**
  * @title IERC1363Receiver
@@ -23,10 +23,7 @@ interface IERC1363Receiver {
      * @param data Additional data with no specified format.
      * @return `bytes4(keccak256("onTransferReceived(address,address,uint256,bytes)"))` if transfer is allowed unless throwing.
      */
-    function onTransferReceived(
-        address operator,
-        address from,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bytes4);
+    function onTransferReceived(address operator, address from, uint256 value, bytes calldata data)
+        external
+        returns (bytes4);
 }

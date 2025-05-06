@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC1155/IERC1155Receiver.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC165} from "../../utils/introspection/IERC165.sol";
 
@@ -25,13 +25,9 @@ interface IERC1155Receiver is IERC165 {
      * @param data Additional data with no specified format
      * @return `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))` if transfer is allowed
      */
-    function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bytes4);
+    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data)
+        external
+        returns (bytes4);
 
     /**
      * @dev Handles the receipt of a multiple ERC-1155 token types. This function

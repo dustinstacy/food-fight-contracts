@@ -3,11 +3,12 @@ pragma solidity ^0.8.28;
 
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { AssetVault } from "./AssetVault.sol";
 
 /// @title AssetAuction
 /// @notice This contract allows users to create and participate in auctions for ERC1155 assets.
-contract AssetAuction is IERC1155Receiver {
+contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
     ///                  TYPE DECLARATIONS                  ///
     ///////////////////////////////////////////////////////////
@@ -27,7 +28,7 @@ contract AssetAuction is IERC1155Receiver {
         address winningBidder;
         uint256 assetId;
         uint256 reservePrice;
-        uint256 deadline;
+        uint256 deadlineBlock;
         uint256 highestBid;
         uint256 winningBid;
         AuctionStatus status;
@@ -40,27 +41,26 @@ contract AssetAuction is IERC1155Receiver {
     /// @notice Mapping of auction ID to auction details.
     mapping(uint256 auctionId => Auction) private auctions;
 
-    /// @notice Instance of the AssetVault contract that is responsible for managing assets.
-    AssetVault private vault;
-
-    /// @notice The token ID of the IGC token.
-    uint8 private igcTokenId = 0;
-
     /// @notice The number of auctions.
     uint256 private auctionCount;
+
+    /// @notice Instance of the AssetVault contract that is responsible for managing assets.
+    AssetVault private immutable i_vault;
 
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Emitted when an auction is canceled.
+    event AuctionCanceled(uint256 auctionId);
+
     /// @notice Emitted when an auction is created.
-    event AuctionCreated(address seller, uint256 auctionId, uint256 assetId, uint256 reservePrice, uint256 deadline);
+    event AuctionCreated(
+        address seller, uint256 auctionId, uint256 assetId, uint256 reservePrice, uint256 blocksDuration
+    );
 
     /// @notice Emitted when an auction is ended.
     event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
-
-    /// @notice Emitted when an auction is canceled.
-    event AuctionCanceled(uint256 auctionId);
 
     /// @notice Emitted when an auction ends without meeting the reserve price.
     event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
@@ -72,20 +72,20 @@ contract AssetAuction is IERC1155Receiver {
     ///                     ERRORS                          ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Thrown when the auction is not open.
-    error AssetAuctionNotOpen(AuctionStatus status);
+    /// @notice Thrown when the bid is not higher than the highest bid.
+    error AssetAuctionBidBelowHighestBid(uint256 amount, uint256 highestBid);
+
+    /// @notice Thrown when the deadline has not passed.
+    error AssetAuctionDeadlineNotPassed(uint256 currentBlock, uint256 deadlineBlock);
 
     /// @notice Thrown when the deadline has passed.
-    error AssetAuctionDeadlineHasPassed(uint256 deadline);
+    error AssetAuctionDeadlineHasPassed(uint256 currentBlock, uint256 deadlineBlock);
 
     /// @notice Thrown when the caller is not the seller.
     error AssetAuctionNotTheSeller(address caller, address seller);
 
-    /// @notice Thrown when the deadline has not passed.
-    error AssetAuctionDeadlineNotPassed(uint256 deadline);
-
-    /// @notice Thrown when the bid is not higher than the highest bid.
-    error AssetAuctionBidBelowHighestBid(uint256 amount, uint256 highestBid);
+    /// @notice Thrown when the auction is not open.
+    error AssetAuctionNotOpen(AuctionStatus status);
 
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
@@ -93,7 +93,7 @@ contract AssetAuction is IERC1155Receiver {
 
     /// @param _assetVaultAddress The address of the AssetVault contract.
     constructor(address _assetVaultAddress) {
-        vault = AssetVault(_assetVaultAddress);
+        i_vault = AssetVault(_assetVaultAddress);
     }
 
     ///////////////////////////////////////////////////////////
@@ -103,15 +103,18 @@ contract AssetAuction is IERC1155Receiver {
     /// @notice Create a new auction.
     /// @param assetId The ID of the asset.
     /// @param reservePrice The reserve price of the auction.
-    /// @param deadline The deadline of the auction.
+    /// @param blocksDuration The amount of blocks until the auction ends.
     /// @dev Will throw an error if the user lacks the required balance of the asset to auction. (AssetVaultInsufficientBalance).
-    function createAuction(uint256 assetId, uint256 reservePrice, uint256 deadline) public {
+    function createAuction(uint256 assetId, uint256 reservePrice, uint256 blocksDuration) public {
+        uint256 startBlock = block.number;
+        uint256 endBlock = startBlock + blocksDuration;
+
         auctionCount++;
         auctions[auctionCount] = Auction({
             seller: msg.sender,
             assetId: assetId,
             reservePrice: reservePrice,
-            deadline: deadline,
+            deadlineBlock: endBlock,
             highestBid: 0,
             highestBidder: address(0),
             winningBid: 0,
@@ -119,9 +122,9 @@ contract AssetAuction is IERC1155Receiver {
             status: AuctionStatus.Open
         });
 
-        vault.lockAsset(msg.sender, assetId, 1);
+        i_vault.lockAsset(msg.sender, assetId, 1);
 
-        emit AuctionCreated(msg.sender, auctionCount, assetId, reservePrice, deadline);
+        emit AuctionCreated(msg.sender, auctionCount, assetId, reservePrice, blocksDuration);
     }
 
     /// @notice Cancel an auction.
@@ -133,8 +136,8 @@ contract AssetAuction is IERC1155Receiver {
             revert AssetAuctionNotOpen(auction.status);
         }
 
-        if (block.timestamp >= auction.deadline) {
-            revert AssetAuctionDeadlineHasPassed(auction.deadline);
+        if (block.number >= auction.deadlineBlock) {
+            revert AssetAuctionDeadlineHasPassed(block.number, auction.deadlineBlock);
         }
 
         if (auction.seller != msg.sender) {
@@ -143,7 +146,7 @@ contract AssetAuction is IERC1155Receiver {
 
         auction.status = AuctionStatus.Canceled;
 
-        vault.unlockAsset(auction.seller, auction.assetId, 1);
+        i_vault.unlockAsset(auction.seller, auction.assetId, 1);
 
         emit AuctionCanceled(auctionId);
     }
@@ -156,15 +159,15 @@ contract AssetAuction is IERC1155Receiver {
     /// @param auctionId The ID of the auction.
     /// @param amount The amount to bid.
     /// @dev Will throw an error if the user lacks the required balance to place the bid. (AssetVaultInsufficientBalance).
-    function placeBid(uint256 auctionId, uint256 amount) external {
+    function placeBid(uint256 auctionId, uint256 amount) external nonReentrant {
         Auction storage auction = auctions[auctionId];
 
         if (auction.status != AuctionStatus.Open) {
             revert AssetAuctionNotOpen(auction.status);
         }
 
-        if (block.timestamp >= auction.deadline) {
-            revert AssetAuctionDeadlineHasPassed(auction.deadline);
+        if (block.number >= auction.deadlineBlock) {
+            revert AssetAuctionDeadlineHasPassed(block.number, auction.deadlineBlock);
         }
 
         if (amount <= auction.highestBid) {
@@ -172,8 +175,8 @@ contract AssetAuction is IERC1155Receiver {
         }
 
         // Lock the IGC tokens of the bidder and unlock the IGC tokens of the previous highest bidder
-        vault.lockAsset(msg.sender, igcTokenId, amount);
-        vault.unlockAsset(auction.highestBidder, igcTokenId, auction.highestBid);
+        i_vault.lockAsset(msg.sender, i_vault.getIGCTokenId(), amount);
+        i_vault.unlockAsset(auction.highestBidder, i_vault.getIGCTokenId(), auction.highestBid);
 
         auction.highestBid = amount;
         auction.highestBidder = msg.sender;
@@ -194,14 +197,14 @@ contract AssetAuction is IERC1155Receiver {
             revert AssetAuctionNotOpen(auction.status);
         }
 
-        if (block.timestamp < auction.deadline) {
-            revert AssetAuctionDeadlineNotPassed(auction.deadline);
+        if (block.number < auction.deadlineBlock) {
+            revert AssetAuctionDeadlineNotPassed(block.number, auction.deadlineBlock);
         }
 
         if (auction.highestBid < auction.reservePrice) {
             auction.status = AuctionStatus.ReserveNotMet;
 
-            vault.unlockAsset(auction.seller, auction.assetId, 1);
+            i_vault.unlockAsset(auction.seller, auction.assetId, 1);
 
             emit AuctionReserveNotMet(auctionId, auction.reservePrice, auction.highestBid);
 
@@ -213,8 +216,8 @@ contract AssetAuction is IERC1155Receiver {
         auction.winningBidder = auction.highestBidder;
 
         // Execute the exchange of assets by updating the balances in the AssetVault contract
-        vault.unlockAsset(auction.seller, igcTokenId, auction.winningBid);
-        vault.unlockAsset(auction.winningBidder, auction.assetId, 1);
+        i_vault.unlockAsset(auction.seller, i_vault.getIGCTokenId(), auction.winningBid);
+        i_vault.unlockAsset(auction.winningBidder, auction.assetId, 1);
 
         emit AuctionEnded(auctionId, auction.winningBidder, auction.winningBid);
     }
@@ -236,17 +239,12 @@ contract AssetAuction is IERC1155Receiver {
         return auctionCount;
     }
 
-    /// @notice Get the IGC token ID.
-    /// @return tokenId The IGC token ID.
-    function getIGCTokenId() public view returns (uint8 tokenId) {
-        return igcTokenId;
-    }
-
     /// @notice Get the vault contract address.
     /// @return vaultAddress The address of the vault contract.
     function getAssetVaultAddress() public view returns (address vaultAddress) {
-        return address(vault);
+        return address(i_vault);
     }
+
     /////////////////////////////////////////////////////////////
     ///               ERC1155 RECEIVER FUNCTIONS              ///
     /////////////////////////////////////////////////////////////

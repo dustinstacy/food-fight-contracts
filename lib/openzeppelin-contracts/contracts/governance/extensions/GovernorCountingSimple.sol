@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (governance/extensions/GovernorCountingSimple.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Governor} from "../Governor.sol";
 
@@ -45,9 +45,12 @@ abstract contract GovernorCountingSimple is Governor {
     /**
      * @dev Accessor to the internal vote counts.
      */
-    function proposalVotes(
-        uint256 proposalId
-    ) public view virtual returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes) {
+    function proposalVotes(uint256 proposalId)
+        public
+        view
+        virtual
+        returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)
+    {
         ProposalVote storage proposalVote = _proposalVotes[proposalId];
         return (proposalVote.againstVotes, proposalVote.forVotes, proposalVote.abstainVotes);
     }

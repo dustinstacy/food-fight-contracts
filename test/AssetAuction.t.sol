@@ -34,8 +34,8 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
 
         // Check for the AuctionCreated event when creating an auction
         vm.expectEmit(false, false, false, false, address(auctionContract));
-        emit AssetAuction.AuctionCreated(userA, 1, ASSET_ONE_ID, 10, ONE_HOUR);
-        auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR);
+        emit AssetAuction.AuctionCreated(userA, 1, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
+        auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Check that the auction count was incremented
         uint256 auctionCount = auctionContract.getAuctionCount();
@@ -49,7 +49,7 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
         address winningBidder = auctionData.winningBidder;
         uint256 assetId = auctionData.assetId;
         uint256 reservePrice = auctionData.reservePrice;
-        uint256 deadline = auctionData.deadline;
+        uint256 deadlineBlock = auctionData.deadlineBlock;
         uint256 highestBid = auctionData.highestBid;
         uint256 winningBid = auctionData.winningBid;
         // Note: The status is an enum, so we need to cast it to uint256
@@ -59,7 +59,7 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
         assertEq(userA, seller);
         assertEq(ASSET_ONE_ID, assetId);
         assertEq(10, reservePrice);
-        assertEq(ONE_HOUR, deadline);
+        assertEq(ONE_HOUR_IN_BLOCKS + 1, deadlineBlock);
         assertEq(0, highestBid);
         assertEq(address(0), highestBidder);
         assertEq(0, winningBid);
@@ -78,14 +78,14 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(AssetVault.AssetVaultInsufficientBalance.selector, userA, 0, 1, ASSET_THREE_ID)
         );
-        auctionContract.createAuction(ASSET_THREE_ID, 10, ONE_HOUR);
+        auctionContract.createAuction(ASSET_THREE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 }
 
 contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Update the starting vault balance for userA
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -121,13 +121,17 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
 
     function test_cancelAuction_RevertsIf_DeadlinePassed() public {
         AssetAuction.Auction memory auctionData = auctionContract.getAuction(1);
-        uint256 deadline = auctionData.deadline;
+        uint256 deadlineBlock = auctionData.deadlineBlock;
 
-        vm.warp(ONE_HOUR + 1);
+        vm.roll(ONE_HOUR_IN_BLOCKS + 1);
         vm.prank(userA);
 
         // Check that the function reverts with the AssetAuctionDeadlineHasPassed error
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineHasPassed.selector, deadline));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetAuction.AssetAuctionDeadlineHasPassed.selector, vm.getBlockNumber(), deadlineBlock
+            )
+        );
         auctionContract.cancelAuction(1);
     }
 
@@ -147,7 +151,7 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
 contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 
     function test_placeBid() public {
@@ -202,11 +206,18 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
     }
 
     function test_placeBid_RevertsIf_DeadlinePassed() public {
-        vm.warp(ONE_HOUR + 1);
+        AssetAuction.Auction memory auctionData = auctionContract.getAuction(1);
+        uint256 deadlineBlock = auctionData.deadlineBlock;
+
+        vm.roll(ONE_HOUR_IN_BLOCKS + 1);
         vm.prank(userB);
 
         // Check that the function reverts with the AssetAuctionDeadlineHasPassed error
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineHasPassed.selector, ONE_HOUR));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetAuction.AssetAuctionDeadlineHasPassed.selector, vm.getBlockNumber(), deadlineBlock
+            )
+        );
         auctionContract.placeBid(1, 10);
     }
 
@@ -230,7 +241,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
 contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Update the starting vault balance for userA
         userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
@@ -239,8 +250,13 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
     function test_completeAuction() public {
         placeBidHelper(userB, ASSET_ONE_ID, 10);
 
-        vm.warp(ONE_HOUR + 1);
+        console.log("Current block number: ", vm.getBlockNumber());
+
+        vm.roll(ONE_HOUR_IN_BLOCKS + 1);
         vm.prank(userA);
+
+        console.log("Updated block number: ", vm.getBlockNumber());
+        console.log("Auction deadline block: ", auctionContract.getAuction(1).deadlineBlock);
 
         // Check for the AuctionEnded event when completing an auction
         vm.expectEmit(false, false, false, false, address(auctionContract));
@@ -276,7 +292,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
     }
 
     function test_completeAuction_WhenReserveNotMet() public {
-        vm.warp(ONE_HOUR + 1);
+        vm.roll(ONE_HOUR_IN_BLOCKS + 1);
         vm.prank(userA);
 
         // Check for the AuctionReserveNotMet event when completing an auction
@@ -297,7 +313,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
 
     function test_completeAuction_RevertsIf_NotOpenStatus() public {
         placeBidHelper(userB, ASSET_ONE_ID, 10);
-        vm.warp(ONE_HOUR + 1);
+        vm.roll(ONE_HOUR_IN_BLOCKS + 1);
         vm.startPrank(userA);
         auctionContract.completeAuction(1);
 
@@ -313,8 +329,12 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
         vm.prank(userA);
 
         // Check that the function reverts with the AssetAuctionDeadlineNotPassed error
-        uint256 deadline = auctionContract.getAuction(1).deadline;
-        vm.expectRevert(abi.encodeWithSelector(AssetAuction.AssetAuctionDeadlineNotPassed.selector, deadline));
+        uint256 deadlineBlock = auctionContract.getAuction(1).deadlineBlock;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AssetAuction.AssetAuctionDeadlineNotPassed.selector, vm.getBlockNumber(), deadlineBlock
+            )
+        );
         auctionContract.completeAuction(1);
     }
 }
@@ -326,7 +346,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
 contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
     function setUp() public override {
         super.setUp();
-        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 
     function test_getAuction() public view {
@@ -336,7 +356,7 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
         address winningBidder = auctionData.winningBidder;
         uint256 assetId = auctionData.assetId;
         uint256 reservePrice = auctionData.reservePrice;
-        uint256 deadline = auctionData.deadline;
+        uint256 deadlineBlock = auctionData.deadlineBlock;
         uint256 highestBid = auctionData.highestBid;
         uint256 winningBid = auctionData.winningBid;
         uint256 status = uint256(auctionData.status);
@@ -347,7 +367,7 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
         assertEq(address(0), winningBidder);
         assertEq(ASSET_ONE_ID, assetId);
         assertEq(10, reservePrice);
-        assertEq(ONE_HOUR, deadline);
+        assertEq(ONE_HOUR_IN_BLOCKS + 1, deadlineBlock);
         assertEq(0, highestBid);
         assertEq(0, winningBid);
         assertEq(openStatus, status);
@@ -357,12 +377,6 @@ contract AssetAuctionViewFunctionsTest is AssetAuctionTestHelper {
         // Check that the auction count is correct
         uint256 auctionCount = auctionContract.getAuctionCount();
         assertEq(1, auctionCount);
-    }
-
-    function test_getIGCTokenId() public view {
-        // Check that the IGC token ID is correct
-        uint256 igcTokenId = auctionContract.getIGCTokenId();
-        assertEq(IGC_TOKEN_ID, igcTokenId);
     }
 
     function test_getVaultAddress() public view {

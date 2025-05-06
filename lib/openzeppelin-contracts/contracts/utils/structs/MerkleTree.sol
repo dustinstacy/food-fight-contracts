@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/structs/MerkleTree.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Hashes} from "../cryptography/Hashes.sol";
 import {Arrays} from "../Arrays.sol";
@@ -60,7 +60,10 @@ library MerkleTree {
      * IMPORTANT: The zero value should be carefully chosen since it will be stored in the tree representing
      * empty leaves. It should be a value that is not expected to be part of the tree.
      */
-    function setup(Bytes32PushTree storage self, uint8 treeDepth, bytes32 zero) internal returns (bytes32 initialRoot) {
+    function setup(Bytes32PushTree storage self, uint8 treeDepth, bytes32 zero)
+        internal
+        returns (bytes32 initialRoot)
+    {
         return setup(self, treeDepth, zero, Hashes.commutativeKeccak256);
     }
 
@@ -124,11 +127,10 @@ library MerkleTree {
      * This variant uses a custom hashing function to hash internal nodes. It should only be called with the same
      * function as the one used during the initial setup of the merkle tree.
      */
-    function push(
-        Bytes32PushTree storage self,
-        bytes32 leaf,
-        function(bytes32, bytes32) view returns (bytes32) fnHash
-    ) internal returns (uint256 index, bytes32 newRoot) {
+    function push(Bytes32PushTree storage self, bytes32 leaf, function(bytes32, bytes32) view returns (bytes32) fnHash)
+        internal
+        returns (uint256 index, bytes32 newRoot)
+    {
         // Cache read
         uint256 treeDepth = depth(self);
 

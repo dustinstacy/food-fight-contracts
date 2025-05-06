@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC20/extensions/ERC20FlashMint.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC3156FlashBorrower} from "../../../interfaces/IERC3156FlashBorrower.sol";
 import {IERC3156FlashLender} from "../../../interfaces/IERC3156FlashLender.sol";
@@ -106,12 +106,11 @@ abstract contract ERC20FlashMint is ERC20, IERC3156FlashLender {
     // This function can reenter, but it doesn't pose a risk because it always preserves the property that the amount
     // minted at the beginning is always recovered and burned at the end, or else the entire function will revert.
     // slither-disable-next-line reentrancy-no-eth
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 value,
-        bytes calldata data
-    ) public virtual returns (bool) {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 value, bytes calldata data)
+        public
+        virtual
+        returns (bool)
+    {
         uint256 maxLoan = maxFlashLoan(token);
         if (value > maxLoan) {
             revert ERC3156ExceededMaxLoan(maxLoan);

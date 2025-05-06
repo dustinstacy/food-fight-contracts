@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC20/extensions/IERC20Permit.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 /**
  * @dev Interface of the ERC-20 Permit extension allowing approvals to be made via signatures, as defined in
@@ -63,15 +63,8 @@ interface IERC20Permit {
      *
      * CAUTION: See Security Considerations above.
      */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
 
     /**
      * @dev Returns the current nonce for `owner`. This value must be

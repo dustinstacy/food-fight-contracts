@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/Base64.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 /**
  * @dev Provides a set of functions to operate with Base64 strings.
@@ -72,11 +72,7 @@ library Base64 {
             mstore(afterPtr, 0x00)
 
             // Run over the input, 3 bytes at a time
-            for {
-
-            } lt(dataPtr, endPtr) {
-
-            } {
+            for {} lt(dataPtr, endPtr) {} {
                 // Advance 3 bytes
                 dataPtr := add(dataPtr, 3)
                 let input := mload(dataPtr)
@@ -112,9 +108,7 @@ library Base64 {
                     mstore8(sub(resultPtr, 1), 0x3d)
                     mstore8(sub(resultPtr, 2), 0x3d)
                 }
-                case 2 {
-                    mstore8(sub(resultPtr, 1), 0x3d)
-                }
+                case 2 { mstore8(sub(resultPtr, 1), 0x3d) }
             }
         }
 

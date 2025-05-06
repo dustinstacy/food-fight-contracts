@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC1363.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "./IERC20.sol";
 import {IERC165} from "./IERC165.sol";
@@ -63,7 +63,9 @@ interface IERC1363 is IERC20, IERC165 {
      * @param data Additional data with no specified format, sent in call to `to`.
      * @return A boolean value indicating whether the operation succeeded unless throwing.
      */
-    function transferFromAndCall(address from, address to, uint256 value, bytes calldata data) external returns (bool);
+    function transferFromAndCall(address from, address to, uint256 value, bytes calldata data)
+        external
+        returns (bool);
 
     /**
      * @dev Sets a `value` amount of tokens as the allowance of `spender` over the

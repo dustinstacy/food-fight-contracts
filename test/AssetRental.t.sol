@@ -35,7 +35,7 @@ contract AssetRentalCreateRentalTest is AssetRentalTestHelper {
         // Check that the RentalAssetPosted event was emitted
         vm.expectEmit(false, false, false, false, address(rentalContract));
         emit AssetRental.RentalAssetPosted(userA, 1);
-        rentalContract.createRental(ASSET_ONE_ID, 10, ONE_HOUR);
+        rentalContract.createRental(ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Check that the rental asset count was incremented
         uint256 rentalAssetCount = rentalContract.getRentalAssetCount();
@@ -46,7 +46,7 @@ contract AssetRentalCreateRentalTest is AssetRentalTestHelper {
         address renter = rentalAsset.renter;
         uint256 assetId = rentalAsset.assetId;
         uint256 rentalPrice = rentalAsset.price;
-        uint256 rentalDuration = rentalAsset.duration;
+        uint256 blocksDuration = rentalAsset.blocksDuration;
         uint256 expiration = rentalAsset.expiration;
         uint256 rentalStatus = uint256(rentalAsset.status);
 
@@ -55,7 +55,7 @@ contract AssetRentalCreateRentalTest is AssetRentalTestHelper {
         assertEq(renter, address(0));
         assertEq(assetId, ASSET_ONE_ID);
         assertEq(rentalPrice, 10);
-        assertEq(rentalDuration, ONE_HOUR);
+        assertEq(blocksDuration, ONE_HOUR_IN_BLOCKS);
         assertEq(expiration, 0);
         assertEq(rentalStatus, availableStatus);
 
@@ -71,7 +71,7 @@ contract AssetRentalCreateRentalTest is AssetRentalTestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(AssetVault.AssetVaultInsufficientBalance.selector, userB, 0, 1, ASSET_ONE_ID)
         );
-        rentalContract.createRental(ASSET_ONE_ID, 10, ONE_HOUR);
+        rentalContract.createRental(ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 }
 
@@ -80,7 +80,7 @@ contract AssetRentalUnlistRentalTest is AssetRentalTestHelper {
         super.setUp();
 
         // Create a rental for userA
-        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 
     function test_unlistRental() public {
@@ -129,13 +129,13 @@ contract AssetRentalUnlistRentalTest is AssetRentalTestHelper {
 
 contract AssetRentalUpdateRentalTest is AssetRentalTestHelper {
     uint256 newRentalPrice = 20;
-    uint256 newRentalDuration = 2 * ONE_HOUR;
+    uint256 newRentalDuration = 2 * ONE_HOUR_IN_BLOCKS;
 
     function setUp() public override {
         super.setUp();
 
         // Create a rental for userA
-        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 
     function test_updateRental() public {
@@ -144,14 +144,14 @@ contract AssetRentalUpdateRentalTest is AssetRentalTestHelper {
         // Check that the RentalAssetUpdated event was emitted
         vm.expectEmit(false, false, false, false, address(rentalContract));
         emit AssetRental.RentalAssetUpdated(userA, 1);
-        rentalContract.updateRental(1, 20, 2 * ONE_HOUR);
+        rentalContract.updateRental(1, 20, 2 * ONE_HOUR_IN_BLOCKS);
 
         // Check that the rental asset price was updated correctly
         uint256 price = rentalContract.getRentalAsset(1).price;
         assertEq(price, newRentalPrice);
 
         // Check that the rental asset duration was updated correctly
-        uint256 duration = rentalContract.getRentalAsset(1).duration;
+        uint256 duration = rentalContract.getRentalAsset(1).blocksDuration;
         assertEq(duration, newRentalDuration);
     }
 
@@ -191,7 +191,7 @@ contract AssetRentalRentAssetTest is AssetRentalTestHelper {
         super.setUp();
 
         // Create a rental for userA
-        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
     }
 
     function test_rentAsset() public {
@@ -220,7 +220,7 @@ contract AssetRentalRentAssetTest is AssetRentalTestHelper {
 
         // Check that the rental asset expiration was updated correctly
         uint256 expiration = rentalContract.getRentalAsset(1).expiration;
-        assertEq(expiration, block.timestamp + ONE_HOUR);
+        assertEq(expiration, block.timestamp + ONE_HOUR_IN_BLOCKS);
 
         // Check that userB's rented asset's were updated correctly
         uint256 rentedAssetCount = rentalContract.getRentedAssetBalance(userB, rentalContract.getRentalAsset(1).assetId);
@@ -248,7 +248,7 @@ contract AssetRentalRentAssetTest is AssetRentalTestHelper {
     }
 
     function test_rentAsset_RevertsIf_InsufficientBalance() public {
-        createRentalHelper(userA, ASSET_TWO_ID, ONE_MILLION + 1, ONE_HOUR);
+        createRentalHelper(userA, ASSET_TWO_ID, ONE_MILLION + 1, ONE_HOUR_IN_BLOCKS);
 
         vm.prank(userB);
 
@@ -267,7 +267,7 @@ contract AssetRentalCheckRentalStatus is AssetRentalTestHelper {
         super.setUp();
 
         // Create a rental for userA
-        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Rent the asset for userB
         rentAssetHelper(userB, 1);
@@ -280,7 +280,7 @@ contract AssetRentalCheckRentalStatus is AssetRentalTestHelper {
     }
 
     function test_checkRentalStatus_WhenExpried() public {
-        vm.warp(block.timestamp + ONE_HOUR + 1);
+        vm.roll(block.timestamp + ONE_HOUR_IN_BLOCKS + 1);
 
         // Check that the RentalAssetReleased event was emitted
         vm.expectEmit(false, false, false, false, address(rentalContract));
@@ -317,7 +317,7 @@ contract AssetRentalViewFunctionsTest is AssetRentalTestHelper {
         super.setUp();
 
         // Create a rental for userA
-        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR);
+        createRentalHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Rent the asset for userB
         rentAssetHelper(userB, 1);
@@ -329,7 +329,7 @@ contract AssetRentalViewFunctionsTest is AssetRentalTestHelper {
         address renter = rentalAsset.renter;
         uint256 assetId = rentalAsset.assetId;
         uint256 rentalPrice = rentalAsset.price;
-        uint256 rentalDuration = rentalAsset.duration;
+        uint256 blocksDuration = rentalAsset.blocksDuration;
         uint256 expiration = rentalAsset.expiration;
         uint256 rentalStatus = uint256(rentalAsset.status);
 
@@ -338,8 +338,8 @@ contract AssetRentalViewFunctionsTest is AssetRentalTestHelper {
         assertEq(renter, userB);
         assertEq(assetId, ASSET_ONE_ID);
         assertEq(rentalPrice, 10);
-        assertEq(rentalDuration, ONE_HOUR);
-        assertEq(expiration, block.timestamp + ONE_HOUR);
+        assertEq(blocksDuration, ONE_HOUR_IN_BLOCKS);
+        assertEq(expiration, block.timestamp + ONE_HOUR_IN_BLOCKS);
         assertEq(rentalStatus, rentedStatus);
     }
 
@@ -347,12 +347,6 @@ contract AssetRentalViewFunctionsTest is AssetRentalTestHelper {
         // Check that the rented asset count is correct
         uint256 rentedAssetCount = rentalContract.getRentedAssetBalance(userB, ASSET_ONE_ID);
         assertEq(rentedAssetCount, 1);
-    }
-
-    function test_getIGCTokenId() public view {
-        // Check that the IGC token ID is correct
-        uint256 igcTokenId = rentalContract.getIGCTokenId();
-        assertEq(IGC_TOKEN_ID, igcTokenId);
     }
 
     function test_getVaultAddress() public view {

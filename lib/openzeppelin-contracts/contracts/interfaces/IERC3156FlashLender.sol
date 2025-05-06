@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC3156FlashLender.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC3156FlashBorrower} from "./IERC3156FlashBorrower.sol";
 
@@ -32,10 +32,7 @@ interface IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @param data Arbitrary data structure, intended to contain user-defined parameters.
      */
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external returns (bool);
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data)
+        external
+        returns (bool);
 }

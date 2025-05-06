@@ -36,34 +36,31 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Mapping of the proposal ID to the proposal object.
     mapping(uint256 proposalId => Proposal) private proposals;
 
-    /// @notice Instance of the AssetVault contract that is responsible for managing assets.
-    AssetVault private vault;
-
     /// @notice The number of proposals.
     uint256 private proposalCount;
+
+    /// @notice Instance of the AssetVault contract that is responsible for managing assets.
+    AssetVault private immutable i_vault;
 
     ///////////////////////////////////////////////////////////
     ///                      EVENTS                         ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a proposal is created.
-    event ProposalCreated(uint256 proposalId);
-
     /// @notice Emitted when a proposal is approved.
     event ProposalAccepted(uint256 proposalId);
-
-    /// @notice Emitted when a proposal is rejected.
-    event ProposalRejected(uint256 proposalId);
 
     /// @notice Emitted when a proposal is canceled.
     event ProposalCanceled(uint256 proposalId);
 
+    /// @notice Emitted when a proposal is created.
+    event ProposalCreated(uint256 proposalId);
+
+    /// @notice Emitted when a proposal is rejected.
+    event ProposalRejected(uint256 proposalId);
+
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
-
-    /// @notice Thrown when the proposal is not in a pending state.
-    error AssetTradeProposalNotPending(ProposalStatus status);
 
     /// @notice Thrown when the caller, who is not the proposer, tries to cancel the proposal.
     error AssetTradeNotProposer(address caller, address proposer);
@@ -71,13 +68,16 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Thrown when the caller, who is not the receiver, tries to address the proposal.
     error AssetTradeNotReceiver(address caller, address receiver);
 
+    /// @notice Thrown when the proposal is not in a pending state.
+    error AssetTradeProposalNotPending(ProposalStatus status);
+
     ///////////////////////////////////////////////////////////
     ///                     CONSTRUCTOR                     ///
     ///////////////////////////////////////////////////////////
 
     /// @param _assetVaultAddress The address of the AssetVault contract.
     constructor(address _assetVaultAddress) {
-        vault = AssetVault(_assetVaultAddress);
+        i_vault = AssetVault(_assetVaultAddress);
     }
 
     ///////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ contract AssetTrade is IERC1155Receiver {
             status: ProposalStatus.Pending
         });
 
-        vault.lockAsset(msg.sender, assetAId, 1);
+        i_vault.lockAsset(msg.sender, assetAId, 1);
 
         emit ProposalCreated(proposalCount);
     }
@@ -119,7 +119,7 @@ contract AssetTrade is IERC1155Receiver {
 
         proposal.status = ProposalStatus.Canceled;
 
-        vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
+        i_vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
 
         emit ProposalCanceled(proposalId);
     }
@@ -145,9 +145,9 @@ contract AssetTrade is IERC1155Receiver {
         proposal.status = ProposalStatus.Accepted;
 
         // Execute the exchange of assets by updating the balances in the AssetVault contract
-        vault.lockAsset(proposal.receiver, proposal.assetBId, 1);
-        vault.unlockAsset(proposal.proposer, proposal.assetBId, 1);
-        vault.unlockAsset(proposal.receiver, proposal.assetAId, 1);
+        i_vault.lockAsset(proposal.receiver, proposal.assetBId, 1);
+        i_vault.unlockAsset(proposal.proposer, proposal.assetBId, 1);
+        i_vault.unlockAsset(proposal.receiver, proposal.assetAId, 1);
 
         emit ProposalAccepted(proposalId);
     }
@@ -166,7 +166,7 @@ contract AssetTrade is IERC1155Receiver {
 
         proposal.status = ProposalStatus.Rejected;
 
-        vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
+        i_vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
 
         emit ProposalRejected(proposalId);
     }
@@ -191,7 +191,7 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Get the vault contract address.
     /// @return vaultAddress The address of the vault contract.
     function getAssetVaultAddress() public view returns (address vaultAddress) {
-        return address(vault);
+        return address(i_vault);
     }
 
     /////////////////////////////////////////////////////////////

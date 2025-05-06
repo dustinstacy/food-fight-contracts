@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC1155/extensions/ERC1155Supply.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {ERC1155} from "../ERC1155.sol";
 import {Arrays} from "../../../utils/Arrays.sol";
@@ -49,12 +49,11 @@ abstract contract ERC1155Supply is ERC1155 {
     /**
      * @dev See {ERC1155-_update}.
      */
-    function _update(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory values
-    ) internal virtual override {
+    function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
+        internal
+        virtual
+        override
+    {
         super._update(from, to, ids, values);
 
         if (from == address(0)) {

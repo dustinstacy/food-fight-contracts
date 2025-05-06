@@ -35,7 +35,7 @@ contract TestingVariables {
 
     uint256 constant ONE_MILLION = 1000000;
     uint256 constant ONE_ETHER = 1 ether;
-    uint256 constant ONE_HOUR = 3600;
+    uint256 constant ONE_HOUR_IN_BLOCKS = 300;
 
     ////////////////////////////////////////////////
     /// Asset Data                               ///

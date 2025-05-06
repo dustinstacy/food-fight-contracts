@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC1155/utils/ERC1155Holder.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC165, ERC165} from "../../../utils/introspection/ERC165.sol";
 import {IERC1155Receiver} from "../IERC1155Receiver.sol";
@@ -20,23 +20,21 @@ abstract contract ERC1155Holder is ERC165, IERC1155Receiver {
         return interfaceId == type(IERC1155Receiver).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes memory
-    ) public virtual override returns (bytes4) {
+    function onERC1155Received(address, address, uint256, uint256, bytes memory)
+        public
+        virtual
+        override
+        returns (bytes4)
+    {
         return this.onERC1155Received.selector;
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] memory,
-        uint256[] memory,
-        bytes memory
-    ) public virtual override returns (bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory)
+        public
+        virtual
+        override
+        returns (bytes4)
+    {
         return this.onERC1155BatchReceived.selector;
     }
 }

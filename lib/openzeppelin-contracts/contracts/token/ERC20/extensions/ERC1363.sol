@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.2.0) (token/ERC20/extensions/ERC1363.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {ERC20} from "../ERC20.sol";
 import {IERC165, ERC165} from "../../../utils/introspection/ERC165.sol";
@@ -94,12 +94,11 @@ abstract contract ERC1363 is ERC20, ERC165, IERC1363 {
      * @dev Variant of {transferFromAndCall} that accepts an additional `data` parameter with
      * no specified format.
      */
-    function transferFromAndCall(
-        address from,
-        address to,
-        uint256 value,
-        bytes memory data
-    ) public virtual returns (bool) {
+    function transferFromAndCall(address from, address to, uint256 value, bytes memory data)
+        public
+        virtual
+        returns (bool)
+    {
         if (!transferFrom(from, to, value)) {
             revert ERC1363TransferFromFailed(from, to, value);
         }

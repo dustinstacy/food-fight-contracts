@@ -3,11 +3,12 @@ pragma solidity ^0.8.28;
 
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { AssetVault } from "./AssetVault.sol";
 
 /// @title AssetRental
 /// @notice This contract allows users to list assets for rent and rent assets from other users.
-contract AssetRental is IERC1155Receiver {
+contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
     ///                   TYPE DECLARATIONS                 ///
     ///////////////////////////////////////////////////////////
@@ -25,7 +26,7 @@ contract AssetRental is IERC1155Receiver {
         address renter;
         uint256 assetId;
         uint256 price;
-        uint256 duration;
+        uint256 blocksDuration;
         uint256 expiration;
         RentalStatus status;
     }
@@ -41,10 +42,7 @@ contract AssetRental is IERC1155Receiver {
     mapping(address user => mapping(uint256 assetId => uint256 balance)) private rentedAssets;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
-    AssetVault private vault;
-
-    /// @notice The token ID of the IGC token.
-    uint8 private igcTokenId = 0;
+    AssetVault private immutable i_vault;
 
     /// @notice The number of rental assets.
     uint256 private rentalAssetCount;
@@ -59,24 +57,24 @@ contract AssetRental is IERC1155Receiver {
     /// @notice Emitted when an asset is relisted.
     event RentalAssetRelisted(address rentalOwner, uint256 rentalAssetId);
 
+    /// @notice Emitted when an asset is rented.
+    event RentalAssetRented(address renter, uint256 rentalAssetId, uint256 timeRented);
+
     /// @notice Emitted when an asset is unlisted.
     event RentalAssetUnlisted(address rentalOwner, uint256 rentalAssetId);
 
     /// @notice Emitted when an asset is updated.
     event RentalAssetUpdated(address rentalOwner, uint256 rentalAssetId);
 
-    /// @notice Emitted when an asset is rented.
-    event RentalAssetRented(address renter, uint256 rentalAssetId, uint256 timeRented);
-
     ///////////////////////////////////////////////////////////
     ///                     ERRORS                          ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Thrown when the asset is not available for rent.
-    error AssetRentalNotAvailable(RentalStatus status);
-
     /// @notice Thrown when the asset is already available for rent.
     error AssetRentalAlreadyAvailable(RentalStatus status);
+
+    /// @notice Thrown when the asset is not available for rent.
+    error AssetRentalNotAvailable(RentalStatus status);
 
     /// @notice Thrown when the asset is not expired.
     error AssetRentalNotExpired(uint256 expiration);
@@ -93,7 +91,7 @@ contract AssetRental is IERC1155Receiver {
 
     /// @param _assetVaultAddress The address of the AssetVault contract.
     constructor(address _assetVaultAddress) {
-        vault = AssetVault(_assetVaultAddress);
+        i_vault = AssetVault(_assetVaultAddress);
     }
 
     ///////////////////////////////////////////////////////////
@@ -103,21 +101,21 @@ contract AssetRental is IERC1155Receiver {
     /// @notice Post an asset for rent.
     /// @param assetId The ID of the asset to rent.
     /// @param price The price to rent the asset.
-    /// @param duration The duration of the rental.
+    /// @param blocksDuration The amnount of blocks to rent the asset for.
     /// @dev Will throw an error if the user lacks the required balance of the asset to post for rent. (AssetVaultInsufficientBalance).
-    function createRental(uint256 assetId, uint256 price, uint256 duration) external {
+    function createRental(uint256 assetId, uint256 price, uint256 blocksDuration) external {
         rentalAssetCount++;
         rentalAssets[rentalAssetCount] = RentalAsset({
             owner: msg.sender,
             renter: address(0),
             assetId: assetId,
             price: price,
-            duration: duration,
+            blocksDuration: blocksDuration,
             expiration: 0,
             status: RentalStatus.Available
         });
 
-        vault.lockAsset(msg.sender, assetId, 1);
+        i_vault.lockAsset(msg.sender, assetId, 1);
 
         emit RentalAssetPosted(msg.sender, rentalAssetCount);
     }
@@ -129,18 +127,18 @@ contract AssetRental is IERC1155Receiver {
 
         rental.status = RentalStatus.Unavailable;
 
-        vault.unlockAsset(msg.sender, rental.assetId, 1);
+        i_vault.unlockAsset(msg.sender, rental.assetId, 1);
 
         emit RentalAssetUnlisted(msg.sender, rentalAssetId);
     }
 
-    function updateRental(uint256 rentalAssetId, uint256 price, uint256 duration) external {
+    function updateRental(uint256 rentalAssetId, uint256 price, uint256 blocksDuration) external {
         RentalAsset storage rental = rentalAssets[rentalAssetId];
 
         _checkOwnerAndAvailability(msg.sender, rental);
 
         rental.price = price;
-        rental.duration = duration;
+        rental.blocksDuration = blocksDuration;
 
         emit RentalAssetUpdated(msg.sender, rentalAssetId);
     }
@@ -149,19 +147,19 @@ contract AssetRental is IERC1155Receiver {
     ///                   RENTER FUNCTIONS                  ///
     ///////////////////////////////////////////////////////////
 
-    function rentAsset(uint256 rentalAssetId) external {
+    function rentAsset(uint256 rentalAssetId) external nonReentrant {
         RentalAsset storage rental = rentalAssets[rentalAssetId];
 
         if (rental.status != RentalStatus.Available) {
             revert AssetRentalNotAvailable(rental.status);
         }
 
-        vault.lockAsset(msg.sender, igcTokenId, rental.price);
-        vault.unlockAsset(rental.owner, igcTokenId, rental.price);
+        i_vault.lockAsset(msg.sender, i_vault.getIGCTokenId(), rental.price);
+        i_vault.unlockAsset(rental.owner, i_vault.getIGCTokenId(), rental.price);
 
         rental.status = RentalStatus.Rented;
         rental.renter = msg.sender;
-        rental.expiration = block.timestamp + rental.duration;
+        rental.expiration = block.number + rental.blocksDuration;
 
         rentedAssets[msg.sender][rental.assetId]++;
 
@@ -171,7 +169,7 @@ contract AssetRental is IERC1155Receiver {
     function checkRentalStatus(uint256 rentalAssetId) external returns (bool) {
         RentalAsset storage rental = rentalAssets[rentalAssetId];
 
-        if (block.timestamp >= rental.expiration) {
+        if (block.number >= rental.expiration) {
             rentedAssets[rental.renter][rental.assetId]--;
 
             rental.status = RentalStatus.Available;
@@ -225,16 +223,10 @@ contract AssetRental is IERC1155Receiver {
         return rentalAssetCount;
     }
 
-    /// @notice Get the IGC token ID.
-    /// @return assetId The IGC token ID.
-    function getIGCTokenId() public view returns (uint8 assetId) {
-        return igcTokenId;
-    }
-
     /// @notice Get the vault contract address.
     /// @return vaultAddress The address of the vault contract.
     function getAssetVaultAddress() public view returns (address vaultAddress) {
-        return address(vault);
+        return address(i_vault);
     }
     /////////////////////////////////////////////////////////////
     ///               ERC1155 RECEIVER FUNCTIONS              ///

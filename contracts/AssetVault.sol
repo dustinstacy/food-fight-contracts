@@ -1,15 +1,16 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { AssetFactory } from "./AssetFactory.sol";
 
 /// @title AssetVault
 /// @notice This contract handles user asset storage.
 /// @notice Users must have a balance of a given asset to perform certain actions.
-contract AssetVault is IERC1155Receiver, Ownable {
+contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
@@ -20,27 +21,21 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @notice Mapping of approved callers.
     mapping(address => bool) private approvedCallers;
 
-    /// @notice Instance of the ERC1155 contract that is responsible for minting assets.
-    IERC1155 private factory;
+    /// @notice Instance of the AssetFactory contract that is responsible for minting assets.
+    AssetFactory private immutable i_factory;
 
     /// @notice The token ID of the IGC token.
-    uint8 private igcTokenId = 0;
+    uint8 private immutable i_igcTokenId;
 
     ///////////////////////////////////////////////////////////
     ///                       EVENTS                        ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Emitted when IGC is deposited into the contract.
-    event IGCDeposited(address from, uint256 amount);
+    /// @notice Emitted when a caller is approved to perform actions on a lock function.
+    event ApprovedCaller(address caller);
 
     /// @notice Emitted when assets are deposited into the contract.
     event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
-
-    /// @notice Emitted when IGC is withdrawn from the contract.
-    event IGCWithdrawn(address to, uint256 amount);
-
-    /// @notice Emitted when assets are withdrawn from the contract.
-    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
 
     /// @notice Emitted when assets are locked in the contract.
     event AssetLocked(address account, uint256 tokenId, uint256 amount);
@@ -48,8 +43,14 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @notice Emitted when assets are unlocked in the contract.
     event AssetUnlocked(address account, uint256 tokenId, uint256 amount);
 
-    /// @notice Emitted when a caller is approved to perform actions on a lock function.
-    event ApprovedCaller(address caller);
+    /// @notice Emitted when assets are withdrawn from the contract.
+    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
+
+    /// @notice Emitted when IGC is deposited into the contract.
+    event IGCDeposited(address from, uint256 amount);
+
+    /// @notice Emitted when IGC is withdrawn from the contract.
+    event IGCWithdrawn(address to, uint256 amount);
 
     /// @notice Emitted when a caller is revoked from performing actions on a lock function.
     event RevokedCaller(address caller);
@@ -85,9 +86,10 @@ contract AssetVault is IERC1155Receiver, Ownable {
 
     /// @notice Construct the AssetVault contract.
     /// @param _factory The address of the ERC1155 contract that is responsible for minting assets.
-    /// @param _owner The address of the owner of the contract.
-    constructor(address _factory, address _owner) Ownable(_owner) {
-        factory = IERC1155(_factory);
+    /// @param _initialOwner The address of the owner of the contract.
+    constructor(address _factory, address _initialOwner) Ownable(_initialOwner) {
+        i_factory = AssetFactory(_factory);
+        i_igcTokenId = i_factory.getIGCTokenId();
     }
 
     ///////////////////////////////////////////////////////////
@@ -97,10 +99,10 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @notice Deposit IGC into the contract.
     /// @param amount The amount of IGC to deposit.
     /// @dev Will throw an error when the user lacks the required balance to deposit the IGC. (ERC1155InsufficientBalance).
-    function depositIGC(uint256 amount) external {
-        factory.safeTransferFrom(msg.sender, address(this), igcTokenId, amount, "");
+    function depositIGC(uint256 amount) external nonReentrant {
+        i_factory.safeTransferFrom(msg.sender, address(this), i_igcTokenId, amount, "");
 
-        balances[msg.sender][igcTokenId] += amount;
+        balances[msg.sender][i_igcTokenId] += amount;
 
         emit IGCDeposited(msg.sender, amount);
     }
@@ -110,8 +112,8 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @param amounts The amounts of the assets to deposit.
     /// @dev Will throw an error when the user lacks the required balance to deposit the assets.(ERC1155InsufficientBalance).
     /// @dev Will throw an error when the length of the tokenIds and amounts arrays are different. (ERC1155InvalidArrayLength).
-    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) external {
-        factory.safeBatchTransferFrom(msg.sender, address(this), tokenIds, amounts, "");
+    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) external nonReentrant {
+        i_factory.safeBatchTransferFrom(msg.sender, address(this), tokenIds, amounts, "");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             balances[msg.sender][tokenIds[i]] += amounts[i];
@@ -128,13 +130,13 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @param to The address to withdraw the IGC to.
     /// @param amount The amount of IGC to withdraw.
     function withdrawIGC(address to, uint256 amount) external {
-        if (balances[msg.sender][igcTokenId] < amount) {
-            revert AssetVaultInsufficientBalance(msg.sender, balances[msg.sender][igcTokenId], amount, igcTokenId);
+        if (balances[msg.sender][i_igcTokenId] < amount) {
+            revert AssetVaultInsufficientBalance(msg.sender, balances[msg.sender][i_igcTokenId], amount, i_igcTokenId);
         }
 
-        balances[msg.sender][igcTokenId] -= amount;
+        balances[msg.sender][i_igcTokenId] -= amount;
 
-        factory.safeTransferFrom(address(this), to, igcTokenId, amount, "");
+        i_factory.safeTransferFrom(address(this), to, i_igcTokenId, amount, "");
 
         emit IGCWithdrawn(to, amount);
     }
@@ -158,7 +160,7 @@ contract AssetVault is IERC1155Receiver, Ownable {
             balances[msg.sender][tokenIds[i]] -= amounts[i];
         }
 
-        factory.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
+        i_factory.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
 
         emit AssetsWithdrawn(to, tokenIds, amounts);
     }
@@ -188,9 +190,9 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @param amount The amount of the assets to unlock.
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
     function unlockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
-        if (factory.balanceOf(address(this), tokenId) < amount) {
+        if (i_factory.balanceOf(address(this), tokenId) < amount) {
             revert AssetVaultInsufficientBalance(
-                address(this), factory.balanceOf(address(this), tokenId), amount, tokenId
+                address(this), i_factory.balanceOf(address(this), tokenId), amount, tokenId
             );
         }
 
@@ -234,13 +236,13 @@ contract AssetVault is IERC1155Receiver, Ownable {
     /// @notice Get the factory contract address.
     /// @return factoryAddress The address of the assets contract.
     function getAssetFactoryAddress() public view returns (address factoryAddress) {
-        return address(factory);
+        return address(i_factory);
     }
 
     /// @notice Get the IGC token ID.
-    /// @return igcTokenId The token ID of the IGC token.
+    /// @return i_igcTokenId The token ID of the IGC token.
     function getIGCTokenId() public view returns (uint8) {
-        return igcTokenId;
+        return i_igcTokenId;
     }
 
     /// @notice Get the approved caller status.

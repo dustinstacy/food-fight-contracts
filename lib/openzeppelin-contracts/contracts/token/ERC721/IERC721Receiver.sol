@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC721/IERC721Receiver.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 /**
  * @title ERC-721 token receiver interface
@@ -19,10 +19,7 @@ interface IERC721Receiver {
      *
      * The selector can be obtained in Solidity with `IERC721Receiver.onERC721Received.selector`.
      */
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external returns (bytes4);
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
+        external
+        returns (bytes4);
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC1363Spender} from "../../interfaces/IERC1363Spender.sol";
 
@@ -17,6 +17,7 @@ contract ERC1363SpenderMock is IERC1363Spender {
     RevertType private _error;
 
     event Approved(address owner, uint256 value, bytes data);
+
     error CustomError(bytes4);
 
     constructor() {

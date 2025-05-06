@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 
@@ -49,11 +49,7 @@ contract SignedMathTest is Test {
 
     // 2. more complex test, full int256 range
     function testAverage2(int256 a, int256 b) public {
-        (int256 result, int256 min, int256 max) = (
-            SignedMath.average(a, b),
-            SignedMath.min(a, b),
-            SignedMath.max(a, b)
-        );
+        (int256 result, int256 min, int256 max) = (SignedMath.average(a, b), SignedMath.min(a, b), SignedMath.max(a, b));
 
         // average must be between `a` and `b`
         assertGe(result, min);

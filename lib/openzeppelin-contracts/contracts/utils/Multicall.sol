@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.1) (utils/Multicall.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Address} from "./Address.sol";
 import {Context} from "./Context.sol";
@@ -24,9 +24,8 @@ abstract contract Multicall is Context {
      * @custom:oz-upgrades-unsafe-allow-reachable delegatecall
      */
     function multicall(bytes[] calldata data) external virtual returns (bytes[] memory results) {
-        bytes memory context = msg.sender == _msgSender()
-            ? new bytes(0)
-            : msg.data[msg.data.length - _contextSuffixLength():];
+        bytes memory context =
+            msg.sender == _msgSender() ? new bytes(0) : msg.data[msg.data.length - _contextSuffixLength():];
 
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {

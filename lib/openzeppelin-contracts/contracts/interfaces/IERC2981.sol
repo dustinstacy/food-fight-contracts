@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC2981.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC165} from "../utils/introspection/IERC165.sol";
 
@@ -19,8 +19,8 @@ interface IERC2981 is IERC165 {
      * NOTE: ERC-2981 allows setting the royalty to 100% of the price. In that case all the price would be sent to the
      * royalty receiver and 0 tokens to the seller. Contracts dealing with royalty should consider empty transfers.
      */
-    function royaltyInfo(
-        uint256 tokenId,
-        uint256 salePrice
-    ) external view returns (address receiver, uint256 royaltyAmount);
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        external
+        view
+        returns (address receiver, uint256 royaltyAmount);
 }

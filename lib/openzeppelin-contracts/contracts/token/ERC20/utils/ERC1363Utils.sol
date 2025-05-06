@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC20/utils/ERC1363Utils.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC1363Receiver} from "../../../interfaces/IERC1363Receiver.sol";
 import {IERC1363Spender} from "../../../interfaces/IERC1363Spender.sol";
@@ -68,12 +68,9 @@ library ERC1363Utils {
      * - The target `spender` must implement the {IERC1363Spender} interface.
      * - The target must return the {IERC1363Spender-onApprovalReceived} selector to accept the approval.
      */
-    function checkOnERC1363ApprovalReceived(
-        address operator,
-        address spender,
-        uint256 value,
-        bytes memory data
-    ) internal {
+    function checkOnERC1363ApprovalReceived(address operator, address spender, uint256 value, bytes memory data)
+        internal
+    {
         if (spender.code.length == 0) {
             revert ERC1363InvalidSpender(spender);
         }

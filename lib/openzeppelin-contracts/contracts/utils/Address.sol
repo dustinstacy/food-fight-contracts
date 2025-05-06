@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.2.0) (utils/Address.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Errors} from "./Errors.sol";
 
@@ -103,11 +103,11 @@ library Address {
      * was not a contract or bubbling up the revert reason (falling back to {Errors.FailedCall}) in case
      * of an unsuccessful call.
      */
-    function verifyCallResultFromTarget(
-        address target,
-        bool success,
-        bytes memory returndata
-    ) internal view returns (bytes memory) {
+    function verifyCallResultFromTarget(address target, bool success, bytes memory returndata)
+        internal
+        view
+        returns (bytes memory)
+    {
         if (!success) {
             _revert(returndata);
         } else {

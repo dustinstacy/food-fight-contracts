@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {CallType, ExecType, ModeSelector, ModePayload} from "../../../account/utils/draft-ERC7579Utils.sol";
 
@@ -13,7 +13,11 @@ contract ERC7579UtilsGlobalMock {
         return execType1 == execType2;
     }
 
-    function eqModeSelectorGlobal(ModeSelector modeSelector1, ModeSelector modeSelector2) internal pure returns (bool) {
+    function eqModeSelectorGlobal(ModeSelector modeSelector1, ModeSelector modeSelector2)
+        internal
+        pure
+        returns (bool)
+    {
         return modeSelector1 == modeSelector2;
     }
 

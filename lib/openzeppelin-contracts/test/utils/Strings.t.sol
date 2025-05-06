@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 
@@ -31,7 +31,7 @@ contract StringsTest is Test {
             mstore(add(add(random, 0x20), length), 0x3030303030303030303030303030303030303030303030303030303030303030)
         }
 
-        (bool success, ) = random.tryParseHexUint(1, length + 1);
+        (bool success,) = random.tryParseHexUint(1, length + 1);
         assertFalse(success);
     }
 
@@ -44,7 +44,7 @@ contract StringsTest is Test {
             mstore(add(add(input, 0x20), length), 0x3030303030303030303030303030303030303030303030303030303030303030)
         }
 
-        (bool success, ) = input.tryParseAddress(begin, begin + 40);
+        (bool success,) = input.tryParseAddress(begin, begin + 40);
         assertFalse(success);
     }
 }

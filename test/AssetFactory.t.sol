@@ -369,8 +369,9 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
         factory.updateAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
 
         // Check the URI and price were updated correctly
-        assertEq(factory.getAssetUri(ASSET_ONE_ID), newURI);
-        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ONE_MILLION);
+        AssetFactory.Asset memory asset = factory.getAsset(ASSET_ONE_ID);
+        assertEq(asset.uri, newURI);
+        assertEq(asset.price, ONE_MILLION);
     }
 
     function test_updateAssetData_RevertsIf_NotTheOwner() public {
@@ -385,7 +386,7 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
         vm.prank(owner);
 
         // Check that the function reverts with the AssetNotFound error
-        vm.expectRevert(abi.encodeWithSelector(AssetFactory.AssetFactory__AssetNotFound.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(AssetFactory.AssetFactoryAssetNotFound.selector, 0));
         factory.updateAssetData(0, newURI, ONE_MILLION);
     }
 
@@ -418,31 +419,17 @@ contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
         assertEq(asset.price, ASSET_ONE_PRICE);
     }
 
-    function test_getAssetUri() public view {
-        // Check the URI is retrieved correctly
-        string memory expectedURI = "ipfs://asset1";
-        string memory actualURI = factory.getAssetUri(ASSET_ONE_ID);
-        assertEq(actualURI, expectedURI);
-    }
-
-    function test_getAssetPrice() public view {
-        // Check the price is retrieved correctly
-        uint256 expectedPrice = ASSET_ONE_PRICE;
-        uint256 actualPrice = factory.getAssetPrice(ASSET_ONE_ID);
-        assertEq(actualPrice, expectedPrice);
+    function test_getNextAssetTokenId() public view {
+        // Check the asset token ID is retrieved correctly
+        uint256 expectedTokenId = ASSET_THREE_ID;
+        uint256 actualTokenId = factory.getNextAssetId();
+        assertEq(actualTokenId, expectedTokenId);
     }
 
     function test_getIGCTokenId() public view {
         // Check the IGC token ID is retrieved correctly
         uint256 expectedTokenId = IGC_TOKEN_ID;
         uint256 actualTokenId = factory.getIGCTokenId();
-        assertEq(actualTokenId, expectedTokenId);
-    }
-
-    function test_getNextAssetTokenId() public view {
-        // Check the asset token ID is retrieved correctly
-        uint256 expectedTokenId = ASSET_THREE_ID;
-        uint256 actualTokenId = factory.getNextAssetId();
         assertEq(actualTokenId, expectedTokenId);
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (governance/extensions/GovernorStorage.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Governor} from "../Governor.sol";
 
@@ -86,9 +86,7 @@ abstract contract GovernorStorage is Governor {
     /**
      * @dev Returns the details of a proposalId. Reverts if `proposalId` is not a known proposal.
      */
-    function proposalDetails(
-        uint256 proposalId
-    )
+    function proposalDetails(uint256 proposalId)
         public
         view
         virtual
@@ -105,9 +103,7 @@ abstract contract GovernorStorage is Governor {
     /**
      * @dev Returns the details (including the proposalId) of a proposal given its sequential index.
      */
-    function proposalDetailsAt(
-        uint256 index
-    )
+    function proposalDetailsAt(uint256 index)
         public
         view
         virtual

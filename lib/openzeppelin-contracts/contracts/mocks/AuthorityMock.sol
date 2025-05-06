@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IAccessManaged} from "../access/manager/IAccessManaged.sol";
 import {IAuthority} from "../access/manager/IAuthority.sol";
 
 contract NotAuthorityMock is IAuthority {
-    function canCall(address /* caller */, address /* target */, bytes4 /* selector */) external pure returns (bool) {
+    function canCall(address, /* caller */ address, /* target */ bytes4 /* selector */ ) external pure returns (bool) {
         revert("AuthorityNoDelayMock: not implemented");
     }
 }
@@ -14,11 +14,11 @@ contract NotAuthorityMock is IAuthority {
 contract AuthorityNoDelayMock is IAuthority {
     bool _immediate;
 
-    function canCall(
-        address /* caller */,
-        address /* target */,
-        bytes4 /* selector */
-    ) external view returns (bool immediate) {
+    function canCall(address, /* caller */ address, /* target */ bytes4 /* selector */ )
+        external
+        view
+        returns (bool immediate)
+    {
         return _immediate;
     }
 
@@ -31,11 +31,11 @@ contract AuthorityDelayMock {
     bool _immediate;
     uint32 _delay;
 
-    function canCall(
-        address /* caller */,
-        address /* target */,
-        bytes4 /* selector */
-    ) external view returns (bool immediate, uint32 delay) {
+    function canCall(address, /* caller */ address, /* target */ bytes4 /* selector */ )
+        external
+        view
+        returns (bool immediate, uint32 delay)
+    {
         return (_immediate, _delay);
     }
 
@@ -49,17 +49,17 @@ contract AuthorityDelayMock {
 }
 
 contract AuthorityNoResponse {
-    function canCall(address /* caller */, address /* target */, bytes4 /* selector */) external view {}
+    function canCall(address, /* caller */ address, /* target */ bytes4 /* selector */ ) external view {}
 }
 
 contract AuthorityObserveIsConsuming {
     event ConsumeScheduledOpCalled(address caller, bytes data, bytes4 isConsuming);
 
-    function canCall(
-        address /* caller */,
-        address /* target */,
-        bytes4 /* selector */
-    ) external pure returns (bool immediate, uint32 delay) {
+    function canCall(address, /* caller */ address, /* target */ bytes4 /* selector */ )
+        external
+        pure
+        returns (bool immediate, uint32 delay)
+    {
         return (false, 1);
     }
 

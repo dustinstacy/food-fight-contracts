@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/introspection/ERC165Checker.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC165} from "./IERC165.sol";
 
@@ -22,9 +22,8 @@ library ERC165Checker {
     function supportsERC165(address account) internal view returns (bool) {
         // Any contract that implements ERC-165 must explicitly indicate support of
         // InterfaceId_ERC165 and explicitly indicate non-support of InterfaceId_Invalid
-        return
-            supportsERC165InterfaceUnchecked(account, type(IERC165).interfaceId) &&
-            !supportsERC165InterfaceUnchecked(account, INTERFACE_ID_INVALID);
+        return supportsERC165InterfaceUnchecked(account, type(IERC165).interfaceId)
+            && !supportsERC165InterfaceUnchecked(account, INTERFACE_ID_INVALID);
     }
 
     /**
@@ -46,10 +45,11 @@ library ERC165Checker {
      *
      * See {IERC165-supportsInterface}.
      */
-    function getSupportedInterfaces(
-        address account,
-        bytes4[] memory interfaceIds
-    ) internal view returns (bool[] memory) {
+    function getSupportedInterfaces(address account, bytes4[] memory interfaceIds)
+        internal
+        view
+        returns (bool[] memory)
+    {
         // an array of booleans corresponding to interfaceIds and whether they're supported or not
         bool[] memory interfaceIdsSupported = new bool[](interfaceIds.length);
 

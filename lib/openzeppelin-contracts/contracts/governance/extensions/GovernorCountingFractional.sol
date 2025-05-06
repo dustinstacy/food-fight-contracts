@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (governance/extensions/GovernorCountingFractional.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Governor} from "../Governor.sol";
 import {GovernorCountingSimple} from "./GovernorCountingSimple.sol";
@@ -79,9 +79,12 @@ abstract contract GovernorCountingFractional is Governor {
     /**
      * @dev Get current distribution of votes for a given proposal.
      */
-    function proposalVotes(
-        uint256 proposalId
-    ) public view virtual returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes) {
+    function proposalVotes(uint256 proposalId)
+        public
+        view
+        virtual
+        returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)
+    {
         ProposalVote storage proposalVote = _proposalVotes[proposalId];
         return (proposalVote.againstVotes, proposalVote.forVotes, proposalVote.abstainVotes);
     }
@@ -132,13 +135,12 @@ abstract contract GovernorCountingFractional is Governor {
      * remaining votes in a single operation using the traditional "bravo" vote.
      */
     // slither-disable-next-line cyclomatic-complexity
-    function _countVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        uint256 totalWeight,
-        bytes memory params
-    ) internal virtual override returns (uint256) {
+    function _countVote(uint256 proposalId, address account, uint8 support, uint256 totalWeight, bytes memory params)
+        internal
+        virtual
+        override
+        returns (uint256)
+    {
         // Compute number of remaining votes. Returns 0 on overflow.
         (, uint256 remainingWeight) = totalWeight.trySub(usedVotes(proposalId, account));
         if (remainingWeight == 0) {

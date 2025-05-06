@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/Create2.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Errors} from "./Errors.sol";
 
@@ -67,7 +67,11 @@ library Create2 {
      * @dev Returns the address where a contract will be stored if deployed via {deploy} from a contract located at
      * `deployer`. If `deployer` is this contract's address, returns the same value as {computeAddress}.
      */
-    function computeAddress(bytes32 salt, bytes32 bytecodeHash, address deployer) internal pure returns (address addr) {
+    function computeAddress(bytes32 salt, bytes32 bytecodeHash, address deployer)
+        internal
+        pure
+        returns (address addr)
+    {
         assembly ("memory-safe") {
             let ptr := mload(0x40) // Get free memory pointer
 

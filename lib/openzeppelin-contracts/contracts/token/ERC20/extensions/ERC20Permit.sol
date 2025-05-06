@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC20/extensions/ERC20Permit.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC20Permit} from "./IERC20Permit.sol";
 import {ERC20} from "../ERC20.sol";
@@ -41,15 +41,10 @@ abstract contract ERC20Permit is ERC20, IERC20Permit, EIP712, Nonces {
     /**
      * @inheritdoc IERC20Permit
      */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public virtual {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+        virtual
+    {
         if (block.timestamp > deadline) {
             revert ERC2612ExpiredSignature(deadline);
         }

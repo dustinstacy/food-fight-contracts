@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (governance/extensions/GovernorTimelockCompound.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IGovernor, Governor} from "../Governor.sol";
 import {ICompoundTimelock} from "../../vendor/compound/ICompoundTimelock.sol";
@@ -39,11 +39,10 @@ abstract contract GovernorTimelockCompound is Governor {
     function state(uint256 proposalId) public view virtual override returns (ProposalState) {
         ProposalState currentState = super.state(proposalId);
 
-        return
-            (currentState == ProposalState.Queued &&
-                block.timestamp >= proposalEta(proposalId) + _timelock.GRACE_PERIOD())
-                ? ProposalState.Expired
-                : currentState;
+        return (
+            currentState == ProposalState.Queued
+                && block.timestamp >= proposalEta(proposalId) + _timelock.GRACE_PERIOD()
+        ) ? ProposalState.Expired : currentState;
     }
 
     /**
@@ -153,7 +152,7 @@ abstract contract GovernorTimelockCompound is Governor {
      * Note that if the timelock admin has been handed over in a previous operation, we refuse updates made through the
      * timelock if admin of the timelock has already been accepted and the operation is executed outside the scope of
      * governance.
-
+     *
      * CAUTION: It is not recommended to change the timelock while there are other queued governance proposals.
      */
     function updateTimelock(ICompoundTimelock newTimelock) external virtual onlyGovernance {

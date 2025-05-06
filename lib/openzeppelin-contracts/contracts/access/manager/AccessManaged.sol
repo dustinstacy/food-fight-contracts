@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (access/manager/AccessManaged.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IAuthority} from "./IAuthority.sol";
 import {AuthorityUtils} from "./AuthorityUtils.sol";
@@ -94,12 +94,8 @@ abstract contract AccessManaged is Context, IAccessManaged {
      * is less than 4 bytes long.
      */
     function _checkCanCall(address caller, bytes calldata data) internal virtual {
-        (bool immediate, uint32 delay) = AuthorityUtils.canCallWithDelay(
-            authority(),
-            caller,
-            address(this),
-            bytes4(data[0:4])
-        );
+        (bool immediate, uint32 delay) =
+            AuthorityUtils.canCallWithDelay(authority(), caller, address(this), bytes4(data[0:4]));
         if (!immediate) {
             if (delay > 0) {
                 _consumingSchedule = true;

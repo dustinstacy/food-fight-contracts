@@ -1,14 +1,15 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title AssetFactory
 /// @notice This is a factory contract for creating ERC1155 assets.
 /// @notice It will handle minting the IGC (in game currency) and the game assets.
-contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
+contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
     ///                  TYPE DECLARATIONS                  ///
     ///////////////////////////////////////////////////////////
@@ -26,11 +27,11 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @notice Mapping of the asset ID to the asset data.
     mapping(uint256 assetID => Asset) private assets;
 
-    /// @notice The token ID of the IGC token.
-    uint256 private igcTokenId = 0;
-
     /// @notice The next asset ID to be minted.
-    uint256 private nextAssetID = 0;
+    uint256 private nextAssetID;
+
+    /// @notice The token ID of the IGC token.
+    uint8 private constant IGC_TOKEN_ID = 0;
 
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
@@ -39,33 +40,33 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @notice Emitted when the URI and price of an asset are set.
     event AssetDataSet(string uri, uint256 id, uint256 price);
 
-    /// @notice Emitted when the IGC is minted.
-    event IGCminted(address indexed account, uint256 amount);
-
     /// @notice Emitted when the IGC is burnt.
     event AssetMinted(address indexed account, uint256 id, uint256 amount);
+
+    /// @notice Emitted when multiple assets are burnt
+    event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
 
     /// @notice Emitted when a single asset is burnt
     event BurntSingle(address indexed account, uint256 id, uint256 amount);
 
-    /// @notice Emitted when multiple assets are burnt
-    event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
+    /// @notice Emitted when the IGC is minted.
+    event IGCminted(address indexed account, uint256 amount);
 
     ///////////////////////////////////////////////////////////
     ///                      ERRORS                         ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Emitted when the asset ID is not found.
-    error AssetFactory__AssetNotFound(uint256 id);
+    error AssetFactoryAssetNotFound(uint256 id);
 
     ///////////////////////////////////////////////////////////
     ///                    CONSTRUCTOR                      ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Construct the AssetFactory contract.
-    /// @param _owner The address that will be set as the owner of the contract.
+    /// @param _initialOwner The address that will be set as the owner of the contract.
     /// @dev The ERC1155 constructor is an empty string as we will be using a URI mapping instead of ID substitution.
-    constructor(address _owner) ERC1155("") Ownable(_owner) { }
+    constructor(address _initialOwner) ERC1155("") Ownable(_initialOwner) { }
 
     ///////////////////////////////////////////////////////////
     ///                    MINT FUNCTIONS                   ///
@@ -87,11 +88,11 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param id ID of the asset to mint.
     /// @param amount Amount of the asset to mint.
     /// @param data Custom data to pass to the receiver on the mint.
-    function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external {
+    function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external nonReentrant {
         uint256 price = assets[id].price;
         uint256 totalPrice = price * amount;
 
-        safeTransferFrom(_msgSender(), address(this), igcTokenId, totalPrice, "");
+        safeTransferFrom(_msgSender(), address(this), IGC_TOKEN_ID, totalPrice, "");
 
         _mint(account, id, amount, data);
 
@@ -103,7 +104,10 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param to Address to mint the assets to.
     /// @param ids IDs of the assets to mint.
     /// @param amounts Amounts of the assets to mint.
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external {
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        external
+        nonReentrant
+    {
         // Precedes the array length check in _update() (nested inside _mintBatch()) to prevent reverts in the for loop.
         if (ids.length != amounts.length) {
             revert ERC1155InvalidArrayLength(ids.length, amounts.length);
@@ -119,7 +123,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
             totalPrice += price * amount;
         }
 
-        safeTransferFrom(_msgSender(), address(this), igcTokenId, totalPrice, "");
+        safeTransferFrom(_msgSender(), address(this), IGC_TOKEN_ID, totalPrice, "");
 
         _mintBatch(to, ids, amounts, data);
     }
@@ -182,26 +186,26 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
 
     /// @notice Sets the URI of the metadata and the price for a given asset ID.
-    /// @param uri URI of the metadata for the asset.
-    /// @param price Price of the asset.
-    function setAssetData(string memory uri, uint256 price) external onlyOwner {
+    /// @param assetUri URI of the metadata for the asset.
+    /// @param assetPrice Price of the asset.
+    function setAssetData(string memory assetUri, uint256 assetPrice) external onlyOwner {
         nextAssetID++;
 
-        assets[nextAssetID].uri = uri;
-        assets[nextAssetID].price = price;
+        assets[nextAssetID].uri = assetUri;
+        assets[nextAssetID].price = assetPrice;
 
-        emit AssetDataSet(uri, nextAssetID, price);
+        emit AssetDataSet(assetUri, nextAssetID, assetPrice);
     }
 
-    function updateAssetData(uint256 id, string memory uri, uint256 price) external onlyOwner {
+    function updateAssetData(uint256 id, string memory assetUri, uint256 assetPrice) external onlyOwner {
         if (bytes(assets[id].uri).length == 0) {
-            revert AssetFactory__AssetNotFound(id);
+            revert AssetFactoryAssetNotFound(id);
         }
 
-        assets[id].uri = uri;
-        assets[id].price = price;
+        assets[id].uri = assetUri;
+        assets[id].price = assetPrice;
 
-        emit AssetDataSet(uri, id, price);
+        emit AssetDataSet(assetUri, id, assetPrice);
     }
 
     ///////////////////////////////////////////////////////////
@@ -215,30 +219,16 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
         return assets[id];
     }
 
-    /// @notice Gets the URI of the metadata for a given asset ID.
-    /// @param id ID of the asset to get the URI for.
-    /// @return uri The URI of the asset.
-    function getAssetUri(uint256 id) public view returns (string memory uri) {
-        return assets[id].uri;
-    }
-
-    /// @notice Gets the price of a given asset.
-    /// @param id ID of the asset to get the price for.
-    /// @return price The price of the asset.
-    function getAssetPrice(uint256 id) public view returns (uint256 price) {
-        return assets[id].price;
-    }
-
-    /// @notice Gets the IGC token ID.
-    /// @return tokenId The IGC token ID.
-    function getIGCTokenId() public view returns (uint256 tokenId) {
-        return igcTokenId;
-    }
-
     /// @notice Gets the next asset ID to be minted.
     /// @return assetId The next asset ID to be minted.
     function getNextAssetId() public view returns (uint256 assetId) {
         return nextAssetID;
+    }
+
+    /// @notice Gets the IGC token ID.
+    /// @return tokenId The IGC token ID.
+    function getIGCTokenId() public pure returns (uint8 tokenId) {
+        return IGC_TOKEN_ID;
     }
 
     /////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -9,7 +9,9 @@ import {Governor} from "@openzeppelin/contracts/governance/Governor.sol";
 contract GovernorInternalTest is Test, Governor {
     constructor() Governor("") {}
 
-    function testValidDescriptionForProposer(string memory description, address proposer, bool includeProposer) public {
+    function testValidDescriptionForProposer(string memory description, address proposer, bool includeProposer)
+        public
+    {
         if (includeProposer) {
             description = string.concat(description, "#proposer=", Strings.toHexString(proposer));
         }

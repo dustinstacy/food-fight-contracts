@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.2.0) (utils/NoncesKeyed.sol)
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Nonces} from "./Nonces.sol";
 
@@ -44,7 +44,7 @@ abstract contract NoncesKeyed is Nonces {
      * - use the last 8 bytes for the nonce
      */
     function _useCheckedNonce(address owner, uint256 keyNonce) internal virtual override {
-        (uint192 key, ) = _unpack(keyNonce);
+        (uint192 key,) = _unpack(keyNonce);
         if (key == 0) {
             super._useCheckedNonce(owner, keyNonce);
         } else {

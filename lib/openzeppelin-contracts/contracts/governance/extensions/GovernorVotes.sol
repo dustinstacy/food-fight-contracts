@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.1.0) (governance/extensions/GovernorVotes.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {Governor} from "../Governor.sol";
 import {IVotes} from "../utils/IVotes.sol";
@@ -54,11 +54,13 @@ abstract contract GovernorVotes is Governor {
     /**
      * Read the voting weight from the token's built in snapshot mechanism (see {Governor-_getVotes}).
      */
-    function _getVotes(
-        address account,
-        uint256 timepoint,
-        bytes memory /*params*/
-    ) internal view virtual override returns (uint256) {
+    function _getVotes(address account, uint256 timepoint, bytes memory /*params*/ )
+        internal
+        view
+        virtual
+        override
+        returns (uint256)
+    {
         return token().getPastVotes(account, timepoint);
     }
 }

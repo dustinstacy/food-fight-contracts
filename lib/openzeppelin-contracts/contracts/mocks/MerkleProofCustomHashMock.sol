@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {MerkleProof} from "../utils/cryptography/MerkleProof.sol";
 
@@ -35,11 +35,11 @@ abstract contract MerkleProofCustomHashMock {
         return MerkleProof.multiProofVerify(proof, proofFlags, root, leaves, customHash);
     }
 
-    function processMultiProof(
-        bytes32[] calldata proof,
-        bool[] calldata proofFlags,
-        bytes32[] calldata leaves
-    ) internal view returns (bytes32) {
+    function processMultiProof(bytes32[] calldata proof, bool[] calldata proofFlags, bytes32[] calldata leaves)
+        internal
+        view
+        returns (bytes32)
+    {
         return MerkleProof.processMultiProof(proof, proofFlags, leaves, customHash);
     }
 
@@ -52,11 +52,11 @@ abstract contract MerkleProofCustomHashMock {
         return MerkleProof.multiProofVerifyCalldata(proof, proofFlags, root, leaves, customHash);
     }
 
-    function processMultiProofCalldata(
-        bytes32[] calldata proof,
-        bool[] calldata proofFlags,
-        bytes32[] calldata leaves
-    ) internal view returns (bytes32) {
+    function processMultiProofCalldata(bytes32[] calldata proof, bool[] calldata proofFlags, bytes32[] calldata leaves)
+        internal
+        view
+        returns (bytes32)
+    {
         return MerkleProof.processMultiProofCalldata(proof, proofFlags, leaves, customHash);
     }
 }

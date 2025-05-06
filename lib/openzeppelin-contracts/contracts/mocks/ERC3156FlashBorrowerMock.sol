@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "../token/ERC20/IERC20.sol";
 import {IERC3156FlashBorrower} from "../interfaces/IERC3156.sol";
@@ -27,13 +27,10 @@ contract ERC3156FlashBorrowerMock is IERC3156FlashBorrower {
         _enableReturn = enableReturn;
     }
 
-    function onFlashLoan(
-        address /*initiator*/,
-        address token,
-        uint256 amount,
-        uint256 fee,
-        bytes calldata data
-    ) public returns (bytes32) {
+    function onFlashLoan(address, /*initiator*/ address token, uint256 amount, uint256 fee, bytes calldata data)
+        public
+        returns (bytes32)
+    {
         require(msg.sender == token);
 
         emit BalanceOf(token, address(this), IERC20(token).balanceOf(address(this)));

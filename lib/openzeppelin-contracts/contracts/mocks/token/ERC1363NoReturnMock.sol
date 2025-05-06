@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IERC20, ERC20} from "../../token/ERC20/ERC20.sol";
 import {ERC1363} from "../../token/ERC20/extensions/ERC1363.sol";
@@ -13,12 +13,11 @@ abstract contract ERC1363NoReturnMock is ERC1363 {
         }
     }
 
-    function transferFromAndCall(
-        address from,
-        address to,
-        uint256 value,
-        bytes memory data
-    ) public override returns (bool) {
+    function transferFromAndCall(address from, address to, uint256 value, bytes memory data)
+        public
+        override
+        returns (bool)
+    {
         super.transferFromAndCall(from, to, value, data);
         assembly {
             return(0, 0)

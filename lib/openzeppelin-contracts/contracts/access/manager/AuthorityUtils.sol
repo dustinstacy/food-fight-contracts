@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.0) (access/manager/AuthorityUtils.sol)
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
 
 import {IAuthority} from "./IAuthority.sol";
 
@@ -11,15 +11,13 @@ library AuthorityUtils {
      * for the preexisting `IAuthority` interface requires special care to avoid reverting on insufficient return data.
      * This helper function takes care of invoking `canCall` in a backwards compatible way without reverting.
      */
-    function canCallWithDelay(
-        address authority,
-        address caller,
-        address target,
-        bytes4 selector
-    ) internal view returns (bool immediate, uint32 delay) {
-        (bool success, bytes memory data) = authority.staticcall(
-            abi.encodeCall(IAuthority.canCall, (caller, target, selector))
-        );
+    function canCallWithDelay(address authority, address caller, address target, bytes4 selector)
+        internal
+        view
+        returns (bool immediate, uint32 delay)
+    {
+        (bool success, bytes memory data) =
+            authority.staticcall(abi.encodeCall(IAuthority.canCall, (caller, target, selector)));
         if (success) {
             if (data.length >= 0x40) {
                 (immediate, delay) = abi.decode(data, (bool, uint32));
