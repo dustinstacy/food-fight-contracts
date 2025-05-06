@@ -1,0 +1,48 @@
+name: Solidity CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-test-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run Format Check
+        run: npm run format
+
+      - name: Run Linter (Solhint)
+        run: npm run lint
+
+      - name: Setup Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Compile
+        run: npm run compile
+
+      - name: Run Tests
+        run: npm run test
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.0
+        with:
+          command: "slither ."
+        env:
+          SOLC_VERSION: "0.8.26"
