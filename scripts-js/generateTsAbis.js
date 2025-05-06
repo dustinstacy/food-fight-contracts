@@ -1,7 +1,6 @@
 import { readdirSync, statSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "fs"
 import { join, dirname } from "path"
 import { fileURLToPath } from "url"
-import { format } from "prettier"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -218,6 +217,8 @@ function main() {
         ""
     )
 
+    const targetOutputPath = join(__dirname, "../../food-fight/src/data/deployedContracts.ts")
+
     // Write the files
     const fileTemplate = () => `
     ${generatedContractComment}
@@ -227,9 +228,7 @@ function main() {
     export default deployedContracts;
   `
 
-    writeFileSync("deployments/deployedContracts.ts", fileTemplate(), {
-        parser: "typescript",
-    })
+    writeFileSync(targetOutputPath, fileTemplate())
 
     console.log(
         `📝 Updated TypeScript contract definition file on deployments/deployedContracts.ts`
