@@ -31,9 +31,9 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
     /// @dev Sets the asset data for the factory.
     function setAssetsTestHelper() public {
         vm.startPrank(owner);
-        factory.setAssetData(1, "ipfs://asset1", 100);
-        factory.setAssetData(2, "ipfs://asset2", 200);
-        factory.setAssetData(3, "ipfs://asset3", 300);
+        factory.setAssetData("ipfs://asset1", 100);
+        factory.setAssetData("ipfs://asset2", 200);
+        factory.setAssetData("ipfs://asset3", 300);
         vm.stopPrank();
     }
 

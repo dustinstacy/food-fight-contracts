@@ -10,27 +10,31 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice It will handle minting the IGC (in game currency) and the game assets.
 contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///////////////////////////////////////////////////////////
+    ///                  TYPE DECLARATIONS                  ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice The data structure for an asset.
+    struct Asset {
+        string uri;
+        uint256 price;
+    }
+
+    ///////////////////////////////////////////////////////////
     ///                   STATE VARIABLES                   ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Mapping of the asset ID to the URI of the metadata.
-    mapping(uint256 assetID => string uri) private assetURIs;
-
-    /// @notice Mapping of the asset ID to the price of the asset.
-    mapping(uint256 assetID => uint256 price) private assetPrices;
+    /// @notice Mapping of the asset ID to the asset data.
+    mapping(uint256 assetID => Asset) private assets;
 
     /// @notice The token ID of the IGC token.
     uint256 private igcTokenId = 0;
 
+    /// @notice The next asset ID to be minted.
+    uint256 private nextAssetID = 0;
+
     ///////////////////////////////////////////////////////////
     ///                     EVENTS                          ///
     ///////////////////////////////////////////////////////////
-
-    /// @notice Emitted when the URI of an asset is set.
-    event AssetURISet(string uri, uint256 id);
-
-    /// @notice Emitted when the price of an asset is set.
-    event AssetPriceSet(uint256 id, uint256 price);
 
     /// @notice Emitted when the URI and price of an asset are set.
     event AssetDataSet(string uri, uint256 id, uint256 price);
@@ -48,7 +52,14 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
 
     ///////////////////////////////////////////////////////////
-    ///                     CONSTRUCTOR                     ///
+    ///                      ERRORS                         ///
+    ///////////////////////////////////////////////////////////
+
+    /// @notice Emitted when the asset ID is not found.
+    error AssetFactory__AssetNotFound(uint256 id);
+
+    ///////////////////////////////////////////////////////////
+    ///                    CONSTRUCTOR                      ///
     ///////////////////////////////////////////////////////////
 
     /// @notice Construct the AssetFactory contract.
@@ -77,7 +88,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param amount Amount of the asset to mint.
     /// @param data Custom data to pass to the receiver on the mint.
     function mintAsset(address account, uint256 id, uint256 amount, bytes memory data) external {
-        uint256 price = assetPrices[id];
+        uint256 price = assets[id].price;
         uint256 totalPrice = price * amount;
 
         safeTransferFrom(_msgSender(), address(this), igcTokenId, totalPrice, "");
@@ -103,7 +114,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
         for (uint256 i = 0; i < ids.length; i++) {
             uint256 id = ids[i];
             uint256 amount = amounts[i];
-            uint256 price = assetPrices[id];
+            uint256 price = assets[id].price;
 
             totalPrice += price * amount;
         }
@@ -170,31 +181,25 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///                    OWNER FUNCTIONS                  ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Sets the URI of the metadata for a given asset ID.
-    /// @param id ID of the asset to set the URI for.
-    /// @param uri URI of the metadata for the asset.
-    function setAssetURI(uint256 id, string memory uri) external onlyOwner {
-        assetURIs[id] = uri;
-
-        emit AssetURISet(uri, id);
-    }
-
-    /// @notice Sets the price of a given asset.
-    /// @param id ID of the asset to set the price for.
-    /// @param price Price of the asset.
-    function setAssetPrice(uint256 id, uint256 price) external onlyOwner {
-        assetPrices[id] = price;
-
-        emit AssetPriceSet(id, price);
-    }
-
     /// @notice Sets the URI of the metadata and the price for a given asset ID.
-    /// @param id ID of the asset to set the URI and price for.
     /// @param uri URI of the metadata for the asset.
     /// @param price Price of the asset.
-    function setAssetData(uint256 id, string memory uri, uint256 price) external onlyOwner {
-        assetURIs[id] = uri;
-        assetPrices[id] = price;
+    function setAssetData(string memory uri, uint256 price) external onlyOwner {
+        nextAssetID++;
+
+        assets[nextAssetID].uri = uri;
+        assets[nextAssetID].price = price;
+
+        emit AssetDataSet(uri, nextAssetID, price);
+    }
+
+    function updateAssetData(uint256 id, string memory uri, uint256 price) external onlyOwner {
+        if (bytes(assets[id].uri).length == 0) {
+            revert AssetFactory__AssetNotFound(id);
+        }
+
+        assets[id].uri = uri;
+        assets[id].price = price;
 
         emit AssetDataSet(uri, id, price);
     }
@@ -203,18 +208,37 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     ///                    VIEW FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
+    /// @notice Gets the URI and price of a given asset.
+    /// @param id ID of the asset to get the URI and price for.
+    /// @return asset The asset data containing the URI and price.
+    function getAsset(uint256 id) public view returns (Asset memory asset) {
+        return assets[id];
+    }
+
     /// @notice Gets the URI of the metadata for a given asset ID.
     /// @param id ID of the asset to get the URI for.
-    /// @return The URI of the metadata for the asset.
-    function getAssetURI(uint256 id) public view returns (string memory) {
-        return assetURIs[id];
+    /// @return uri The URI of the asset.
+    function getAssetUri(uint256 id) public view returns (string memory uri) {
+        return assets[id].uri;
     }
 
     /// @notice Gets the price of a given asset.
     /// @param id ID of the asset to get the price for.
-    /// @return The price of the asset.
-    function getAssetPrice(uint256 id) public view returns (uint256) {
-        return assetPrices[id];
+    /// @return price The price of the asset.
+    function getAssetPrice(uint256 id) public view returns (uint256 price) {
+        return assets[id].price;
+    }
+
+    /// @notice Gets the IGC token ID.
+    /// @return tokenId The IGC token ID.
+    function getIGCTokenId() public view returns (uint256 tokenId) {
+        return igcTokenId;
+    }
+
+    /// @notice Gets the next asset ID to be minted.
+    /// @return assetId The next asset ID to be minted.
+    function getNextAssetId() public view returns (uint256 assetId) {
+        return nextAssetID;
     }
 
     /////////////////////////////////////////////////////////////

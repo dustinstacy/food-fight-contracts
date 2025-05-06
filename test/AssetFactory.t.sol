@@ -337,57 +337,18 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
 contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
     string newURI = "ipfs://asset1NewURI";
 
-    function test_setAssetURI() public {
-        vm.prank(owner);
-
-        // Check for the AssetURISet event when setting the new URI
-        vm.expectEmit(false, false, false, false, address(factory));
-        emit AssetFactory.AssetURISet(newURI, ASSET_ONE_ID);
-        factory.setAssetURI(ASSET_ONE_ID, newURI);
-
-        // Check the URI was set correctly
-        assertEq(factory.getAssetURI(ASSET_ONE_ID), newURI);
-    }
-
-    function test_setAssetURI_ReverstIf_NotTheOwner() public {
-        vm.prank(userA);
-
-        // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
-        factory.setAssetURI(ASSET_ONE_ID, newURI);
-    }
-
-    function test_setAssetPrice() public {
-        vm.prank(owner);
-
-        // Check for the AssetPriceSet event when setting the new price
-        vm.expectEmit(false, false, false, false, address(factory));
-        emit AssetFactory.AssetPriceSet(ASSET_ONE_ID, ONE_MILLION);
-        factory.setAssetPrice(ASSET_ONE_ID, ONE_MILLION);
-
-        // Check the price was set correctly
-        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ONE_MILLION);
-    }
-
-    function test_setAssetPrice_RevertsIf_NotTheOwner() public {
-        vm.prank(userA);
-
-        // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
-        factory.setAssetPrice(ASSET_ONE_ID, ONE_MILLION);
-    }
-
     function test_setAssetData() public {
         vm.prank(owner);
 
         // Check for the AssetDataSet event when setting the new URI and price
         vm.expectEmit(false, false, false, false, address(factory));
         emit AssetFactory.AssetDataSet(newURI, ASSET_ONE_ID, ONE_MILLION);
-        factory.setAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
+        factory.setAssetData(newURI, ONE_MILLION);
 
         // Check the URI and price were set correctly
-        assertEq(factory.getAssetURI(ASSET_ONE_ID), newURI);
-        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ONE_MILLION);
+        AssetFactory.Asset memory asset = factory.getAsset(ASSET_ONE_ID);
+        assertEq(asset.uri, newURI);
+        assertEq(asset.price, ONE_MILLION);
     }
 
     function test_setAssetData_RevertsIf_NotTheOwner() public {
@@ -395,7 +356,49 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
-        factory.setAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
+        factory.setAssetData(newURI, ONE_MILLION);
+    }
+
+    function test_updateAssetData() public {
+        setAssetsTestHelper();
+        vm.prank(owner);
+
+        // Check for the AssetDataSet event when updating the URI and price
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit AssetFactory.AssetDataSet(newURI, ASSET_ONE_ID, ONE_MILLION);
+        factory.updateAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
+
+        // Check the URI and price were updated correctly
+        assertEq(factory.getAssetUri(ASSET_ONE_ID), newURI);
+        assertEq(factory.getAssetPrice(ASSET_ONE_ID), ONE_MILLION);
+    }
+
+    function test_updateAssetData_RevertsIf_NotTheOwner() public {
+        vm.prank(userA);
+
+        // Check that the function reverts with the OwnableUnauthorizedAccount error
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
+        factory.updateAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
+    }
+
+    function test_updateAssetData_RevertsIf_InvalidId() public {
+        vm.prank(owner);
+
+        // Check that the function reverts with the AssetNotFound error
+        vm.expectRevert(abi.encodeWithSelector(AssetFactory.AssetFactory__AssetNotFound.selector, 0));
+        factory.updateAssetData(0, newURI, ONE_MILLION);
+    }
+
+    function test_setApprovalForAll() public {
+        vm.prank(userA);
+
+        // Check for the ApprovalForAll event when setting approval
+        vm.expectEmit(false, false, false, false, address(factory));
+        emit IERC1155.ApprovalForAll(userA, approvedCaller, true);
+        factory.setApprovalForAll(approvedCaller, true);
+
+        // Check that the approval was set correctly
+        assertTrue(factory.isApprovedForAll(userA, approvedCaller));
     }
 }
 
@@ -408,10 +411,17 @@ contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
         setAssetsTestHelper();
     }
 
+    function test_getAsset() public view {
+        // Check the asset data is retrieved correctly
+        AssetFactory.Asset memory asset = factory.getAsset(ASSET_ONE_ID);
+        assertEq(asset.uri, "ipfs://asset1");
+        assertEq(asset.price, ASSET_ONE_PRICE);
+    }
+
     function test_getAssetUri() public view {
         // Check the URI is retrieved correctly
         string memory expectedURI = "ipfs://asset1";
-        string memory actualURI = factory.getAssetURI(ASSET_ONE_ID);
+        string memory actualURI = factory.getAssetUri(ASSET_ONE_ID);
         assertEq(actualURI, expectedURI);
     }
 
@@ -420,6 +430,20 @@ contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
         uint256 expectedPrice = ASSET_ONE_PRICE;
         uint256 actualPrice = factory.getAssetPrice(ASSET_ONE_ID);
         assertEq(actualPrice, expectedPrice);
+    }
+
+    function test_getIGCTokenId() public view {
+        // Check the IGC token ID is retrieved correctly
+        uint256 expectedTokenId = IGC_TOKEN_ID;
+        uint256 actualTokenId = factory.getIGCTokenId();
+        assertEq(actualTokenId, expectedTokenId);
+    }
+
+    function test_getNextAssetTokenId() public view {
+        // Check the asset token ID is retrieved correctly
+        uint256 expectedTokenId = ASSET_THREE_ID;
+        uint256 actualTokenId = factory.getNextAssetId();
+        assertEq(actualTokenId, expectedTokenId);
     }
 }
 
