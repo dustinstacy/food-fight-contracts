@@ -35,6 +35,12 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @notice Emitted when the URI and price of an asset are set.
     event AssetDataSet(string uri, uint256 id, uint256 price);
 
+    /// @notice Emitted when the IGC is minted.
+    event IGCminted(address indexed account, uint256 amount);
+
+    /// @notice Emitted when the IGC is burnt.
+    event AssetMinted(address indexed account, uint256 id, uint256 amount);
+
     /// @notice Emitted when a single asset is burnt
     event BurntSingle(address indexed account, uint256 id, uint256 amount);
 
@@ -60,6 +66,8 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
     /// @param amount Amount of IGC to mint.
     function mintIGC(address account, uint256 amount) external payable {
         _mint(account, 0, amount, "");
+
+        emit IGCminted(account, amount);
     }
 
     /// @notice Mints a given amount of an asset.
@@ -75,6 +83,8 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable {
         safeTransferFrom(_msgSender(), address(this), igcTokenId, totalPrice, "");
 
         _mint(account, id, amount, data);
+
+        emit AssetMinted(account, id, amount);
     }
 
     /// @notice Mints given amounts of multiple assets.
