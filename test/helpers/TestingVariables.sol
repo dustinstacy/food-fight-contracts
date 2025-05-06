@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ERC1155InvalidReceiverHelper } from "./ERC1155InvalidReceiverHelper.sol";
-import { AssetFactory } from "@contracts/AssetFactory.sol";
-import { AssetVault } from "@contracts/AssetVault.sol";
+import {ERC1155InvalidReceiverHelper} from "./ERC1155InvalidReceiverHelper.sol";
+import {AssetFactory} from "@contracts/AssetFactory.sol";
+import {AssetVault} from "@contracts/AssetVault.sol";
 
 /// @dev Helper contract that stores variables used across multiple test files.
 contract TestingVariables {
@@ -27,7 +27,8 @@ contract TestingVariables {
     // Create and instance of the AssetVault contract that all tests will use
     AssetVault vault = new AssetVault(address(factory), owner);
     // Create an instance of an invalid receiver contract using the ERC1155InvalidReceiverHelper (empty contract)
-    ERC1155InvalidReceiverHelper invalidReceiver = new ERC1155InvalidReceiverHelper();
+    ERC1155InvalidReceiverHelper invalidReceiver =
+        new ERC1155InvalidReceiverHelper();
 
     /////////////////////////////////////////////////
     /// Constant Numerical Values                 ///

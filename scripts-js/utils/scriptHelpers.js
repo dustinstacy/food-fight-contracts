@@ -97,7 +97,7 @@ export function getContract(contractAddress, signer, contractName) {
   // Construct the path to the ABI JSON file
   const abiPath = path.join(
     __dirname,
-    `../../out/${contractName}.sol/${contractName}.json`
+    `../../out/${contractName}.sol/${contractName}.json`,
   );
   // Read the ABI JSON file
   const abiData = fs.readFileSync(abiPath, "utf8");

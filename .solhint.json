@@ -1,0 +1,11 @@
+{
+  "extends": "solhint:recommended",
+  "rules": {
+    "func-visibility": ["warn", { "ignoreConstructors": true }],
+    "reason-string": ["warn", { "maxLength": 32 }],
+    "quotes": ["error", "double"],
+    "avoid-sha3": "warn",
+    "not-rely-on-time": ["error", { "only-warning": false }],
+    "import-path-check": "off"
+  }
+}

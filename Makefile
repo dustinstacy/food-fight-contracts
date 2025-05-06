@@ -32,6 +32,9 @@ chain: setup-anvil-wallet
 fork: setup-anvil-wallet
 	anvil --fork-url ${FORK_URL} --chain-id 31337
 
+	# Deploy and generate ABIs
+deploy-and-generate-abis: deploy generate-abis 
+
 # Deploy the contracts
 deploy: 
 	@echo "Running make deploy target (RPC_URL=$(RPC_URL), DEPLOY_SCRIPT=$(DEPLOY_SCRIPT))"
@@ -49,8 +52,7 @@ deploy:
 		node scripts-js/setAssetData.js; \
 	fi
 
-# Deploy and generate ABIs
-deploy-and-generate-abis: deploy generate-abis 
+
 
 # Generate TypeScript ABIs
 generate-abis:
@@ -73,28 +75,10 @@ account-generate:
 account-import:
 	@cast wallet import ${ACCOUNT_NAME} --interactive
 
-# Compile contracts
-compile:
-	forge compile
-
-# Flatten contracts
-flatten:
-	forge flatten
-
-# Format code
-format:
-	forge fmt && prettier --write ./scripts-js/**/*.js
-
-# Lint code
-lint:
-	forge fmt --check && prettier --check ./scripts-js/**/*.js
 
 # Verify contracts
 verify:
 	forge script script/VerifyAll.s.sol --ffi --rpc-url $(RPC_URL)
 
-# Coverage report of contracts and tests
-coverage:
-	forge coverage --no-match-coverage "(script|reference|test)"
 
 

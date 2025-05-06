@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { console } from "forge-std/console.sol";
-import { AssetTrade } from "@contracts/AssetTrade.sol";
-import { AssetFactoryTestHelper } from "./AssetFactoryTestHelper.sol";
-import { AssetVaultTestHelper } from "./AssetVaultTestHelper.sol";
+import {console} from "forge-std/console.sol";
+import {AssetTrade} from "@contracts/AssetTrade.sol";
+import {AssetFactoryTestHelper} from "./AssetFactoryTestHelper.sol";
+import {AssetVaultTestHelper} from "./AssetVaultTestHelper.sol";
 
 /// @dev Helper contract for interacting with the AssetTrade contract.
 /// Inheritance Tree:
@@ -47,10 +47,22 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
         vault.approveCaller(address(tradeContract));
 
         // Update the starting vault balances for userA & userB
-        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
-        userBStartingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
-        userBStartingVaultAssetTwoBalance = vault.balanceOf(userB, ASSET_TWO_ID);
+        userAStartingVaultAssetOneBalance = vault.balanceOf(
+            userA,
+            ASSET_ONE_ID
+        );
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(
+            userA,
+            ASSET_TWO_ID
+        );
+        userBStartingVaultAssetOneBalance = vault.balanceOf(
+            userB,
+            ASSET_ONE_ID
+        );
+        userBStartingVaultAssetTwoBalance = vault.balanceOf(
+            userB,
+            ASSET_TWO_ID
+        );
     }
 
     ////////////////////////////////////////////////
@@ -62,11 +74,18 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
     /// @param receiver The address of the user receiving the proposal.
     /// @param assetToTradeId The ID of the asset to trade.
     /// @param assetToReceiveId The ID of the asset to receive.
-    function createProposalHelper(address proposer, address receiver, uint256 assetToTradeId, uint256 assetToReceiveId)
-        public
-    {
+    function createProposalHelper(
+        address proposer,
+        address receiver,
+        uint256 assetToTradeId,
+        uint256 assetToReceiveId
+    ) public {
         vm.prank(proposer);
-        tradeContract.createProposal(receiver, assetToTradeId, assetToReceiveId);
+        tradeContract.createProposal(
+            receiver,
+            assetToTradeId,
+            assetToReceiveId
+        );
     }
 
     /// @dev Cancel a proposal

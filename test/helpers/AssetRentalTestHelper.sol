@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { AssetRental } from "@contracts/AssetRental.sol";
-import { AssetVaultTestHelper } from "./AssetVaultTestHelper.sol";
+import {AssetRental} from "@contracts/AssetRental.sol";
+import {AssetVaultTestHelper} from "./AssetVaultTestHelper.sol";
 
 /// @dev Helper contract for interacting with the AssetRental contract.
 /// Inheritance Tree:
@@ -46,9 +46,18 @@ contract AssetRentalTestHelper is AssetVaultTestHelper {
         vault.approveCaller(address(rentalContract));
 
         // Update the starting vault balances for userA & userB
-        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
-        userBStartingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
+        userAStartingVaultAssetOneBalance = vault.balanceOf(
+            userA,
+            ASSET_ONE_ID
+        );
+        userBStartingVaultAssetOneBalance = vault.balanceOf(
+            userB,
+            ASSET_ONE_ID
+        );
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(
+            userA,
+            ASSET_TWO_ID
+        );
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         userBStartingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
         userCStartingVaultIGCBalance = vault.balanceOf(userC, IGC_TOKEN_ID);
@@ -63,11 +72,19 @@ contract AssetRentalTestHelper is AssetVaultTestHelper {
     /// @param assetId The ID of the asset to be rented.
     /// @param price The price of the rental.
     /// @param duration The duration of the rental in seconds.
-    function createRentalHelper(address user, uint256 assetId, uint256 price, uint256 duration) public {
+    function createRentalHelper(
+        address user,
+        uint256 assetId,
+        uint256 price,
+        uint256 duration
+    ) public {
         vm.startPrank(user);
         factory.setApprovalForAll(address(rentalContract), true);
         rentalContract.createRental(assetId, price, duration);
-        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingVaultAssetOneBalance = vault.balanceOf(
+            userA,
+            ASSET_ONE_ID
+        );
         vm.stopPrank();
     }
 
@@ -84,7 +101,12 @@ contract AssetRentalTestHelper is AssetVaultTestHelper {
     /// @param rentalId The ID of the rental to be updated.
     /// @param newPrice The new price of the rental.
     /// @param newDuration The new duration of the rental in seconds.
-    function updateRentalHelper(address user, uint256 rentalId, uint256 newPrice, uint256 newDuration) public {
+    function updateRentalHelper(
+        address user,
+        uint256 rentalId,
+        uint256 newPrice,
+        uint256 newDuration
+    ) public {
         vm.prank(user);
         rentalContract.updateRental(rentalId, newPrice, newDuration);
     }

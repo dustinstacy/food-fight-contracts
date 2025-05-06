@@ -1,33 +1,35 @@
 {
-    "name": "food-fight-contracts",
-    "version": "0.0.1",
-    "type": "module",
-    "scripts": {
-        "account": "make account",
-        "account:generate": "make account-generate ACCOUNT_NAME=${1:-scaffold-eth-custom}",
-        "account:import": "make account-import ACCOUNT_NAME=${1:-scaffold-eth-custom}",
-        "chain": "make chain",
-        "compile": "make compile",
-        "coverage": "make coverage",
-        "deploy": "node scripts-js/parseArgs.js",
-        "dev": "make dev",
-        "flatten": "make flatten",
-        "fork": "make fork FORK_URL=${1:-mainnet}",
-        "format": "make format",
-        "postinstall": "shx cp -n .env.example .env",
-        "lint": "make lint",
-        "test": "forge test",
-        "verify": "make verify RPC_URL=${1:-localhost}",
-        "verify-keystore": "make verify-keystore"
-    },
-    "dependencies": {
-        "dotenv": "~16.3.1",
-        "envfile": "~6.18.0",
-        "ethers": "^5.8.0",
-        "prettier": "~2.8.8",
-        "toml": "~3.0.0"
-    },
-    "devDependencies": {
-        "shx": "^0.3.4"
-    }
+  "name": "food-fight-contracts",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "account": "make account",
+    "account:generate": "make account-generate ACCOUNT_NAME=${1:-scaffold-eth-custom}",
+    "account:import": "make account-import ACCOUNT_NAME=${1:-scaffold-eth-custom}",
+    "chain": "make chain",
+    "deploy": "make deploy",
+    "dev": "make dev",
+    "fork": "make fork FORK_URL=${1:-mainnet}",
+    "verify": "make verify RPC_URL=${1:-localhost}",
+    "verify-keystore": "make verify-keystore",
+    "compile": "forge compile",
+    "coverage": "forge coverage --no-match-path '(script|reference|test)'",
+    "flatten": "forge flatten",
+    "format": "forge fmt && prettier --write .",
+    "lint": "solhint contracts/**/*.sol",
+    "test": "forge test",
+    "prepare": "npm run format && npm run lint && npm run compile && npm run test && slither ."
+  },
+  "dependencies": {
+    "dotenv": "~16.3.1",
+    "envfile": "~6.18.0",
+    "ethers": "^5.8.0",
+    "toml": "~3.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "prettier-plugin-solidity": "^2.0.0",
+    "shx": "^0.3.4",
+    "solhint": "^5.1.0"
+  }
 }

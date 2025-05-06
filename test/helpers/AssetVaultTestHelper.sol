@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { AssetFactoryTestHelper } from "./AssetFactoryTestHelper.sol";
+import {AssetFactoryTestHelper} from "./AssetFactoryTestHelper.sol";
 
 /// @dev Helper contract for interacting with the AssetVault contract.
 /// Inheritance Tree:
@@ -21,9 +21,18 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
 
         // Update the starting vault balances for userA
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
-        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
-        userAStartingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
+        userAStartingVaultAssetOneBalance = vault.balanceOf(
+            userA,
+            ASSET_ONE_ID
+        );
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(
+            userA,
+            ASSET_TWO_ID
+        );
+        userAStartingVaultAssetThreeBalance = vault.balanceOf(
+            userA,
+            ASSET_THREE_ID
+        );
     }
 
     ////////////////////////////////////////////////
@@ -44,7 +53,11 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @param user The address of the user depositing assets.
     /// @param assetIds The IDs of the asset to deposit.
     /// @param amounts The amounts of the assets to deposit.
-    function depositAssetsTestHelper(address user, uint256[] memory assetIds, uint256[] memory amounts) public {
+    function depositAssetsTestHelper(
+        address user,
+        uint256[] memory assetIds,
+        uint256[] memory amounts
+    ) public {
         vm.startPrank(user);
         factory.setApprovalForAll(address(vault), true);
         vault.depositAssets(assetIds, amounts);
@@ -55,7 +68,11 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @param user The address of the user withdrawing IGC.
     /// @param to The address to withdraw the IGC to.
     /// @param amount The amount of IGC to withdraw.
-    function withdrawIGCTestHelper(address user, address to, uint256 amount) public {
+    function withdrawIGCTestHelper(
+        address user,
+        address to,
+        uint256 amount
+    ) public {
         vm.prank(user);
         vault.withdrawIGC(to, amount);
     }
@@ -65,9 +82,12 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @param to The address to withdraw the assets to.
     /// @param assetIds The IDs of the assets to withdraw.
     /// @param amounts The amounts of the assets to withdraw.
-    function withdrawAssetsTestHelper(address user, address to, uint256[] memory assetIds, uint256[] memory amounts)
-        public
-    {
+    function withdrawAssetsTestHelper(
+        address user,
+        address to,
+        uint256[] memory assetIds,
+        uint256[] memory amounts
+    ) public {
         vm.prank(user);
         vault.withdrawAssets(to, assetIds, amounts);
     }
@@ -77,7 +97,12 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @param user The address of the user whose assets are being locked.
     /// @param assetId The ID of the asset to lock.
     /// @param amount The amount of the asset to lock.
-    function lockAssetTestHelper(address caller, address user, uint256 assetId, uint256 amount) public {
+    function lockAssetTestHelper(
+        address caller,
+        address user,
+        uint256 assetId,
+        uint256 amount
+    ) public {
         vm.prank(caller);
         vault.lockAsset(user, assetId, amount);
     }
@@ -87,7 +112,12 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @param user The address of the user to unlock assets for.
     /// @param assetId The ID of the asset to unlock.
     /// @param amount The amount of the asset to unlock.
-    function unlockAssetTestHelper(address caller, address user, uint256 assetId, uint256 amount) public {
+    function unlockAssetTestHelper(
+        address caller,
+        address user,
+        uint256 assetId,
+        uint256 amount
+    ) public {
         vm.prank(caller);
         vault.unlockAsset(user, assetId, amount);
     }

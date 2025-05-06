@@ -1,11 +1,15 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { AssetFactory } from "./AssetFactory.sol";
+import {
+    IERC1155Receiver
+} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {AssetFactory} from "./AssetFactory.sol";
 
 /// @title AssetVault
 /// @notice This contract handles user asset storage.
@@ -16,16 +20,17 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Mapping of a user to their balances of each token ID.
-    mapping(address user => mapping(uint256 tokenId => uint256 balance)) private balances;
+    mapping(address user => mapping(uint256 tokenId => uint256 balance))
+        private balances;
 
     /// @notice Mapping of approved callers.
     mapping(address => bool) private approvedCallers;
 
     /// @notice Instance of the AssetFactory contract that is responsible for minting assets.
-    AssetFactory private immutable i_factory;
+    AssetFactory private immutable FACTORY;
 
     /// @notice The token ID of the IGC token.
-    uint8 private immutable i_igcTokenId;
+    uint8 private immutable IGC_TOKEN_ID;
 
     ///////////////////////////////////////////////////////////
     ///                       EVENTS                        ///
@@ -60,10 +65,18 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Thrown when the length of the tokenIds and amounts arrays are different.
-    error AssetVaultArraysLengthMismatch(uint256 tokenIdsLength, uint256 amountsLength);
+    error AssetVaultArraysLengthMismatch(
+        uint256 tokenIdsLength,
+        uint256 amountsLength
+    );
 
     /// @notice Thrown when the user lacks the required balance to perform an action.
-    error AssetVaultInsufficientBalance(address caller, uint256 balance, uint256 amount, uint256 tokenId);
+    error AssetVaultInsufficientBalance(
+        address caller,
+        uint256 balance,
+        uint256 amount,
+        uint256 tokenId
+    );
 
     /// @notice Thrown when the caller is not approved to perform an action.
     error AssetVaultUnauthorizedCaller(address caller);
@@ -87,9 +100,12 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Construct the AssetVault contract.
     /// @param _factory The address of the ERC1155 contract that is responsible for minting assets.
     /// @param _initialOwner The address of the owner of the contract.
-    constructor(address _factory, address _initialOwner) Ownable(_initialOwner) {
-        i_factory = AssetFactory(_factory);
-        i_igcTokenId = i_factory.getIGCTokenId();
+    constructor(
+        address _factory,
+        address _initialOwner
+    ) Ownable(_initialOwner) {
+        FACTORY = AssetFactory(_factory);
+        IGC_TOKEN_ID = FACTORY.getIGCTokenId();
     }
 
     ///////////////////////////////////////////////////////////
@@ -100,9 +116,15 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param amount The amount of IGC to deposit.
     /// @dev Will throw an error when the user lacks the required balance to deposit the IGC. (ERC1155InsufficientBalance).
     function depositIGC(uint256 amount) external nonReentrant {
-        i_factory.safeTransferFrom(msg.sender, address(this), i_igcTokenId, amount, "");
+        FACTORY.safeTransferFrom(
+            msg.sender,
+            address(this),
+            IGC_TOKEN_ID,
+            amount,
+            ""
+        );
 
-        balances[msg.sender][i_igcTokenId] += amount;
+        balances[msg.sender][IGC_TOKEN_ID] += amount;
 
         emit IGCDeposited(msg.sender, amount);
     }
@@ -112,8 +134,17 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param amounts The amounts of the assets to deposit.
     /// @dev Will throw an error when the user lacks the required balance to deposit the assets.(ERC1155InsufficientBalance).
     /// @dev Will throw an error when the length of the tokenIds and amounts arrays are different. (ERC1155InvalidArrayLength).
-    function depositAssets(uint256[] memory tokenIds, uint256[] memory amounts) external nonReentrant {
-        i_factory.safeBatchTransferFrom(msg.sender, address(this), tokenIds, amounts, "");
+    function depositAssets(
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    ) external nonReentrant {
+        FACTORY.safeBatchTransferFrom(
+            msg.sender,
+            address(this),
+            tokenIds,
+            amounts,
+            ""
+        );
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             balances[msg.sender][tokenIds[i]] += amounts[i];
@@ -130,13 +161,18 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param to The address to withdraw the IGC to.
     /// @param amount The amount of IGC to withdraw.
     function withdrawIGC(address to, uint256 amount) external {
-        if (balances[msg.sender][i_igcTokenId] < amount) {
-            revert AssetVaultInsufficientBalance(msg.sender, balances[msg.sender][i_igcTokenId], amount, i_igcTokenId);
+        if (balances[msg.sender][IGC_TOKEN_ID] < amount) {
+            revert AssetVaultInsufficientBalance(
+                msg.sender,
+                balances[msg.sender][IGC_TOKEN_ID],
+                amount,
+                IGC_TOKEN_ID
+            );
         }
 
-        balances[msg.sender][i_igcTokenId] -= amount;
+        balances[msg.sender][IGC_TOKEN_ID] -= amount;
 
-        i_factory.safeTransferFrom(address(this), to, i_igcTokenId, amount, "");
+        FACTORY.safeTransferFrom(address(this), to, IGC_TOKEN_ID, amount, "");
 
         emit IGCWithdrawn(to, amount);
     }
@@ -145,22 +181,32 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param to The address to withdraw the assets to.
     /// @param tokenIds The token IDs of the assets to withdraw.
     /// @param amounts The amounts of the assets to withdraw.
-    function withdrawAssets(address to, uint256[] memory tokenIds, uint256[] memory amounts) external {
+    function withdrawAssets(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    ) external {
         if (tokenIds.length != amounts.length) {
-            revert AssetVaultArraysLengthMismatch(tokenIds.length, amounts.length);
+            revert AssetVaultArraysLengthMismatch(
+                tokenIds.length,
+                amounts.length
+            );
         }
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (balances[msg.sender][tokenIds[i]] < amounts[i]) {
                 revert AssetVaultInsufficientBalance(
-                    msg.sender, balances[msg.sender][tokenIds[i]], amounts[i], tokenIds[i]
+                    msg.sender,
+                    balances[msg.sender][tokenIds[i]],
+                    amounts[i],
+                    tokenIds[i]
                 );
             }
 
             balances[msg.sender][tokenIds[i]] -= amounts[i];
         }
 
-        i_factory.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
+        FACTORY.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
 
         emit AssetsWithdrawn(to, tokenIds, amounts);
     }
@@ -174,9 +220,18 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param tokenId The token IDs of the assets to lock.
     /// @param amount The amount of the assets to lock.
     /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a trade.
-    function lockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
+    function lockAsset(
+        address account,
+        uint256 tokenId,
+        uint256 amount
+    ) external onlyApprovedCaller {
         if (balances[account][tokenId] < amount) {
-            revert AssetVaultInsufficientBalance(account, balances[account][tokenId], amount, tokenId);
+            revert AssetVaultInsufficientBalance(
+                account,
+                balances[account][tokenId],
+                amount,
+                tokenId
+            );
         }
 
         balances[account][tokenId] -= amount;
@@ -189,10 +244,17 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param tokenId The token IDs of the assets to unlock.
     /// @param amount The amount of the assets to unlock.
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
-    function unlockAsset(address account, uint256 tokenId, uint256 amount) external onlyApprovedCaller {
-        if (i_factory.balanceOf(address(this), tokenId) < amount) {
+    function unlockAsset(
+        address account,
+        uint256 tokenId,
+        uint256 amount
+    ) external onlyApprovedCaller {
+        if (FACTORY.balanceOf(address(this), tokenId) < amount) {
             revert AssetVaultInsufficientBalance(
-                address(this), i_factory.balanceOf(address(this), tokenId), amount, tokenId
+                address(this),
+                FACTORY.balanceOf(address(this), tokenId),
+                amount,
+                tokenId
             );
         }
 
@@ -229,26 +291,35 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param user The address of the user.
     /// @param tokenId The token ID to get the balance of.
     /// @return balance The balance of the user for the token ID.
-    function balanceOf(address user, uint256 tokenId) public view returns (uint256 balance) {
+    function balanceOf(
+        address user,
+        uint256 tokenId
+    ) public view returns (uint256 balance) {
         return balances[user][tokenId];
     }
 
     /// @notice Get the factory contract address.
     /// @return factoryAddress The address of the assets contract.
-    function getAssetFactoryAddress() public view returns (address factoryAddress) {
-        return address(i_factory);
+    function getAssetFactoryAddress()
+        public
+        view
+        returns (address factoryAddress)
+    {
+        return address(FACTORY);
     }
 
     /// @notice Get the IGC token ID.
-    /// @return i_igcTokenId The token ID of the IGC token.
+    /// @return IGC_TOKEN_ID The token ID of the IGC token.
     function getIGCTokenId() public view returns (uint8) {
-        return i_igcTokenId;
+        return IGC_TOKEN_ID;
     }
 
     /// @notice Get the approved caller status.
     /// @param caller The address of the caller.
     /// @return approved The approved caller status.
-    function getIsApprovedCaller(address caller) public view returns (bool approved) {
+    function getIsApprovedCaller(
+        address caller
+    ) public view returns (bool approved) {
         return approvedCallers[caller];
     }
 
@@ -258,24 +329,34 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
 
     /// @inheritdoc IERC1155Receiver
     function onERC1155Received(
-        address, /*operator*/
-        address, /*from*/
-        uint256, /*id*/
-        uint256, /*value*/
+        address /*operator*/,
+        address /*from*/,
+        uint256 /*id*/,
+        uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155Received(address,address,uint256,uint256,bytes)"
+                )
+            );
     }
 
     /// @inheritdoc IERC1155Receiver
     function onERC1155BatchReceived(
-        address, /*operator*/
-        address, /*from*/
-        uint256[] memory, /*ids*/
-        uint256[] memory, /*values*/
+        address /*operator*/,
+        address /*from*/,
+        uint256[] memory /*ids*/,
+        uint256[] memory /*values*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
+                )
+            );
     }
 
     /////////////////////////////////////////////////////////////
@@ -283,7 +364,11 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public pure override returns (bool) {
+        return
+            interfaceId == type(IERC1155Receiver).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
     }
 }

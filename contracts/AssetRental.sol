@@ -1,10 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { AssetVault } from "./AssetVault.sol";
+import {
+    IERC1155Receiver
+} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AssetVault} from "./AssetVault.sol";
 
 /// @title AssetRental
 /// @notice This contract allows users to list assets for rent and rent assets from other users.
@@ -39,10 +43,11 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     mapping(uint256 rentalAssetId => RentalAsset) private rentalAssets;
 
     /// @notice Mapping of a user to their rented asset balances.
-    mapping(address user => mapping(uint256 assetId => uint256 balance)) private rentedAssets;
+    mapping(address user => mapping(uint256 assetId => uint256 balance))
+        private rentedAssets;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
-    AssetVault private immutable i_vault;
+    AssetVault private immutable VAULT;
 
     /// @notice The number of rental assets.
     uint256 private rentalAssetCount;
@@ -58,7 +63,11 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     event RentalAssetRelisted(address rentalOwner, uint256 rentalAssetId);
 
     /// @notice Emitted when an asset is rented.
-    event RentalAssetRented(address renter, uint256 rentalAssetId, uint256 timeRented);
+    event RentalAssetRented(
+        address renter,
+        uint256 rentalAssetId,
+        uint256 timeRented
+    );
 
     /// @notice Emitted when an asset is unlisted.
     event RentalAssetUnlisted(address rentalOwner, uint256 rentalAssetId);
@@ -91,7 +100,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
 
     /// @param _assetVaultAddress The address of the AssetVault contract.
     constructor(address _assetVaultAddress) {
-        i_vault = AssetVault(_assetVaultAddress);
+        VAULT = AssetVault(_assetVaultAddress);
     }
 
     ///////////////////////////////////////////////////////////
@@ -103,7 +112,11 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /// @param price The price to rent the asset.
     /// @param blocksDuration The amnount of blocks to rent the asset for.
     /// @dev Will throw an error if the user lacks the required balance of the asset to post for rent. (AssetVaultInsufficientBalance).
-    function createRental(uint256 assetId, uint256 price, uint256 blocksDuration) external {
+    function createRental(
+        uint256 assetId,
+        uint256 price,
+        uint256 blocksDuration
+    ) external {
         rentalAssetCount++;
         rentalAssets[rentalAssetCount] = RentalAsset({
             owner: msg.sender,
@@ -115,7 +128,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
             status: RentalStatus.Available
         });
 
-        i_vault.lockAsset(msg.sender, assetId, 1);
+        VAULT.lockAsset(msg.sender, assetId, 1);
 
         emit RentalAssetPosted(msg.sender, rentalAssetCount);
     }
@@ -127,12 +140,16 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
 
         rental.status = RentalStatus.Unavailable;
 
-        i_vault.unlockAsset(msg.sender, rental.assetId, 1);
+        VAULT.unlockAsset(msg.sender, rental.assetId, 1);
 
         emit RentalAssetUnlisted(msg.sender, rentalAssetId);
     }
 
-    function updateRental(uint256 rentalAssetId, uint256 price, uint256 blocksDuration) external {
+    function updateRental(
+        uint256 rentalAssetId,
+        uint256 price,
+        uint256 blocksDuration
+    ) external {
         RentalAsset storage rental = rentalAssets[rentalAssetId];
 
         _checkOwnerAndAvailability(msg.sender, rental);
@@ -154,8 +171,8 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
             revert AssetRentalNotAvailable(rental.status);
         }
 
-        i_vault.lockAsset(msg.sender, i_vault.getIGCTokenId(), rental.price);
-        i_vault.unlockAsset(rental.owner, i_vault.getIGCTokenId(), rental.price);
+        VAULT.lockAsset(msg.sender, VAULT.getIGCTokenId(), rental.price);
+        VAULT.unlockAsset(rental.owner, VAULT.getIGCTokenId(), rental.price);
 
         rental.status = RentalStatus.Rented;
         rental.renter = msg.sender;
@@ -163,7 +180,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
 
         rentedAssets[msg.sender][rental.assetId]++;
 
-        emit RentalAssetRented(msg.sender, rentalAssetId, block.timestamp);
+        emit RentalAssetRented(msg.sender, rentalAssetId, block.number);
     }
 
     function checkRentalStatus(uint256 rentalAssetId) external returns (bool) {
@@ -188,7 +205,10 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     ///                INTERNAL FUNCTIONS                   ///
     ///////////////////////////////////////////////////////////
 
-    function _checkOwnerAndAvailability(address user, RentalAsset storage rentalAsset) internal view {
+    function _checkOwnerAndAvailability(
+        address user,
+        RentalAsset storage rentalAsset
+    ) internal view {
         if (rentalAsset.status != RentalStatus.Available) {
             revert AssetRentalNotAvailable(rentalAsset.status);
         }
@@ -205,7 +225,9 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /// @notice Get the rental asset details.
     /// @param rentalAssetId The ID of the rental asset.
     /// @return rentalAsset The rental asset details.
-    function getRentalAsset(uint256 rentalAssetId) public view returns (RentalAsset memory rentalAsset) {
+    function getRentalAsset(
+        uint256 rentalAssetId
+    ) public view returns (RentalAsset memory rentalAsset) {
         return rentalAssets[rentalAssetId];
     }
 
@@ -213,7 +235,10 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /// @param user The address of the user.
     /// @param assetId The ID of the asset.
     /// @return balance The rented asset balance of the user.
-    function getRentedAssetBalance(address user, uint256 assetId) public view returns (uint256 balance) {
+    function getRentedAssetBalance(
+        address user,
+        uint256 assetId
+    ) public view returns (uint256 balance) {
         return rentedAssets[user][assetId];
     }
 
@@ -226,7 +251,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /// @notice Get the vault contract address.
     /// @return vaultAddress The address of the vault contract.
     function getAssetVaultAddress() public view returns (address vaultAddress) {
-        return address(i_vault);
+        return address(VAULT);
     }
     /////////////////////////////////////////////////////////////
     ///               ERC1155 RECEIVER FUNCTIONS              ///
@@ -234,24 +259,34 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
 
     /// @inheritdoc IERC1155Receiver
     function onERC1155Received(
-        address, /*operator*/
-        address, /*from*/
-        uint256, /*id*/
-        uint256, /*value*/
+        address /*operator*/,
+        address /*from*/,
+        uint256 /*id*/,
+        uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155Received(address,address,uint256,uint256,bytes)"
+                )
+            );
     }
 
     /// @inheritdoc IERC1155Receiver
     function onERC1155BatchReceived(
-        address, /*operator*/
-        address, /*from*/
-        uint256[] memory, /*ids*/
-        uint256[] memory, /*values*/
+        address /*operator*/,
+        address /*from*/,
+        uint256[] memory /*ids*/,
+        uint256[] memory /*values*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
+                )
+            );
     }
 
     /////////////////////////////////////////////////////////////
@@ -259,7 +294,11 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public pure override returns (bool) {
+        return
+            interfaceId == type(IERC1155Receiver).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
     }
 }

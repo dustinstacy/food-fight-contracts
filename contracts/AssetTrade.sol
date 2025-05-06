@@ -1,9 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { AssetVault } from "./AssetVault.sol";
+import {
+    IERC1155Receiver
+} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {AssetVault} from "./AssetVault.sol";
 
 /// @title AssetTrade
 /// @notice This contract allows users to trade ERC1155 assets with each other.
@@ -40,7 +42,7 @@ contract AssetTrade is IERC1155Receiver {
     uint256 private proposalCount;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
-    AssetVault private immutable i_vault;
+    AssetVault private immutable VAULT;
 
     ///////////////////////////////////////////////////////////
     ///                      EVENTS                         ///
@@ -77,7 +79,7 @@ contract AssetTrade is IERC1155Receiver {
 
     /// @param _assetVaultAddress The address of the AssetVault contract.
     constructor(address _assetVaultAddress) {
-        i_vault = AssetVault(_assetVaultAddress);
+        VAULT = AssetVault(_assetVaultAddress);
     }
 
     ///////////////////////////////////////////////////////////
@@ -89,7 +91,11 @@ contract AssetTrade is IERC1155Receiver {
     /// @param assetAId The token ID of the asset being traded.
     /// @param assetBId The token ID of the asset being traded for.
     /// @dev Will throw an error when the user lacks the required balance of the asset to trade. (AssetVaultInsufficientBalance).
-    function createProposal(address receiver, uint256 assetAId, uint256 assetBId) external {
+    function createProposal(
+        address receiver,
+        uint256 assetAId,
+        uint256 assetBId
+    ) external {
         proposalCount++;
         proposals[proposalCount] = Proposal({
             proposer: msg.sender,
@@ -99,7 +105,7 @@ contract AssetTrade is IERC1155Receiver {
             status: ProposalStatus.Pending
         });
 
-        i_vault.lockAsset(msg.sender, assetAId, 1);
+        VAULT.lockAsset(msg.sender, assetAId, 1);
 
         emit ProposalCreated(proposalCount);
     }
@@ -119,7 +125,7 @@ contract AssetTrade is IERC1155Receiver {
 
         proposal.status = ProposalStatus.Canceled;
 
-        i_vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
+        VAULT.unlockAsset(proposal.proposer, proposal.assetAId, 1);
 
         emit ProposalCanceled(proposalId);
     }
@@ -145,9 +151,9 @@ contract AssetTrade is IERC1155Receiver {
         proposal.status = ProposalStatus.Accepted;
 
         // Execute the exchange of assets by updating the balances in the AssetVault contract
-        i_vault.lockAsset(proposal.receiver, proposal.assetBId, 1);
-        i_vault.unlockAsset(proposal.proposer, proposal.assetBId, 1);
-        i_vault.unlockAsset(proposal.receiver, proposal.assetAId, 1);
+        VAULT.lockAsset(proposal.receiver, proposal.assetBId, 1);
+        VAULT.unlockAsset(proposal.proposer, proposal.assetBId, 1);
+        VAULT.unlockAsset(proposal.receiver, proposal.assetAId, 1);
 
         emit ProposalAccepted(proposalId);
     }
@@ -166,7 +172,7 @@ contract AssetTrade is IERC1155Receiver {
 
         proposal.status = ProposalStatus.Rejected;
 
-        i_vault.unlockAsset(proposal.proposer, proposal.assetAId, 1);
+        VAULT.unlockAsset(proposal.proposer, proposal.assetAId, 1);
 
         emit ProposalRejected(proposalId);
     }
@@ -178,7 +184,9 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Get an existing proposal.
     /// @param proposalId The ID of the proposal.
     /// @return proposal The proposal object.
-    function getProposal(uint256 proposalId) public view returns (Proposal memory proposal) {
+    function getProposal(
+        uint256 proposalId
+    ) public view returns (Proposal memory proposal) {
         return proposals[proposalId];
     }
 
@@ -191,7 +199,7 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Get the vault contract address.
     /// @return vaultAddress The address of the vault contract.
     function getAssetVaultAddress() public view returns (address vaultAddress) {
-        return address(i_vault);
+        return address(VAULT);
     }
 
     /////////////////////////////////////////////////////////////
@@ -200,24 +208,34 @@ contract AssetTrade is IERC1155Receiver {
 
     /// @inheritdoc IERC1155Receiver
     function onERC1155Received(
-        address, /*operator*/
-        address, /*from*/
-        uint256, /*id*/
-        uint256, /*value*/
+        address /*operator*/,
+        address /*from*/,
+        uint256 /*id*/,
+        uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155Received(address,address,uint256,uint256,bytes)"
+                )
+            );
     }
 
     /// @inheritdoc IERC1155Receiver
     function onERC1155BatchReceived(
-        address, /*operator*/
-        address, /*from*/
-        uint256[] memory, /*ids*/
-        uint256[] memory, /*values*/
+        address /*operator*/,
+        address /*from*/,
+        uint256[] memory /*ids*/,
+        uint256[] memory /*values*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
+                )
+            );
     }
 
     /////////////////////////////////////////////////////////////
@@ -225,7 +243,11 @@ contract AssetTrade is IERC1155Receiver {
     /////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public pure override returns (bool) {
+        return
+            interfaceId == type(IERC1155Receiver).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
     }
 }
