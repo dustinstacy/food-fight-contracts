@@ -19,6 +19,8 @@ jobs:
 
       - name: Setup Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,5 +45,3 @@ jobs:
 
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
-        with:
-          slither_version: "0.10.3"
