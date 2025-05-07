@@ -35,11 +35,6 @@ jobs:
       - name: Run Linter (Solhint)
         run: npm run lint
 
-      - name: Setup Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
       - name: Run Compile
         run: npm run compile
 
