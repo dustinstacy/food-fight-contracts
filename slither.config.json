@@ -1,0 +1,5 @@
+{
+  "filter_paths": "node_modules,test,lib,script,coverage,build,dist",
+  "triage_database": "slither.db.json"
+
+}

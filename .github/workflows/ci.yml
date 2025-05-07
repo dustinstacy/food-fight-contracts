@@ -44,6 +44,4 @@ jobs:
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
         with:
-          command: "slither ."
-        env:
-          SOLC_VERSION: "0.8.26"
+          slither_version: "0.10.3"
