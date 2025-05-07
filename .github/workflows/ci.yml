@@ -7,12 +7,18 @@ on:
     branches: [main]
 
 jobs:
-  lint-test-analyze:
+  check:
+    name: Food Fight Contracts
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,11 +28,6 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
-
-      - name: Setup Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
 
       - name: Run Format Check
         run: npm run format
