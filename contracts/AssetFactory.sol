@@ -42,16 +42,20 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Emitted when the URI and price of an asset are set.
-    event AssetDataSet(string uri, uint256 id, uint256 price);
+    event AssetDataSet(string uri, uint256 assetId, uint256 price);
 
     /// @notice Emitted when the IGC is burnt.
-    event AssetMinted(address indexed account, uint256 id, uint256 amount);
+    event AssetMinted(address indexed account, uint256 assetId, uint256 amount);
 
     /// @notice Emitted when multiple assets are burnt
-    event BurntBatch(address indexed account, uint256[] ids, uint256[] amounts);
+    event BurntBatch(
+        address indexed account,
+        uint256[] assetIds,
+        uint256[] amounts
+    );
 
     /// @notice Emitted when a single asset is burnt
-    event BurntSingle(address indexed account, uint256 id, uint256 amount);
+    event BurntSingle(address indexed account, uint256 assetId, uint256 amount);
 
     /// @notice Emitted when the IGC is minted.
     event IGCminted(address indexed account, uint256 amount);
@@ -61,7 +65,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Emitted when the asset ID is not found.
-    error AssetFactoryAssetNotFound(uint256 id);
+    error AssetFactoryAssetNotFound(uint256 assetId);
 
     ///////////////////////////////////////////////////////////
     ///                    CONSTRUCTOR                      ///
@@ -89,16 +93,16 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Mints a given amount of an asset.
     /// @dev Simple placeholder pricing model. Needs to be updated.
     /// @param account Address to mint the asset to.
-    /// @param id ID of the asset to mint.
+    /// @param assetId ID of the asset to mint.
     /// @param amount Amount of the asset to mint.
     /// @param data Custom data to pass to the receiver on the mint.
     function mintAsset(
         address account,
-        uint256 id,
+        uint256 assetId,
         uint256 amount,
         bytes memory data
     ) external nonReentrant {
-        uint256 price = assets[id].price;
+        uint256 price = assets[assetId].price;
         uint256 totalPrice = price * amount;
 
         safeTransferFrom(
@@ -109,33 +113,33 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
             ""
         );
 
-        _mint(account, id, amount, data);
+        _mint(account, assetId, amount, data);
 
-        emit AssetMinted(account, id, amount);
+        emit AssetMinted(account, assetId, amount);
     }
 
     /// @notice Mints given amounts of multiple assets.
     /// @dev Simple placeholder pricing model. Needs to be updated.
     /// @param to Address to mint the assets to.
-    /// @param ids IDs of the assets to mint.
+    /// @param assetIds IDs of the assets to mint.
     /// @param amounts Amounts of the assets to mint.
     function mintBatch(
         address to,
-        uint256[] memory ids,
+        uint256[] memory assetIds,
         uint256[] memory amounts,
         bytes memory data
     ) external nonReentrant {
         // Precedes the array length check in _update() (nested inside _mintBatch()) to prevent reverts in the for loop.
-        if (ids.length != amounts.length) {
-            revert ERC1155InvalidArrayLength(ids.length, amounts.length);
+        if (assetIds.length != amounts.length) {
+            revert ERC1155InvalidArrayLength(assetIds.length, amounts.length);
         }
 
         uint256 totalPrice = 0;
 
-        for (uint256 i = 0; i < ids.length; i++) {
-            uint256 id = ids[i];
+        for (uint256 i = 0; i < assetIds.length; i++) {
+            uint256 assetId = assetIds[i];
             uint256 amount = amounts[i];
-            uint256 price = assets[id].price;
+            uint256 price = assets[assetId].price;
 
             totalPrice += price * amount;
         }
@@ -148,7 +152,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
             ""
         );
 
-        _mintBatch(to, ids, amounts, data);
+        _mintBatch(to, assetIds, amounts, data);
     }
 
     ///////////////////////////////////////////////////////////
@@ -157,33 +161,42 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
 
     /// @notice Burns a given amount of an asset.
     /// @param account Address to burn the asset from.
-    /// @param id ID of the asset to burn.
+    /// @param assetId ID of the asset to burn.
     /// @param amount Amount of the asset to burn.
-    function burnAsset(address account, uint256 id, uint256 amount) external {
+    function burnAsset(
+        address account,
+        uint256 assetId,
+        uint256 amount
+    ) external {
         if (
             account != _msgSender() && !isApprovedForAll(account, _msgSender())
         ) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
 
-        uint256 balance = balanceOf(account, id);
+        uint256 balance = balanceOf(account, assetId);
 
         if (balance < amount) {
-            revert ERC1155InsufficientBalance(account, balance, amount, id);
+            revert ERC1155InsufficientBalance(
+                account,
+                balance,
+                amount,
+                assetId
+            );
         }
 
-        _burn(account, id, amount);
+        _burn(account, assetId, amount);
 
-        emit BurntSingle(account, id, amount);
+        emit BurntSingle(account, assetId, amount);
     }
 
     /// @notice Burns given amounts of multiple assets.
     /// @param account Address to burn the assets from.
-    /// @param ids IDs of the assets to burn.
+    /// @param assetIds IDs of the assets to burn.
     /// @param amounts Amounts of the assets to burn.
     function burnBatch(
         address account,
-        uint256[] memory ids,
+        uint256[] memory assetIds,
         uint256[] memory amounts
     ) external {
         if (
@@ -193,23 +206,28 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
         }
 
         // Precedes the array length check in _update() (nested inside _burnBatch()) to prevent reverts in the for loop.
-        if (ids.length != amounts.length) {
-            revert ERC1155InvalidArrayLength(ids.length, amounts.length);
+        if (assetIds.length != amounts.length) {
+            revert ERC1155InvalidArrayLength(assetIds.length, amounts.length);
         }
 
-        for (uint256 i = 0; i < ids.length; i++) {
-            uint256 id = ids[i];
+        for (uint256 i = 0; i < assetIds.length; i++) {
+            uint256 assetId = assetIds[i];
             uint256 amount = amounts[i];
-            uint256 balance = balanceOf(account, id);
+            uint256 balance = balanceOf(account, assetId);
 
             if (balance < amount) {
-                revert ERC1155InsufficientBalance(account, balance, amount, id);
+                revert ERC1155InsufficientBalance(
+                    account,
+                    balance,
+                    amount,
+                    assetId
+                );
             }
         }
 
-        _burnBatch(account, ids, amounts);
+        _burnBatch(account, assetIds, amounts);
 
-        emit BurntBatch(account, ids, amounts);
+        emit BurntBatch(account, assetIds, amounts);
     }
 
     ///////////////////////////////////////////////////////////
@@ -232,18 +250,18 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     }
 
     function updateAssetData(
-        uint256 id,
+        uint256 assetId,
         string memory assetUri,
         uint256 assetPrice
     ) external onlyOwner {
-        if (bytes(assets[id].uri).length == 0) {
-            revert AssetFactoryAssetNotFound(id);
+        if (bytes(assets[assetId].uri).length == 0) {
+            revert AssetFactoryAssetNotFound(assetId);
         }
 
-        assets[id].uri = assetUri;
-        assets[id].price = assetPrice;
+        assets[assetId].uri = assetUri;
+        assets[assetId].price = assetPrice;
 
-        emit AssetDataSet(assetUri, id, assetPrice);
+        emit AssetDataSet(assetUri, assetId, assetPrice);
     }
 
     ///////////////////////////////////////////////////////////
@@ -251,10 +269,12 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Gets the URI and price of a given asset.
-    /// @param id ID of the asset to get the URI and price for.
+    /// @param assetId ID of the asset to get the URI and price for.
     /// @return asset The asset data containing the URI and price.
-    function getAsset(uint256 id) public view returns (Asset memory asset) {
-        return assets[id];
+    function getAsset(
+        uint256 assetId
+    ) public view returns (Asset memory asset) {
+        return assets[assetId];
     }
 
     /// @notice Gets the newest asset ID to be minted.

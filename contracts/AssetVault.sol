@@ -20,7 +20,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Mapping of a user to their balances of each token ID.
-    mapping(address user => mapping(uint256 tokenId => uint256 balance))
+    mapping(address user => mapping(uint256 assetId => uint256 balance))
         private balances;
 
     /// @notice Mapping of approved callers.
@@ -40,16 +40,16 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     event ApprovedCaller(address caller);
 
     /// @notice Emitted when assets are deposited into the contract.
-    event AssetsDeposited(address from, uint256[] tokenIds, uint256[] amounts);
+    event AssetsDeposited(address from, uint256[] assetIds, uint256[] amounts);
 
     /// @notice Emitted when assets are locked in the contract.
-    event AssetLocked(address account, uint256 tokenId, uint256 amount);
+    event AssetLocked(address account, uint256 assetId, uint256 amount);
 
     /// @notice Emitted when assets are unlocked in the contract.
-    event AssetUnlocked(address account, uint256 tokenId, uint256 amount);
+    event AssetUnlocked(address account, uint256 assetId, uint256 amount);
 
     /// @notice Emitted when assets are withdrawn from the contract.
-    event AssetsWithdrawn(address to, uint256[] tokenIds, uint256[] amounts);
+    event AssetsWithdrawn(address to, uint256[] assetIds, uint256[] amounts);
 
     /// @notice Emitted when IGC is deposited into the contract.
     event IGCDeposited(address from, uint256 amount);
@@ -64,9 +64,9 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///                       ERRORS                        ///
     ///////////////////////////////////////////////////////////
 
-    /// @notice Thrown when the length of the tokenIds and amounts arrays are different.
+    /// @notice Thrown when the length of the assetIds and amounts arrays are different.
     error AssetVaultArraysLengthMismatch(
-        uint256 tokenIdsLength,
+        uint256 assetIdsLength,
         uint256 amountsLength
     );
 
@@ -75,7 +75,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
         address caller,
         uint256 balance,
         uint256 amount,
-        uint256 tokenId
+        uint256 assetId
     );
 
     /// @notice Thrown when the caller is not approved to perform an action.
@@ -130,27 +130,27 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     }
 
     /// @notice Deposit assets into a contract.
-    /// @param tokenIds The token IDs of the assets to deposit.
+    /// @param assetIds The token IDs of the assets to deposit.
     /// @param amounts The amounts of the assets to deposit.
     /// @dev Will throw an error when the user lacks the required balance to deposit the assets.(ERC1155InsufficientBalance).
-    /// @dev Will throw an error when the length of the tokenIds and amounts arrays are different. (ERC1155InvalidArrayLength).
+    /// @dev Will throw an error when the length of the assetIds and amounts arrays are different. (ERC1155InvalidArrayLength).
     function depositAssets(
-        uint256[] memory tokenIds,
+        uint256[] memory assetIds,
         uint256[] memory amounts
     ) external nonReentrant {
         FACTORY.safeBatchTransferFrom(
             msg.sender,
             address(this),
-            tokenIds,
+            assetIds,
             amounts,
             ""
         );
 
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            balances[msg.sender][tokenIds[i]] += amounts[i];
+        for (uint256 i = 0; i < assetIds.length; i++) {
+            balances[msg.sender][assetIds[i]] += amounts[i];
         }
 
-        emit AssetsDeposited(msg.sender, tokenIds, amounts);
+        emit AssetsDeposited(msg.sender, assetIds, amounts);
     }
 
     ///////////////////////////////////////////////////////////
@@ -179,36 +179,36 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
 
     /// @notice Withdraw assets to a target address.
     /// @param to The address to withdraw the assets to.
-    /// @param tokenIds The token IDs of the assets to withdraw.
+    /// @param assetIds The token IDs of the assets to withdraw.
     /// @param amounts The amounts of the assets to withdraw.
     function withdrawAssets(
         address to,
-        uint256[] memory tokenIds,
+        uint256[] memory assetIds,
         uint256[] memory amounts
     ) external {
-        if (tokenIds.length != amounts.length) {
+        if (assetIds.length != amounts.length) {
             revert AssetVaultArraysLengthMismatch(
-                tokenIds.length,
+                assetIds.length,
                 amounts.length
             );
         }
 
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (balances[msg.sender][tokenIds[i]] < amounts[i]) {
+        for (uint256 i = 0; i < assetIds.length; i++) {
+            if (balances[msg.sender][assetIds[i]] < amounts[i]) {
                 revert AssetVaultInsufficientBalance(
                     msg.sender,
-                    balances[msg.sender][tokenIds[i]],
+                    balances[msg.sender][assetIds[i]],
                     amounts[i],
-                    tokenIds[i]
+                    assetIds[i]
                 );
             }
 
-            balances[msg.sender][tokenIds[i]] -= amounts[i];
+            balances[msg.sender][assetIds[i]] -= amounts[i];
         }
 
-        FACTORY.safeBatchTransferFrom(address(this), to, tokenIds, amounts, "");
+        FACTORY.safeBatchTransferFrom(address(this), to, assetIds, amounts, "");
 
-        emit AssetsWithdrawn(to, tokenIds, amounts);
+        emit AssetsWithdrawn(to, assetIds, amounts);
     }
 
     ///////////////////////////////////////////////////////////
@@ -217,50 +217,50 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
 
     /// @notice Lock assets in the contract.
     /// @param account The address of the account to lock the assets for.
-    /// @param tokenId The token IDs of the assets to lock.
+    /// @param assetId The token IDs of the assets to lock.
     /// @param amount The amount of the assets to lock.
     /// @dev Also used as a mechanism to permanently remove assets from a user balance based on the outcome of an action i.e. a trade.
     function lockAsset(
         address account,
-        uint256 tokenId,
+        uint256 assetId,
         uint256 amount
     ) external onlyApprovedCaller {
-        if (balances[account][tokenId] < amount) {
+        if (balances[account][assetId] < amount) {
             revert AssetVaultInsufficientBalance(
                 account,
-                balances[account][tokenId],
+                balances[account][assetId],
                 amount,
-                tokenId
+                assetId
             );
         }
 
-        balances[account][tokenId] -= amount;
+        balances[account][assetId] -= amount;
 
-        emit AssetLocked(account, tokenId, amount);
+        emit AssetLocked(account, assetId, amount);
     }
 
     /// @notice Unlock assets in the contract.
     /// @param account The address of the account to unlock the assets for.
-    /// @param tokenId The token IDs of the assets to unlock.
+    /// @param assetId The token IDs of the assets to unlock.
     /// @param amount The amount of the assets to unlock.
     /// @dev Also used as a mechanism to permanently add assets to a user balance based on the outcome of an action i.e. a trade.
     function unlockAsset(
         address account,
-        uint256 tokenId,
+        uint256 assetId,
         uint256 amount
     ) external onlyApprovedCaller {
-        if (FACTORY.balanceOf(address(this), tokenId) < amount) {
+        if (FACTORY.balanceOf(address(this), assetId) < amount) {
             revert AssetVaultInsufficientBalance(
                 address(this),
-                FACTORY.balanceOf(address(this), tokenId),
+                FACTORY.balanceOf(address(this), assetId),
                 amount,
-                tokenId
+                assetId
             );
         }
 
-        balances[account][tokenId] += amount;
+        balances[account][assetId] += amount;
 
-        emit AssetUnlocked(account, tokenId, amount);
+        emit AssetUnlocked(account, assetId, amount);
     }
 
     ///////////////////////////////////////////////////////////
@@ -289,13 +289,13 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
 
     /// @notice Get the balance of a user for a specific token ID.
     /// @param user The address of the user.
-    /// @param tokenId The token ID to get the balance of.
+    /// @param assetId The token ID to get the balance of.
     /// @return balance The balance of the user for the token ID.
     function balanceOf(
         address user,
-        uint256 tokenId
+        uint256 assetId
     ) public view returns (uint256 balance) {
-        return balances[user][tokenId];
+        return balances[user][assetId];
     }
 
     /// @notice Get the factory contract address.

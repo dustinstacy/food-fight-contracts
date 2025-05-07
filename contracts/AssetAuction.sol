@@ -127,6 +127,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     /// @param reservePrice The reserve price of the auction.
     /// @param blocksDuration The amount of blocks until the auction ends.
     /// @dev Will throw an error if the user lacks the required balance of the asset to auction. (AssetVaultInsufficientBalance).
+    //!! Create designated block start time?
     function createAuction(
         uint256 assetId,
         uint256 reservePrice,
