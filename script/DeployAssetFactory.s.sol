@@ -15,7 +15,7 @@ import "../contracts/AssetFactory.sol";
  * npm run deploy --file DeployAssetFactory.s.sol --network optimism # live network (requires keystore)
  */
 contract DeployAssetFactory is ScaffoldETHDeploy {
-    function run() external ScaffoldEthDeployerRunner {
-        new AssetFactory(deployer);
+    function run() external ScaffoldEthDeployerRunner returns (AssetFactory deployedFactory) {
+        deployedFactory = new AssetFactory(deployer);
     }
 }

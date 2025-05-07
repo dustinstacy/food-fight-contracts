@@ -2,11 +2,13 @@
 pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
-import {DeployAssetFactory} from "./DeployAssetFactory.s.sol";
-import {DeployAssetVault} from "./DeployAssetVault.s.sol";
-import {DeployAssetTrade} from "./DeployAssetTrade.s.sol";
-import {DeployAssetAuction} from "./DeployAssetAuction.s.sol";
-import {DeployAssetRental} from "./DeployAssetRental.s.sol";
+import { DeployAssetFactory } from "./DeployAssetFactory.s.sol";
+import { DeployAssetVault } from "./DeployAssetVault.s.sol";
+import { DeployAssetTrade } from "./DeployAssetTrade.s.sol";
+import { DeployAssetAuction } from "./DeployAssetAuction.s.sol";
+import { DeployAssetRental } from "./DeployAssetRental.s.sol";
+import { AssetFactory } from "../contracts/AssetFactory.sol";
+import { AssetVault } from "../contracts/AssetVault.sol";
 
 /**
  * @notice Main deployment script for all contracts
@@ -17,18 +19,18 @@ import {DeployAssetRental} from "./DeployAssetRental.s.sol";
 contract DeployScript is ScaffoldETHDeploy {
     function run() external {
         DeployAssetFactory deployAssetFactory = new DeployAssetFactory();
-        deployAssetFactory.run();
+        AssetFactory deployedAssetFactory = deployAssetFactory.run();
 
         DeployAssetVault deployAssetVault = new DeployAssetVault();
-        deployAssetVault.run(address(deployAssetFactory));
+        AssetVault deployedAssetVault = deployAssetVault.run(address(deployedAssetFactory));
 
         DeployAssetTrade deployAssetTrade = new DeployAssetTrade();
-        deployAssetTrade.run(address(deployAssetVault));
+        deployAssetTrade.run(address(deployedAssetVault));
 
         DeployAssetAuction deployAssetAuction = new DeployAssetAuction();
-        deployAssetAuction.run(address(deployAssetVault));
+        deployAssetAuction.run(address(deployedAssetVault));
 
         DeployAssetRental deployAssetRental = new DeployAssetRental();
-        deployAssetRental.run(address(deployAssetVault));
+        deployAssetRental.run(address(deployedAssetVault));
     }
 }

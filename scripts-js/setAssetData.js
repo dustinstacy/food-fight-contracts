@@ -47,11 +47,7 @@ async function main() {
     );
 
     for (const asset of assetData) {
-      const tx = await assetFactory.setAssetData(
-        asset.id,
-        asset.uri,
-        asset.price,
-      );
+      const tx = await assetFactory.setAssetData(asset.uri, asset.price);
       await tx.wait();
       console.log(`Set data for asset ${asset.id}`);
     }
