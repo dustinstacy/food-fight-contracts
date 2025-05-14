@@ -2,13 +2,9 @@
 pragma solidity ^0.8.28;
 
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title AssetFactory
 /// @notice This is a factory contract for creating ERC1155 assets.
@@ -31,8 +27,8 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Mapping of the asset ID to the asset data.
     mapping(uint256 assetID => Asset) private assets;
 
-    /// @notice The newest asset ID to be minted.
-    uint256 private newestAssetID;
+    /// @notice The current number of unique assets not including the IGC token.
+    uint256 private uniqueAssets;
 
     /// @notice The token ID of the IGC token.
     uint8 private constant IGC_TOKEN_ID = 0;
@@ -48,11 +44,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     event AssetMinted(address indexed account, uint256 assetId, uint256 amount);
 
     /// @notice Emitted when multiple assets are burnt
-    event BurntBatch(
-        address indexed account,
-        uint256[] assetIds,
-        uint256[] amounts
-    );
+    event BurntBatch(address indexed account, uint256[] assetIds, uint256[] amounts);
 
     /// @notice Emitted when a single asset is burnt
     event BurntSingle(address indexed account, uint256 assetId, uint256 amount);
@@ -105,13 +97,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
         uint256 price = assets[assetId].price;
         uint256 totalPrice = price * amount;
 
-        safeTransferFrom(
-            _msgSender(),
-            address(this),
-            IGC_TOKEN_ID,
-            totalPrice,
-            ""
-        );
+        safeTransferFrom(_msgSender(), address(this), IGC_TOKEN_ID, totalPrice, "");
 
         _mint(account, assetId, amount, data);
 
@@ -144,13 +130,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
             totalPrice += price * amount;
         }
 
-        safeTransferFrom(
-            _msgSender(),
-            address(this),
-            IGC_TOKEN_ID,
-            totalPrice,
-            ""
-        );
+        safeTransferFrom(_msgSender(), address(this), IGC_TOKEN_ID, totalPrice, "");
 
         _mintBatch(to, assetIds, amounts, data);
     }
@@ -163,26 +143,15 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param account Address to burn the asset from.
     /// @param assetId ID of the asset to burn.
     /// @param amount Amount of the asset to burn.
-    function burnAsset(
-        address account,
-        uint256 assetId,
-        uint256 amount
-    ) external {
-        if (
-            account != _msgSender() && !isApprovedForAll(account, _msgSender())
-        ) {
+    function burnAsset(address account, uint256 assetId, uint256 amount) external {
+        if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
 
         uint256 balance = balanceOf(account, assetId);
 
         if (balance < amount) {
-            revert ERC1155InsufficientBalance(
-                account,
-                balance,
-                amount,
-                assetId
-            );
+            revert ERC1155InsufficientBalance(account, balance, amount, assetId);
         }
 
         _burn(account, assetId, amount);
@@ -199,9 +168,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
         uint256[] memory assetIds,
         uint256[] memory amounts
     ) external {
-        if (
-            account != _msgSender() && !isApprovedForAll(account, _msgSender())
-        ) {
+        if (account != _msgSender() && !isApprovedForAll(account, _msgSender())) {
             revert ERC1155MissingApprovalForAll(_msgSender(), account);
         }
 
@@ -216,12 +183,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
             uint256 balance = balanceOf(account, assetId);
 
             if (balance < amount) {
-                revert ERC1155InsufficientBalance(
-                    account,
-                    balance,
-                    amount,
-                    assetId
-                );
+                revert ERC1155InsufficientBalance(account, balance, amount, assetId);
             }
         }
 
@@ -237,16 +199,13 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Sets the URI of the metadata and the price for a given asset ID.
     /// @param assetUri URI of the metadata for the asset.
     /// @param assetPrice Price of the asset.
-    function setAssetData(
-        string memory assetUri,
-        uint256 assetPrice
-    ) external onlyOwner {
-        newestAssetID++;
+    function setAssetData(string memory assetUri, uint256 assetPrice) external onlyOwner {
+        uniqueAssets++;
 
-        assets[newestAssetID].uri = assetUri;
-        assets[newestAssetID].price = assetPrice;
+        assets[uniqueAssets].uri = assetUri;
+        assets[uniqueAssets].price = assetPrice;
 
-        emit AssetDataSet(assetUri, newestAssetID, assetPrice);
+        emit AssetDataSet(assetUri, uniqueAssets, assetPrice);
     }
 
     function updateAssetData(
@@ -271,16 +230,14 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Gets the URI and price of a given asset.
     /// @param assetId ID of the asset to get the URI and price for.
     /// @return asset The asset data containing the URI and price.
-    function getAsset(
-        uint256 assetId
-    ) public view returns (Asset memory asset) {
+    function getAsset(uint256 assetId) public view returns (Asset memory asset) {
         return assets[assetId];
     }
 
     /// @notice Gets the newest asset ID to be minted.
     /// @return assetId The newest asset ID to be minted.
     function getNextAssetId() public view returns (uint256 assetId) {
-        return newestAssetID;
+        return uniqueAssets + 1;
     }
 
     /// @notice Gets the IGC token ID.
@@ -301,12 +258,7 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
         uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return
-            bytes4(
-                keccak256(
-                    "onERC1155Received(address,address,uint256,uint256,bytes)"
-                )
-            );
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 
     /// @inheritdoc IERC1155Receiver
@@ -318,10 +270,6 @@ contract AssetFactory is ERC1155, IERC1155Receiver, Ownable, ReentrancyGuard {
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
         return
-            bytes4(
-                keccak256(
-                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-                )
-            );
+            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 }
