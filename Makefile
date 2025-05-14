@@ -32,10 +32,12 @@ chain: setup-anvil-wallet
 fork: setup-anvil-wallet
 	anvil --fork-url ${FORK_URL} --chain-id 31337
 
-	# Deploy and generate ABIs
+# Deploy and generate ABIs
 deploy-and-generate-abis: deploy generate-abis 
 
 # Deploy the contracts
+# echo "Setting asset data for localhost..."; \
+# DEPLOYER_PRIVATE_KEY=$(LOCALHOST_PK) node scripts-js/setAssetData.js; \
 deploy: 
 	@echo "Running make deploy target (RPC_URL=$(RPC_URL), DEPLOY_SCRIPT=$(DEPLOY_SCRIPT))"
 	@if [ ! -f "$(DEPLOY_SCRIPT)" ]; then echo "Error: Deploy script '$(DEPLOY_SCRIPT)' not found"; exit 1; fi
@@ -43,8 +45,6 @@ deploy:
 	@if [ "$(RPC_URL)" = "localhost" ]; then \
 		echo "Deploying to localhost using default account/password..."; \
 		forge script $(DEPLOY_SCRIPT) --rpc-url localhost --password localhost --broadcast --legacy --ffi; \
-    	echo "Setting asset data for localhost..."; \
-    	DEPLOYER_PRIVATE_KEY=$(LOCALHOST_PK) node scripts-js/setAssetData.js; \
 	else \
  		echo "Deploying to $(RPC_URL)..."; \
     	forge script $(DEPLOY_SCRIPT) --rpc-url $(RPC_URL) --broadcast --legacy --ffi; \
