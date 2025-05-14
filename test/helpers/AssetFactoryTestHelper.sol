@@ -19,18 +19,9 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
 
         // Update the starting factory balances for userA
         userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        userAStartingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userAStartingFactoryAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        userAStartingFactoryAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
+        userAStartingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
     }
 
     /////////////////////////////////////////////////
@@ -74,11 +65,7 @@ contract AssetFactoryTestHelper is TestingVariables, Test {
     /// @param user The address of the user to set approval for.
     /// @param operator The address of the operator to set approval for.
     /// @param approved The approval status to set.
-    function setApprovalForAllHelper(
-        address user,
-        address operator,
-        bool approved
-    ) public {
+    function setApprovalForAllHelper(address user, address operator, bool approved) public {
         vm.prank(user);
         factory.setApprovalForAll(operator, approved);
     }

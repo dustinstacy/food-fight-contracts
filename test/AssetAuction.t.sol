@@ -2,12 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {console} from "forge-std/console.sol";
-import {
-    IERC1155Errors
-} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {AssetVault} from "@contracts/AssetVault.sol";
 import {AssetAuction} from "@contracts/AssetAuction.sol";
 import {AssetAuctionTestHelper} from "./helpers/AssetAuctionTestHelper.sol";
@@ -38,13 +34,7 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
 
         // Check for the AuctionCreated event when creating an auction
         vm.expectEmit(false, false, false, false, address(auctionContract));
-        emit AssetAuction.AuctionCreated(
-            userA,
-            1,
-            ASSET_ONE_ID,
-            10,
-            ONE_HOUR_IN_BLOCKS
-        );
+        emit AssetAuction.AuctionCreated(userA, 1, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
         auctionContract.createAuction(ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Check that the auction count was incremented
@@ -77,14 +67,8 @@ contract AssetAuctionCreateAuctionTest is AssetAuctionTestHelper {
         assertEq(openStatus, status);
 
         // Check that userA's vault balance was updated
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingVaultAssetOneBalance,
-            userAStartingVaultAssetOneBalance - 1
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance - 1);
     }
 
     function test_createAuction_RevertsIf_InsufficientBalance() public {
@@ -110,10 +94,7 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
         createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Update the starting vault balance for userA
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
     }
 
     function test_cancelAuction() public {
@@ -129,14 +110,8 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
         assertEq(canceledStatus, status);
 
         // Check that userA's vault balance was updated
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingVaultAssetOneBalance,
-            userAStartingVaultAssetOneBalance + 1
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
     }
 
     function test_cancelAuction_RevertsIf_NotOpenStatus() public {
@@ -146,10 +121,7 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
 
         // Check that the function reverts with the AssetAuctionNotOpen error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetAuction.AssetAuctionNotOpen.selector,
-                canceledStatus
-            )
+            abi.encodeWithSelector(AssetAuction.AssetAuctionNotOpen.selector, canceledStatus)
         );
         auctionContract.cancelAuction(1);
         vm.stopPrank();
@@ -178,11 +150,7 @@ contract AssetAustionCancelAuctionTest is AssetAuctionTestHelper {
 
         // Check that the function reverts with the AssetAuctionNotTheSeller error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetAuction.AssetAuctionNotTheSeller.selector,
-                userB,
-                userA
-            )
+            abi.encodeWithSelector(AssetAuction.AssetAuctionNotTheSeller.selector, userB, userA)
         );
         auctionContract.cancelAuction(1);
     }
@@ -216,10 +184,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
         assertEq(10, highestBid);
 
         // Check that userB's IGC balance was updated
-        uint256 userBEndingVaultIGCBalance = vault.balanceOf(
-            userB,
-            IGC_TOKEN_ID
-        );
+        uint256 userBEndingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
         assertEq(userBEndingVaultIGCBalance, userBStartingVaultIGCBalance - 10);
     }
 
@@ -228,10 +193,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
         placeBidHelper(userC, ASSET_ONE_ID, 11);
 
         // Check that userB's IGC balance was updated to return the locked assets
-        uint256 userBEndingVaultIGCBalance = vault.balanceOf(
-            userB,
-            IGC_TOKEN_ID
-        );
+        uint256 userBEndingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
         assertEq(userBEndingVaultIGCBalance, userBStartingVaultIGCBalance);
     }
 
@@ -242,10 +204,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
 
         // Check that the function reverts with the AssetAuctionNotOpen error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetAuction.AssetAuctionNotOpen.selector,
-                canceledStatus
-            )
+            abi.encodeWithSelector(AssetAuction.AssetAuctionNotOpen.selector, canceledStatus)
         );
         auctionContract.placeBid(1, 10);
     }
@@ -257,11 +216,7 @@ contract AssetAuctionPlaceBidTest is AssetAuctionTestHelper {
 
         // Check that the function reverts with the AssetAuctionBidBelowHighestBid error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetAuction.AssetAuctionBidBelowHighestBid.selector,
-                1,
-                10
-            )
+            abi.encodeWithSelector(AssetAuction.AssetAuctionBidBelowHighestBid.selector, 1, 10)
         );
         auctionContract.placeBid(1, 1);
     }
@@ -311,10 +266,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
         createAuctionHelper(userA, ASSET_ONE_ID, 10, ONE_HOUR_IN_BLOCKS);
 
         // Update the starting vault balance for userA
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
     }
 
     function test_completeAuction() public {
@@ -326,10 +278,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
         vm.prank(userA);
 
         console.log("Updated block number: ", vm.getBlockNumber());
-        console.log(
-            "Auction deadline block: ",
-            auctionContract.getAuction(1).deadlineBlock
-        );
+        console.log("Auction deadline block: ", auctionContract.getAuction(1).deadlineBlock);
 
         // Check for the AuctionEnded event when completing an auction
         vm.expectEmit(false, false, false, false, address(auctionContract));
@@ -350,42 +299,18 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
 
         // Check that userA's vault balances were updated
         // Note: userA's asset one balance should be the same because it was previously locked
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingVaultAssetOneBalance,
-            userAStartingVaultAssetOneBalance
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance);
 
-        uint256 userAEndingVaultIGCBalance = vault.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
-        assertEq(
-            userAEndingVaultIGCBalance,
-            userAStartingVaultIGCBalance + winningBid
-        );
+        uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
+        assertEq(userAEndingVaultIGCBalance, userAStartingVaultIGCBalance + winningBid);
 
         // Check that userB's vault balances were updated
-        uint256 userBEndingVaultAssetOneBalance = vault.balanceOf(
-            userB,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userBEndingVaultAssetOneBalance,
-            userBStartingVaultAssetOneBalance + 1
-        );
+        uint256 userBEndingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
+        assertEq(userBEndingVaultAssetOneBalance, userBStartingVaultAssetOneBalance + 1);
 
-        uint256 userBEndingVaultIGCBalance = vault.balanceOf(
-            userB,
-            IGC_TOKEN_ID
-        );
-        assertEq(
-            userBEndingVaultIGCBalance,
-            userBStartingVaultIGCBalance - winningBid
-        );
+        uint256 userBEndingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
+        assertEq(userBEndingVaultIGCBalance, userBStartingVaultIGCBalance - winningBid);
     }
 
     function test_completeAuction_WhenReserveNotMet() public {
@@ -404,14 +329,8 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
         assertEq(reserveNotMetStatus, status);
 
         // Check that userA's vault balance was updated
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingVaultAssetOneBalance,
-            userAStartingVaultAssetOneBalance + 1
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingVaultAssetOneBalance, userAStartingVaultAssetOneBalance + 1);
     }
 
     function test_completeAuction_RevertsIf_NotOpenStatus() public {
@@ -422,10 +341,7 @@ contract AssetAuctionCompleteAuctionTest is AssetAuctionTestHelper {
 
         // Check that the function reverts with the AssetAuctionNotOpen error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetAuction.AssetAuctionNotOpen.selector,
-                endedStatus
-            )
+            abi.encodeWithSelector(AssetAuction.AssetAuctionNotOpen.selector, endedStatus)
         );
         auctionContract.completeAuction(1);
         vm.stopPrank();
@@ -504,9 +420,7 @@ contract AssetAuctionERC1155ReceiverTest is AssetAuctionTestHelper {
     function test_onERC1155Received() public view {
         // Check that the correct selector was returned
         bytes4 expectedSelector = bytes4(
-            keccak256(
-                "onERC1155Received(address,address,uint256,uint256,bytes)"
-            )
+            keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")
         );
         bytes4 returnedSelector = auctionContract.onERC1155Received(
             address(0),
@@ -521,9 +435,7 @@ contract AssetAuctionERC1155ReceiverTest is AssetAuctionTestHelper {
     function test_onERC1155BatchReceived() public view {
         // Check that the correct selector was returned
         bytes4 expectedSelector = bytes4(
-            keccak256(
-                "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-            )
+            keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)")
         );
         bytes4 returnedSelector = auctionContract.onERC1155BatchReceived(
             address(0),
@@ -544,18 +456,14 @@ contract AssetAuctionERC165Test is AssetAuctionTestHelper {
     function test_supportsInterfaceIdIERC165() public view {
         // Check that the contract supports the IERC165 interface
         bytes4 expectedSelector = 0x01ffc9a7;
-        bool returnedSelector = auctionContract.supportsInterface(
-            expectedSelector
-        );
+        bool returnedSelector = auctionContract.supportsInterface(expectedSelector);
         assertEq(returnedSelector, true);
     }
 
     function test_supportsInterfaceIdIERC1155Receiver() public view {
         // Check that the contract supports the IERC1155Receiver interface
         bytes4 expectedSelector = 0x4e2312e0;
-        bool returnedSelector = auctionContract.supportsInterface(
-            expectedSelector
-        );
+        bool returnedSelector = auctionContract.supportsInterface(expectedSelector);
         assertEq(returnedSelector, true);
     }
 

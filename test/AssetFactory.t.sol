@@ -5,9 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {IERC1155} from "@openzeppelin/contracts/interfaces/IERC1155.sol";
-import {
-    IERC1155Errors
-} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC1155Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {AssetFactory} from "@contracts/AssetFactory.sol";
 import {AssetFactoryTestHelper} from "./helpers/AssetFactoryTestHelper.sol";
 
@@ -68,24 +66,12 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
         // Update the starting factory balances for userA
         userAStartingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        userAStartingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userAStartingFactoryAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        userAStartingFactoryAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
+        userAStartingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
 
         // Calculate mint cost based on the allVarying array found in TestingVariables ( [1, 5, 10] )
-        mintBatchTotalCost =
-            ASSET_ONE_PRICE +
-            (ASSET_TWO_PRICE * 5) +
-            (ASSET_THREE_PRICE * 10);
+        mintBatchTotalCost = ASSET_ONE_PRICE + (ASSET_TWO_PRICE * 5) + (ASSET_THREE_PRICE * 10);
     }
 
     function test_mintAsset() public {
@@ -97,21 +83,12 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
         factory.mintAsset(userA, ASSET_ONE_ID, 1, "");
 
         // Check that userA's asset balance has increased
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingAssetOneBalance,
-            userAStartingFactoryAssetOneBalance + 1
-        );
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance + 1);
 
         // Check that userA's IGC balance has decreased
         uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        assertEq(
-            userAEndingIGCBalance,
-            userAStartingFactoryIGCBalance - ASSET_ONE_PRICE
-        );
+        assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - ASSET_ONE_PRICE);
     }
 
     function test_mintAsset_RevertsIf_InsufficientBalance() public {
@@ -135,10 +112,7 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InvalidReceiver.selector,
-                address(0)
-            )
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0))
         );
         factory.mintAsset(address(0), ASSET_ONE_ID, 1, "");
     }
@@ -161,51 +135,24 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
         // Check for the TransferBatch event when minting multiple assets
         vm.expectEmit(false, true, false, false, address(factory));
-        emit IERC1155.TransferBatch(
-            userA,
-            address(0),
-            userA,
-            assetIds,
-            allVarying
-        );
+        emit IERC1155.TransferBatch(userA, address(0), userA, assetIds, allVarying);
         // assetIds = [ASSET_ONE_ID, ASSET_TWO_ID, ASSET_THREE_ID]
         // allVarying = [1, 5, 10]
         factory.mintBatch(userA, assetIds, allVarying, "");
 
         // Check that userA's IGC balance has decreased
         uint256 userAEndingIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
-        assertEq(
-            userAEndingIGCBalance,
-            userAStartingFactoryIGCBalance - mintBatchTotalCost
-        );
+        assertEq(userAEndingIGCBalance, userAStartingFactoryIGCBalance - mintBatchTotalCost);
 
         // Check that userA's asset balances have increased
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingAssetOneBalance,
-            userAStartingFactoryAssetOneBalance + 1
-        );
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance + 1);
 
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAEndingAssetTwoBalance,
-            userAStartingFactoryAssetTwoBalance + 5
-        );
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance + 5);
 
-        uint256 userAEndingAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAEndingAssetThreeBalance,
-            userAStartingFactoryAssetThreeBalance + 10
-        );
+        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance + 10);
     }
 
     function test_mintBatch_RevertsIf_InvalidArrayLength() public {
@@ -243,10 +190,7 @@ contract AssetFactoryMintingFunctionsTest is AssetFactoryTestHelper {
 
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InvalidReceiver.selector,
-                address(0)
-            )
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0))
         );
         factory.mintBatch(address(0), assetIds, allVarying, "");
     }
@@ -296,14 +240,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
         // Check that userA's asset balance has decreased
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingAssetOneBalance,
-            userAStartingFactoryAssetOneBalance - 1
-        );
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
     }
 
     function test_burnAsset_Multiple() public {
@@ -315,14 +253,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         factory.burnAsset(userA, ASSET_TWO_ID, 5);
 
         // Check that userA's asset balance has decreased
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAEndingAssetTwoBalance,
-            userAStartingFactoryAssetTwoBalance - 5
-        );
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
     }
 
     function test_burnAsset_WithApproval() public {
@@ -335,14 +267,8 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         factory.burnAsset(userA, ASSET_ONE_ID, 1);
 
         // Check that userA's asset balance has decreased
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingAssetOneBalance,
-            userAStartingFactoryAssetOneBalance - 1
-        );
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
     }
 
     function test_burnAsset_RevertsIf_MissingApprovalForAll() public {
@@ -384,32 +310,14 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         factory.burnBatch(userA, assetIds, allVarying);
 
         // Check that userA's asset balances have decreased
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingAssetOneBalance,
-            userAStartingFactoryAssetOneBalance - 1
-        );
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
 
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAEndingAssetTwoBalance,
-            userAStartingFactoryAssetTwoBalance - 5
-        );
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
 
-        uint256 userAEndingAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAEndingAssetThreeBalance,
-            userAStartingFactoryAssetThreeBalance - 10
-        );
+        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance - 10);
     }
 
     function test_burnBatch_WithApproval() public {
@@ -422,32 +330,14 @@ contract AssetFactoryBurningFunctionsTest is AssetFactoryTestHelper {
         factory.burnBatch(userA, assetIds, allVarying);
 
         // Check that userA's asset balances have decreased
-        uint256 userAEndingAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAEndingAssetOneBalance,
-            userAStartingFactoryAssetOneBalance - 1
-        );
+        uint256 userAEndingAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAEndingAssetOneBalance, userAStartingFactoryAssetOneBalance - 1);
 
-        uint256 userAEndingAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAEndingAssetTwoBalance,
-            userAStartingFactoryAssetTwoBalance - 5
-        );
+        uint256 userAEndingAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAEndingAssetTwoBalance, userAStartingFactoryAssetTwoBalance - 5);
 
-        uint256 userAEndingAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAEndingAssetThreeBalance,
-            userAStartingFactoryAssetThreeBalance - 10
-        );
+        uint256 userAEndingAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAEndingAssetThreeBalance, userAStartingFactoryAssetThreeBalance - 10);
     }
 
     function test_burnBatch_RevertsIf_MissingApprovalForAll() public {
@@ -522,12 +412,7 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                userA
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
         factory.setAssetData(newURI, ONE_MILLION);
     }
 
@@ -550,12 +435,7 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
         vm.prank(userA);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                userA
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
         factory.updateAssetData(ASSET_ONE_ID, newURI, ONE_MILLION);
     }
 
@@ -563,12 +443,7 @@ contract AssetFactorySetterFunctionsTest is AssetFactoryTestHelper {
         vm.prank(owner);
 
         // Check that the function reverts with the AssetNotFound error
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetFactory.AssetFactoryAssetNotFound.selector,
-                0
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(AssetFactory.AssetFactoryAssetNotFound.selector, 0));
         factory.updateAssetData(0, newURI, ONE_MILLION);
     }
 
@@ -603,7 +478,7 @@ contract AssetFactoryViewFunctionsTest is AssetFactoryTestHelper {
 
     function test_getNextAssetTokenId() public view {
         // Check the asset token ID is retrieved correctly
-        uint256 expectedTokenId = ASSET_THREE_ID;
+        uint256 expectedTokenId = ASSET_THREE_ID + 1;
         uint256 actualTokenId = factory.getNextAssetId();
         assertEq(actualTokenId, expectedTokenId);
     }
@@ -624,26 +499,16 @@ contract AssetFactoryERC1155ReceiverTest is AssetFactoryTestHelper {
     function test_onERC1155Received() public view {
         // Check the correct selector was returned
         bytes4 expectedSelector = bytes4(
-            keccak256(
-                "onERC1155Received(address,address,uint256,uint256,bytes)"
-            )
+            keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")
         );
-        bytes4 returnedSelector = factory.onERC1155Received(
-            address(0),
-            address(0),
-            0,
-            0,
-            ""
-        );
+        bytes4 returnedSelector = factory.onERC1155Received(address(0), address(0), 0, 0, "");
         assertEq(returnedSelector, expectedSelector);
     }
 
     function test_onERC1155BatchReceived() public view {
         // Check the correct selector was returned
         bytes4 expectedSelector = bytes4(
-            keccak256(
-                "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-            )
+            keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)")
         );
         bytes4 returnedSelector = factory.onERC1155BatchReceived(
             address(0),

@@ -1,11 +1,4 @@
-import {
-  readdirSync,
-  statSync,
-  readFileSync,
-  existsSync,
-  mkdirSync,
-  writeFileSync,
-} from "fs";
+import { readdirSync, statSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -50,10 +43,7 @@ function getDeploymentHistory(broadcastPath) {
   // Sort files to process them in chronological order
   const runFiles = files
     .filter(
-      (file) =>
-        file.startsWith("run-") &&
-        file.endsWith(".json") &&
-        !file.includes("run-latest"),
+      (file) => file.startsWith("run-") && file.endsWith(".json") && !file.includes("run-latest"),
     )
     .sort((a, b) => {
       // Extract run numbers and compare them
@@ -82,11 +72,7 @@ function getDeploymentHistory(broadcastPath) {
 }
 
 function getArtifactOfContract(contractName) {
-  const current_path_to_artifacts = join(
-    __dirname,
-    "..",
-    `out/${contractName}.sol`,
-  );
+  const current_path_to_artifacts = join(__dirname, "..", `out/${contractName}.sol`);
 
   if (!existsSync(current_path_to_artifacts)) return null;
 
@@ -103,9 +89,7 @@ function getInheritedFromContracts(artifact) {
     for (const astNode of artifact.ast.nodes) {
       if (astNode.nodeType == "ContractDefinition") {
         if (astNode.baseContracts.length > 0) {
-          inheritedFromContracts = astNode.baseContracts.map(
-            ({ baseName }) => baseName.name,
-          );
+          inheritedFromContracts = astNode.baseContracts.map(({ baseName }) => baseName.name);
         }
       }
     }
@@ -146,16 +130,11 @@ function processAllDeployments(broadcastPath) {
       const deploymentHistory = getDeploymentHistory(chainPath);
 
       deploymentHistory.forEach((deployment) => {
-        const timestamp = parseInt(
-          deployment.deploymentFile.match(/run-(\d+)/)?.[1] || "0",
-        );
+        const timestamp = parseInt(deployment.deploymentFile.match(/run-(\d+)/)?.[1] || "0");
         const key = `${chainId}-${deployment.contractName}`;
 
         // Only update if this deployment is newer
-        if (
-          !allDeployments.has(key) ||
-          timestamp > allDeployments.get(key).timestamp
-        ) {
+        if (!allDeployments.has(key) || timestamp > allDeployments.get(key).timestamp) {
           allDeployments.set(key, {
             ...deployment,
             timestamp,
@@ -202,16 +181,12 @@ function main() {
   Deploymentchains.forEach((chain) => {
     if (!chain.endsWith(".json")) return;
     chain = chain.slice(0, -5);
-    var deploymentObject = JSON.parse(
-      readFileSync(`${current_path_to_deployments}/${chain}.json`),
-    );
+    var deploymentObject = JSON.parse(readFileSync(`${current_path_to_deployments}/${chain}.json`));
     deployments[chain] = deploymentObject;
   });
 
   // Process all deployments from all script folders
-  const allGeneratedContracts = processAllDeployments(
-    current_path_to_broadcast,
-  );
+  const allGeneratedContracts = processAllDeployments(current_path_to_broadcast);
 
   // Update contract keys based on deployments if they exist
   Object.entries(allGeneratedContracts).forEach(([chainId, contracts]) => {
@@ -228,19 +203,12 @@ function main() {
   // Generate the deployedContracts content
   const fileContent = Object.entries(allGeneratedContracts).reduce(
     (content, [chainId, chainConfig]) => {
-      return `${content}${parseInt(chainId).toFixed(0)}:${JSON.stringify(
-        chainConfig,
-        null,
-        2,
-      )},`;
+      return `${content}${parseInt(chainId).toFixed(0)}:${JSON.stringify(chainConfig, null, 2)},`;
     },
     "",
   );
 
-  const targetOutputPath = join(
-    __dirname,
-    "../../food-fight/src/data/deployedContracts.ts",
-  );
+  const targetOutputPath = join(__dirname, "../../food-fight/src/data/deployedContracts.ts");
 
   // Write the files
   const fileTemplate = () => `
@@ -253,9 +221,7 @@ function main() {
 
   writeFileSync(targetOutputPath, fileTemplate());
 
-  console.log(
-    `📝 Updated TypeScript contract definition file on deployments/deployedContracts.ts`,
-  );
+  console.log(`📝 Updated TypeScript contract definition file on deployments/deployedContracts.ts`);
 }
 
 try {

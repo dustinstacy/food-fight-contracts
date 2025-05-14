@@ -41,10 +41,7 @@ contract VerifyAll is Script {
 
     function _verifyIfContractDeployment(string memory content) internal {
         string memory txType = abi.decode(
-            vm.parseJson(
-                content,
-                searchStr(currTransactionIdx, "transactionType")
-            ),
+            vm.parseJson(content, searchStr(currTransactionIdx, "transactionType")),
             (string)
         );
         if (keccak256(bytes(txType)) == keccak256(bytes("CREATE"))) {
@@ -54,31 +51,19 @@ contract VerifyAll is Script {
 
     function _verifyContract(string memory content) internal {
         string memory contractName = abi.decode(
-            vm.parseJson(
-                content,
-                searchStr(currTransactionIdx, "contractName")
-            ),
+            vm.parseJson(content, searchStr(currTransactionIdx, "contractName")),
             (string)
         );
         address contractAddr = abi.decode(
-            vm.parseJson(
-                content,
-                searchStr(currTransactionIdx, "contractAddress")
-            ),
+            vm.parseJson(content, searchStr(currTransactionIdx, "contractAddress")),
             (address)
         );
         bytes memory deployedBytecode = abi.decode(
-            vm.parseJson(
-                content,
-                searchStr(currTransactionIdx, "transaction.input")
-            ),
+            vm.parseJson(content, searchStr(currTransactionIdx, "transaction.input")),
             (bytes)
         );
         bytes memory compiledBytecode = abi.decode(
-            vm.parseJson(
-                _getCompiledBytecode(contractName),
-                ".bytecode.object"
-            ),
+            vm.parseJson(_getCompiledBytecode(contractName), ".bytecode.object"),
             (bytes)
         );
         bytes memory constructorArgs = BytesLib.slice(
@@ -102,10 +87,7 @@ contract VerifyAll is Script {
 
         if (f.stderr.length != 0) {
             console.logString(
-                string.concat(
-                    "Submitting verification for contract: ",
-                    vm.toString(contractAddr)
-                )
+                string.concat("Submitting verification for contract: ", vm.toString(contractAddr))
             );
             console.logString(string(f.stderr));
         } else {
@@ -114,9 +96,7 @@ contract VerifyAll is Script {
         return;
     }
 
-    function nextTransaction(
-        string memory content
-    ) external view returns (bool) {
+    function nextTransaction(string memory content) external view returns (bool) {
         try this.getTransactionFromRaw(content, currTransactionIdx) {
             return true;
         } catch {
@@ -139,18 +119,11 @@ contract VerifyAll is Script {
         compiledBytecode = vm.readFile(path);
     }
 
-    function getTransactionFromRaw(
-        string memory content,
-        uint96 idx
-    ) external pure {
+    function getTransactionFromRaw(string memory content, uint96 idx) external pure {
         abi.decode(vm.parseJson(content, searchStr(idx, "hash")), (bytes32));
     }
 
-    function searchStr(
-        uint96 idx,
-        string memory searchKey
-    ) internal pure returns (string memory) {
-        return
-            string.concat(".transactions[", vm.toString(idx), "].", searchKey);
+    function searchStr(uint96 idx, string memory searchKey) internal pure returns (string memory) {
+        return string.concat(".transactions[", vm.toString(idx), "].", searchKey);
     }
 }

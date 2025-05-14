@@ -21,18 +21,9 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
 
         // Update the starting vault balances for userA
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        userAStartingVaultAssetThreeBalance = vault.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
+        userAStartingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
     }
 
     ////////////////////////////////////////////////
@@ -68,11 +59,7 @@ contract AssetVaultTestHelper is AssetFactoryTestHelper {
     /// @param user The address of the user withdrawing IGC.
     /// @param to The address to withdraw the IGC to.
     /// @param amount The amount of IGC to withdraw.
-    function withdrawIGCTestHelper(
-        address user,
-        address to,
-        uint256 amount
-    ) public {
+    function withdrawIGCTestHelper(address user, address to, uint256 amount) public {
         vm.prank(user);
         vault.withdrawIGC(to, amount);
     }

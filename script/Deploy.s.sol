@@ -2,13 +2,13 @@
 pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
-import { DeployAssetFactory } from "./DeployAssetFactory.s.sol";
-import { DeployAssetVault } from "./DeployAssetVault.s.sol";
-import { DeployAssetTrade } from "./DeployAssetTrade.s.sol";
-import { DeployAssetAuction } from "./DeployAssetAuction.s.sol";
-import { DeployAssetRental } from "./DeployAssetRental.s.sol";
-import { AssetFactory } from "../contracts/AssetFactory.sol";
-import { AssetVault } from "../contracts/AssetVault.sol";
+import {DeployAssetFactory} from "./DeployAssetFactory.s.sol";
+import {DeployAssetVault} from "./DeployAssetVault.s.sol";
+import {DeployAssetTrade} from "./DeployAssetTrade.s.sol";
+import {DeployAssetAuction} from "./DeployAssetAuction.s.sol";
+import {DeployAssetRental} from "./DeployAssetRental.s.sol";
+import {AssetFactory} from "../contracts/AssetFactory.sol";
+import {AssetVault} from "../contracts/AssetVault.sol";
 
 /**
  * @notice Main deployment script for all contracts

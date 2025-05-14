@@ -60,10 +60,7 @@ try {
 }
 
 // Check for default account on live network
-if (
-  process.env.ETH_KEYSTORE_ACCOUNT === "scaffold-eth-default" &&
-  network !== "localhost"
-) {
+if (process.env.ETH_KEYSTORE_ACCOUNT === "scaffold-eth-default" && network !== "localhost") {
   console.log(`
 ❌ Error: Cannot deploy to live network using default keystore account!
 
@@ -80,10 +77,7 @@ The default account (scaffold-eth-default) can only be used for localhost deploy
   process.exit(0);
 }
 
-if (
-  process.env.ETH_KEYSTORE_ACCOUNT !== "scaffold-eth-default" &&
-  network === "localhost"
-) {
+if (process.env.ETH_KEYSTORE_ACCOUNT !== "scaffold-eth-default" && network === "localhost") {
   console.log(`
 ⚠️ Warning: Using ${process.env.ETH_KEYSTORE_ACCOUNT} keystore account on localhost.
 

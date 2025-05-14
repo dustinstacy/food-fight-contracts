@@ -46,18 +46,9 @@ contract AssetRentalTestHelper is AssetVaultTestHelper {
         vault.approveCaller(address(rentalContract));
 
         // Update the starting vault balances for userA & userB
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userBStartingVaultAssetOneBalance = vault.balanceOf(
-            userB,
-            ASSET_ONE_ID
-        );
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        userBStartingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         userBStartingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
         userCStartingVaultIGCBalance = vault.balanceOf(userC, IGC_TOKEN_ID);
@@ -81,10 +72,7 @@ contract AssetRentalTestHelper is AssetVaultTestHelper {
         vm.startPrank(user);
         factory.setApprovalForAll(address(rentalContract), true);
         rentalContract.createRental(assetId, price, duration);
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
         vm.stopPrank();
     }
 

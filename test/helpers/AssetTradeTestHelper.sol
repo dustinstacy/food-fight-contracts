@@ -47,22 +47,10 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
         vault.approveCaller(address(tradeContract));
 
         // Update the starting vault balances for userA & userB
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        userBStartingVaultAssetOneBalance = vault.balanceOf(
-            userB,
-            ASSET_ONE_ID
-        );
-        userBStartingVaultAssetTwoBalance = vault.balanceOf(
-            userB,
-            ASSET_TWO_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
+        userBStartingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
+        userBStartingVaultAssetTwoBalance = vault.balanceOf(userB, ASSET_TWO_ID);
     }
 
     ////////////////////////////////////////////////
@@ -81,11 +69,7 @@ contract AssetTradeTestHelper is AssetVaultTestHelper {
         uint256 assetToReceiveId
     ) public {
         vm.prank(proposer);
-        tradeContract.createProposal(
-            receiver,
-            assetToTradeId,
-            assetToReceiveId
-        );
+        tradeContract.createProposal(receiver, assetToTradeId, assetToReceiveId);
     }
 
     /// @dev Cancel a proposal

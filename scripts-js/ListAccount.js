@@ -8,8 +8,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const ALCHEMY_API_KEY =
-  process.env.ALCHEMY_API_KEY || "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 
 async function getBalanceForEachNetwork(address) {
   try {
@@ -38,10 +37,7 @@ async function getBalanceForEachNetwork(address) {
         const balance = await provider.getBalance(address);
         console.log("--", networkName, "-- 📡");
         console.log("   balance:", +ethers.utils.formatEther(balance));
-        console.log(
-          "   nonce:",
-          +(await provider.getTransactionCount(address)),
-        );
+        console.log("   nonce:", +(await provider.getTransactionCount(address)));
       } catch (e) {
         console.log("Can't connect to network", networkName);
         console.log();
@@ -70,13 +66,10 @@ async function main() {
   const address = findAddressFromArgs(process.argv);
 
   const isValidAddress = verifyAddressFormat(address);
-  const isDefaultAccount =
-    process.env.ETH_KEYSTORE_ACCOUNT === DEFAULT_KEYSTORE_ACCOUNT;
+  const isDefaultAccount = process.env.ETH_KEYSTORE_ACCOUNT === DEFAULT_KEYSTORE_ACCOUNT;
 
   if (!isValidAddress) {
-    console.log(
-      `\n🚫️ Unable to access keystore account ${process.env.ETH_KEYSTORE_ACCOUNT}`,
-    );
+    console.log(`\n🚫️ Unable to access keystore account ${process.env.ETH_KEYSTORE_ACCOUNT}`);
 
     if (isDefaultAccount) {
       console.log(

@@ -27,8 +27,7 @@ contract TestingVariables {
     // Create and instance of the AssetVault contract that all tests will use
     AssetVault vault = new AssetVault(address(factory), owner);
     // Create an instance of an invalid receiver contract using the ERC1155InvalidReceiverHelper (empty contract)
-    ERC1155InvalidReceiverHelper invalidReceiver =
-        new ERC1155InvalidReceiverHelper();
+    ERC1155InvalidReceiverHelper invalidReceiver = new ERC1155InvalidReceiverHelper();
 
     /////////////////////////////////////////////////
     /// Constant Numerical Values                 ///

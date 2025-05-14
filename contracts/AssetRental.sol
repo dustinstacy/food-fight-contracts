@@ -1,13 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AssetVault} from "./AssetVault.sol";
 
 /// @title AssetRental
@@ -43,8 +39,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     mapping(uint256 rentalAssetId => RentalAsset) private rentalAssets;
 
     /// @notice Mapping of a user to their rented asset balances.
-    mapping(address user => mapping(uint256 assetId => uint256 balance))
-        private rentedAssets;
+    mapping(address user => mapping(uint256 assetId => uint256 balance)) private rentedAssets;
 
     /// @notice Instance of the AssetVault contract that is responsible for managing assets.
     AssetVault private immutable VAULT;
@@ -63,11 +58,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     event RentalAssetRelisted(address rentalOwner, uint256 rentalAssetId);
 
     /// @notice Emitted when an asset is rented.
-    event RentalAssetRented(
-        address renter,
-        uint256 rentalAssetId,
-        uint256 timeRented
-    );
+    event RentalAssetRented(address renter, uint256 rentalAssetId, uint256 timeRented);
 
     /// @notice Emitted when an asset is unlisted.
     event RentalAssetUnlisted(address rentalOwner, uint256 rentalAssetId);
@@ -112,11 +103,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /// @param price The price to rent the asset.
     /// @param blocksDuration The amnount of blocks to rent the asset for.
     /// @dev Will throw an error if the user lacks the required balance of the asset to post for rent. (AssetVaultInsufficientBalance).
-    function createRental(
-        uint256 assetId,
-        uint256 price,
-        uint256 blocksDuration
-    ) external {
+    function createRental(uint256 assetId, uint256 price, uint256 blocksDuration) external {
         rentalAssetCount++;
         rentalAssets[rentalAssetCount] = RentalAsset({
             owner: msg.sender,
@@ -145,11 +132,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
         emit RentalAssetUnlisted(msg.sender, rentalAssetId);
     }
 
-    function updateRental(
-        uint256 rentalAssetId,
-        uint256 price,
-        uint256 blocksDuration
-    ) external {
+    function updateRental(uint256 rentalAssetId, uint256 price, uint256 blocksDuration) external {
         RentalAsset storage rental = rentalAssets[rentalAssetId];
 
         _checkOwnerAndAvailability(msg.sender, rental);
@@ -265,12 +248,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
         uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return
-            bytes4(
-                keccak256(
-                    "onERC1155Received(address,address,uint256,uint256,bytes)"
-                )
-            );
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 
     /// @inheritdoc IERC1155Receiver
@@ -282,11 +260,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
         return
-            bytes4(
-                keccak256(
-                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-                )
-            );
+            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 
     /////////////////////////////////////////////////////////////
@@ -294,9 +268,7 @@ contract AssetRental is IERC1155Receiver, ReentrancyGuard {
     /////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC165
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
         return
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC165).interfaceId;

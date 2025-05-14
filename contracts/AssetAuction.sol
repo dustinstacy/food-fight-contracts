@@ -1,13 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AssetVault} from "./AssetVault.sol";
 
 /// @title AssetAuction
@@ -68,18 +64,10 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     );
 
     /// @notice Emitted when an auction is ended.
-    event AuctionEnded(
-        uint256 auctionId,
-        address winningBidder,
-        uint256 winningBid
-    );
+    event AuctionEnded(uint256 auctionId, address winningBidder, uint256 winningBid);
 
     /// @notice Emitted when an auction ends without meeting the reserve price.
-    event AuctionReserveNotMet(
-        uint256 auctionId,
-        uint256 reservePrice,
-        uint256 highestBid
-    );
+    event AuctionReserveNotMet(uint256 auctionId, uint256 reservePrice, uint256 highestBid);
 
     /// @notice Emitted when a bid is placed.
     event BidPlaced(address bidder, uint256 auctionId, uint256 amount);
@@ -92,16 +80,10 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     error AssetAuctionBidBelowHighestBid(uint256 amount, uint256 highestBid);
 
     /// @notice Thrown when the deadline has not passed.
-    error AssetAuctionDeadlineNotPassed(
-        uint256 currentBlock,
-        uint256 deadlineBlock
-    );
+    error AssetAuctionDeadlineNotPassed(uint256 currentBlock, uint256 deadlineBlock);
 
     /// @notice Thrown when the deadline has passed.
-    error AssetAuctionDeadlineHasPassed(
-        uint256 currentBlock,
-        uint256 deadlineBlock
-    );
+    error AssetAuctionDeadlineHasPassed(uint256 currentBlock, uint256 deadlineBlock);
 
     /// @notice Thrown when the caller is not the seller.
     error AssetAuctionNotTheSeller(address caller, address seller);
@@ -128,11 +110,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     /// @param blocksDuration The amount of blocks until the auction ends.
     /// @dev Will throw an error if the user lacks the required balance of the asset to auction. (AssetVaultInsufficientBalance).
     //!! Create designated block start time?
-    function createAuction(
-        uint256 assetId,
-        uint256 reservePrice,
-        uint256 blocksDuration
-    ) public {
+    function createAuction(uint256 assetId, uint256 reservePrice, uint256 blocksDuration) public {
         uint256 startBlock = block.number;
         uint256 endBlock = startBlock + blocksDuration;
 
@@ -151,13 +129,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
 
         VAULT.lockAsset(msg.sender, assetId, 1);
 
-        emit AuctionCreated(
-            msg.sender,
-            auctionCount,
-            assetId,
-            reservePrice,
-            blocksDuration
-        );
+        emit AuctionCreated(msg.sender, auctionCount, assetId, reservePrice, blocksDuration);
     }
 
     /// @notice Cancel an auction.
@@ -170,10 +142,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
         }
 
         if (block.number >= auction.deadlineBlock) {
-            revert AssetAuctionDeadlineHasPassed(
-                block.number,
-                auction.deadlineBlock
-            );
+            revert AssetAuctionDeadlineHasPassed(block.number, auction.deadlineBlock);
         }
 
         if (auction.seller != msg.sender) {
@@ -203,10 +172,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
         }
 
         if (block.number >= auction.deadlineBlock) {
-            revert AssetAuctionDeadlineHasPassed(
-                block.number,
-                auction.deadlineBlock
-            );
+            revert AssetAuctionDeadlineHasPassed(block.number, auction.deadlineBlock);
         }
 
         if (amount <= auction.highestBid) {
@@ -215,11 +181,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
 
         // Lock the IGC tokens of the bidder and unlock the IGC tokens of the previous highest bidder
         VAULT.lockAsset(msg.sender, VAULT.getIGCTokenId(), amount);
-        VAULT.unlockAsset(
-            auction.highestBidder,
-            VAULT.getIGCTokenId(),
-            auction.highestBid
-        );
+        VAULT.unlockAsset(auction.highestBidder, VAULT.getIGCTokenId(), auction.highestBid);
 
         auction.highestBid = amount;
         auction.highestBidder = msg.sender;
@@ -241,10 +203,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
         }
 
         if (block.number < auction.deadlineBlock) {
-            revert AssetAuctionDeadlineNotPassed(
-                block.number,
-                auction.deadlineBlock
-            );
+            revert AssetAuctionDeadlineNotPassed(block.number, auction.deadlineBlock);
         }
 
         if (auction.highestBid < auction.reservePrice) {
@@ -252,11 +211,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
 
             VAULT.unlockAsset(auction.seller, auction.assetId, 1);
 
-            emit AuctionReserveNotMet(
-                auctionId,
-                auction.reservePrice,
-                auction.highestBid
-            );
+            emit AuctionReserveNotMet(auctionId, auction.reservePrice, auction.highestBid);
 
             return;
         }
@@ -266,11 +221,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
         auction.winningBidder = auction.highestBidder;
 
         // Execute the exchange of assets by updating the balances in the AssetVault contract
-        VAULT.unlockAsset(
-            auction.seller,
-            VAULT.getIGCTokenId(),
-            auction.winningBid
-        );
+        VAULT.unlockAsset(auction.seller, VAULT.getIGCTokenId(), auction.winningBid);
         VAULT.unlockAsset(auction.winningBidder, auction.assetId, 1);
 
         emit AuctionEnded(auctionId, auction.winningBidder, auction.winningBid);
@@ -283,9 +234,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     /// @notice Get the details of an auction.
     /// @param auctionId The ID of the auction.
     /// @return auction The details of the auction.
-    function getAuction(
-        uint256 auctionId
-    ) public view returns (Auction memory auction) {
+    function getAuction(uint256 auctionId) public view returns (Auction memory auction) {
         return auctions[auctionId];
     }
 
@@ -313,12 +262,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
         uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return
-            bytes4(
-                keccak256(
-                    "onERC1155Received(address,address,uint256,uint256,bytes)"
-                )
-            );
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 
     /// @inheritdoc IERC1155Receiver
@@ -330,11 +274,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
         return
-            bytes4(
-                keccak256(
-                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-                )
-            );
+            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 
     /////////////////////////////////////////////////////////////
@@ -342,9 +282,7 @@ contract AssetAuction is IERC1155Receiver, ReentrancyGuard {
     /////////////////////////////////////////////////////////////
 
     // Implement supportsInterface
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
         return
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC165).interfaceId;

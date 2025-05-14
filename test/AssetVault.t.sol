@@ -4,12 +4,8 @@ pragma solidity ^0.8.28;
 import {console} from "forge-std/console.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import {
-    IERC1155Errors
-} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {AssetVault} from "@contracts/AssetVault.sol";
 import {AssetVaultTestHelper} from "./helpers/AssetVaultTestHelper.sol";
 
@@ -47,20 +43,11 @@ contract AssetVaultDepositIGCTest is AssetVaultTestHelper {
         vm.stopPrank();
 
         // Check that the user's factory balance was updated correctly
-        uint256 userAEndingFactoryIGCBalance = factory.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
-        assertEq(
-            userAStartingFactoryIGCBalance - 10,
-            userAEndingFactoryIGCBalance
-        );
+        uint256 userAEndingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
+        assertEq(userAStartingFactoryIGCBalance - 10, userAEndingFactoryIGCBalance);
 
         // Check that the user's vault balance was updated correctly
-        uint256 userAEndingVaultIGCBalance = vault.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
+        uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAStartingVaultIGCBalance + 10, userAEndingVaultIGCBalance);
     }
 
@@ -114,24 +101,12 @@ contract AssetVaultDepositAssetsTest is AssetVaultTestHelper {
         vm.stopPrank();
 
         // Check that the user's factory balance was updated correctly
-        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetOneBalance - 1,
-            userAEndingFactoryAssetOneBalance
-        );
+        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingFactoryAssetOneBalance - 1, userAEndingFactoryAssetOneBalance);
 
         // Check that the user's vault balance was updated correctly
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingVaultAssetOneBalance + 1,
-            userAEndingVaultAssetOneBalance
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingVaultAssetOneBalance + 1, userAEndingVaultAssetOneBalance);
     }
 
     function test_depositAssets_MultipleAssets() public {
@@ -146,60 +121,24 @@ contract AssetVaultDepositAssetsTest is AssetVaultTestHelper {
         vault.depositAssets(assetIds, all);
 
         // Check that the user's factory balances were updated correctly
-        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetOneBalance - 10,
-            userAEndingFactoryAssetOneBalance
-        );
+        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingFactoryAssetOneBalance - 10, userAEndingFactoryAssetOneBalance);
 
-        uint256 userAEndingFactoryAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetTwoBalance - 10,
-            userAEndingFactoryAssetTwoBalance
-        );
+        uint256 userAEndingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAStartingFactoryAssetTwoBalance - 10, userAEndingFactoryAssetTwoBalance);
 
-        uint256 userAEndingFactoryAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetThreeBalance - 10,
-            userAEndingFactoryAssetThreeBalance
-        );
+        uint256 userAEndingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAStartingFactoryAssetThreeBalance - 10, userAEndingFactoryAssetThreeBalance);
 
         // Check that the user's vault balances wer updated correctly
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingVaultAssetOneBalance + 10,
-            userAEndingVaultAssetOneBalance
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingVaultAssetOneBalance + 10, userAEndingVaultAssetOneBalance);
 
-        uint256 userAEndingVaultAssetTwoBalance = vault.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAStartingVaultAssetTwoBalance + 10,
-            userAEndingVaultAssetTwoBalance
-        );
+        uint256 userAEndingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAStartingVaultAssetTwoBalance + 10, userAEndingVaultAssetTwoBalance);
 
-        uint256 userAEndingVaultAssetThreeBalance = vault.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAStartingVaultAssetThreeBalance + 10,
-            userAEndingVaultAssetThreeBalance
-        );
+        uint256 userAEndingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAStartingVaultAssetThreeBalance + 10, userAEndingVaultAssetThreeBalance);
     }
 
     function test_depositAssets_RevertsIf_InvalidArrayLength() public {
@@ -262,32 +201,14 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
         depositAssetsTestHelper(userA, assetIds, all);
 
         // Update the starting factory balances for userA
-        userAStartingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userAStartingFactoryAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        userAStartingFactoryAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
+        userAStartingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        userAStartingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
 
         // Update the starting vault balances for userA
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userAStartingVaultAssetTwoBalance = vault.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        userAStartingVaultAssetThreeBalance = vault.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        userAStartingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
+        userAStartingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
     }
 
     function test_withdrawAssets() public {
@@ -299,24 +220,12 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
         vault.withdrawAssets(userA, asset1Single, amountSingle);
 
         // Check that the user's factory balance was updated correctly
-        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetOneBalance + 1,
-            userAEndingFactoryAssetOneBalance
-        );
+        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingFactoryAssetOneBalance + 1, userAEndingFactoryAssetOneBalance);
 
         // Check that the user's vault balance was updated correctly
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingVaultAssetOneBalance - 1,
-            userAEndingVaultAssetOneBalance
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingVaultAssetOneBalance - 1, userAEndingVaultAssetOneBalance);
     }
 
     function test_withdrawAssets_Multiple() public {
@@ -328,60 +237,24 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
         vault.withdrawAssets(userA, assetIds, allVarying);
 
         // Check that the user's factory balances were updated correctly
-        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetOneBalance + 1,
-            userAEndingFactoryAssetOneBalance
-        );
+        uint256 userAEndingFactoryAssetOneBalance = factory.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingFactoryAssetOneBalance + 1, userAEndingFactoryAssetOneBalance);
 
-        uint256 userAEndingFactoryAssetTwoBalance = factory.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetTwoBalance + 5,
-            userAEndingFactoryAssetTwoBalance
-        );
+        uint256 userAEndingFactoryAssetTwoBalance = factory.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAStartingFactoryAssetTwoBalance + 5, userAEndingFactoryAssetTwoBalance);
 
-        uint256 userAEndingFactoryAssetThreeBalance = factory.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAStartingFactoryAssetThreeBalance + 10,
-            userAEndingFactoryAssetThreeBalance
-        );
+        uint256 userAEndingFactoryAssetThreeBalance = factory.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAStartingFactoryAssetThreeBalance + 10, userAEndingFactoryAssetThreeBalance);
 
         // Check that the user's vault balances were updated correctly
-        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        assertEq(
-            userAStartingVaultAssetOneBalance - 1,
-            userAEndingVaultAssetOneBalance
-        );
+        uint256 userAEndingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        assertEq(userAStartingVaultAssetOneBalance - 1, userAEndingVaultAssetOneBalance);
 
-        uint256 userAEndingVaultAssetTwoBalance = vault.balanceOf(
-            userA,
-            ASSET_TWO_ID
-        );
-        assertEq(
-            userAStartingVaultAssetTwoBalance - 5,
-            userAEndingVaultAssetTwoBalance
-        );
+        uint256 userAEndingVaultAssetTwoBalance = vault.balanceOf(userA, ASSET_TWO_ID);
+        assertEq(userAStartingVaultAssetTwoBalance - 5, userAEndingVaultAssetTwoBalance);
 
-        uint256 userAEndingVaultAssetThreeBalance = vault.balanceOf(
-            userA,
-            ASSET_THREE_ID
-        );
-        assertEq(
-            userAStartingVaultAssetThreeBalance - 10,
-            userAEndingVaultAssetThreeBalance
-        );
+        uint256 userAEndingVaultAssetThreeBalance = vault.balanceOf(userA, ASSET_THREE_ID);
+        assertEq(userAStartingVaultAssetThreeBalance - 10, userAEndingVaultAssetThreeBalance);
     }
 
     function test_withdrawAssets_RevertsIf_ArrayLengthMismatch() public {
@@ -419,10 +292,7 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
 
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InvalidReceiver.selector,
-                address(0)
-            )
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0))
         );
         vault.withdrawAssets(address(0), asset1Single, amountSingle);
     }
@@ -437,11 +307,7 @@ contract AssetVaultWithdrawAssetsTest is AssetVaultTestHelper {
                 address(invalidReceiver)
             )
         );
-        vault.withdrawAssets(
-            address(invalidReceiver),
-            asset1Single,
-            amountSingle
-        );
+        vault.withdrawAssets(address(invalidReceiver), asset1Single, amountSingle);
     }
 }
 
@@ -466,20 +332,11 @@ contract AssetVaultWithdrawIGCTest is AssetVaultTestHelper {
         vault.withdrawIGC(userA, 10);
 
         // Check that the user's factory balance was updated correctly
-        uint256 userAEndingFactoryIGCBalance = factory.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
-        assertEq(
-            userAStartingFactoryIGCBalance + 10,
-            userAEndingFactoryIGCBalance
-        );
+        uint256 userAEndingFactoryIGCBalance = factory.balanceOf(userA, IGC_TOKEN_ID);
+        assertEq(userAStartingFactoryIGCBalance + 10, userAEndingFactoryIGCBalance);
 
         // Check that the user's vault balance was updated correctly
-        uint256 userAEndingVaultIGCBalance = vault.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
+        uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAStartingVaultIGCBalance - 10, userAEndingVaultIGCBalance);
     }
 
@@ -504,10 +361,7 @@ contract AssetVaultWithdrawIGCTest is AssetVaultTestHelper {
 
         // Check that the function reverts with the ERC1155InvalidReceiver error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InvalidReceiver.selector,
-                address(0)
-            )
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, address(0))
         );
         vault.withdrawIGC(address(0), 10);
     }
@@ -548,10 +402,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
         vault.lockAsset(userA, IGC_TOKEN_ID, 10);
 
         // Check that the user's balance was updated correctly
-        uint256 userAEndingVaultIGCBalance = vault.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
+        uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAStartingVaultIGCBalance - 10, userAEndingVaultIGCBalance);
     }
 
@@ -576,10 +427,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
 
         // Check that the function reverts with the AssetVaultUnauthorizedCaller error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetVault.AssetVaultUnauthorizedCaller.selector,
-                userA
-            )
+            abi.encodeWithSelector(AssetVault.AssetVaultUnauthorizedCaller.selector, userA)
         );
         vault.lockAsset(userA, IGC_TOKEN_ID, 10);
     }
@@ -587,10 +435,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
     function test_unlockAsset() public {
         lockAssetTestHelper(approvedCaller, userA, IGC_TOKEN_ID, 10);
 
-        console.log(
-            "vault balance of IGC: ",
-            factory.balanceOf(address(vault), IGC_TOKEN_ID)
-        );
+        console.log("vault balance of IGC: ", factory.balanceOf(address(vault), IGC_TOKEN_ID));
 
         vm.prank(approvedCaller);
 
@@ -600,10 +445,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
         vault.unlockAsset(userA, IGC_TOKEN_ID, 10);
 
         // Check that the user's balance was updated correctly
-        uint256 userAEndingVaultIGCBalance = vault.balanceOf(
-            userA,
-            IGC_TOKEN_ID
-        );
+        uint256 userAEndingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         assertEq(userAStartingVaultIGCBalance, userAEndingVaultIGCBalance);
     }
 
@@ -628,10 +470,7 @@ contract AssetVaultLockFunctionsTest is AssetVaultTestHelper {
 
         // Check that the function reverts with the AssetVaultUnauthorizedCaller error
         vm.expectRevert(
-            abi.encodeWithSelector(
-                AssetVault.AssetVaultUnauthorizedCaller.selector,
-                userA
-            )
+            abi.encodeWithSelector(AssetVault.AssetVaultUnauthorizedCaller.selector, userA)
         );
         vault.unlockAsset(userA, IGC_TOKEN_ID, 10);
     }
@@ -658,12 +497,7 @@ contract AssetVaultApproveFunctionsTest is AssetVaultTestHelper {
         vm.prank(userA);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                userA
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
         vault.approveCaller(userA);
     }
 
@@ -684,12 +518,7 @@ contract AssetVaultApproveFunctionsTest is AssetVaultTestHelper {
         vm.prank(userA);
 
         // Check that the function reverts with the OwnableUnauthorizedAccount error
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                userA
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
         vault.revokeCaller(userA);
     }
 }
@@ -740,26 +569,16 @@ contract AssetVaultERC1155ReceiverTest is AssetVaultTestHelper {
     function test_onERC1155Received() public view {
         // Check that the correct selector was returned
         bytes4 expectedSelector = bytes4(
-            keccak256(
-                "onERC1155Received(address,address,uint256,uint256,bytes)"
-            )
+            keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")
         );
-        bytes4 returnedSelector = vault.onERC1155Received(
-            address(0),
-            address(0),
-            0,
-            0,
-            ""
-        );
+        bytes4 returnedSelector = vault.onERC1155Received(address(0), address(0), 0, 0, "");
         assertEq(returnedSelector, expectedSelector);
     }
 
     function test_onERC1155BatchReceived() public view {
         // Check that the correct selector was returned
         bytes4 expectedSelector = bytes4(
-            keccak256(
-                "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-            )
+            keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)")
         );
         bytes4 returnedSelector = vault.onERC1155BatchReceived(
             address(0),

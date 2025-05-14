@@ -1,9 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AssetVault} from "./AssetVault.sol";
 
@@ -92,11 +90,7 @@ contract AssetTrade is IERC1155Receiver {
     /// @param assetBId The token ID of the asset being traded for.
     /// @dev Will throw an error when the user lacks the required balance of the asset to trade. (AssetVaultInsufficientBalance).
     //!! Add amounts argument to proposal?
-    function createProposal(
-        address receiver,
-        uint256 assetAId,
-        uint256 assetBId
-    ) external {
+    function createProposal(address receiver, uint256 assetAId, uint256 assetBId) external {
         proposalCount++;
         proposals[proposalCount] = Proposal({
             proposer: msg.sender,
@@ -185,9 +179,7 @@ contract AssetTrade is IERC1155Receiver {
     /// @notice Get an existing proposal.
     /// @param proposalId The ID of the proposal.
     /// @return proposal The proposal object.
-    function getProposal(
-        uint256 proposalId
-    ) public view returns (Proposal memory proposal) {
+    function getProposal(uint256 proposalId) public view returns (Proposal memory proposal) {
         return proposals[proposalId];
     }
 
@@ -215,12 +207,7 @@ contract AssetTrade is IERC1155Receiver {
         uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return
-            bytes4(
-                keccak256(
-                    "onERC1155Received(address,address,uint256,uint256,bytes)"
-                )
-            );
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 
     /// @inheritdoc IERC1155Receiver
@@ -232,11 +219,7 @@ contract AssetTrade is IERC1155Receiver {
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
         return
-            bytes4(
-                keccak256(
-                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-                )
-            );
+            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 
     /////////////////////////////////////////////////////////////
@@ -244,9 +227,7 @@ contract AssetTrade is IERC1155Receiver {
     /////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC165
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
         return
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC165).interfaceId;

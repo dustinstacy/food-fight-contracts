@@ -1,13 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {
-    IERC1155Receiver
-} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AssetFactory} from "./AssetFactory.sol";
 
@@ -20,8 +16,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Mapping of a user to their balances of each token ID.
-    mapping(address user => mapping(uint256 assetId => uint256 balance))
-        private balances;
+    mapping(address user => mapping(uint256 assetId => uint256 balance)) private balances;
 
     /// @notice Mapping of approved callers.
     mapping(address => bool) private approvedCallers;
@@ -65,10 +60,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     ///////////////////////////////////////////////////////////
 
     /// @notice Thrown when the length of the assetIds and amounts arrays are different.
-    error AssetVaultArraysLengthMismatch(
-        uint256 assetIdsLength,
-        uint256 amountsLength
-    );
+    error AssetVaultArraysLengthMismatch(uint256 assetIdsLength, uint256 amountsLength);
 
     /// @notice Thrown when the user lacks the required balance to perform an action.
     error AssetVaultInsufficientBalance(
@@ -100,10 +92,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Construct the AssetVault contract.
     /// @param _factory The address of the ERC1155 contract that is responsible for minting assets.
     /// @param _initialOwner The address of the owner of the contract.
-    constructor(
-        address _factory,
-        address _initialOwner
-    ) Ownable(_initialOwner) {
+    constructor(address _factory, address _initialOwner) Ownable(_initialOwner) {
         FACTORY = AssetFactory(_factory);
         IGC_TOKEN_ID = FACTORY.getIGCTokenId();
     }
@@ -116,13 +105,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param amount The amount of IGC to deposit.
     /// @dev Will throw an error when the user lacks the required balance to deposit the IGC. (ERC1155InsufficientBalance).
     function depositIGC(uint256 amount) external nonReentrant {
-        FACTORY.safeTransferFrom(
-            msg.sender,
-            address(this),
-            IGC_TOKEN_ID,
-            amount,
-            ""
-        );
+        FACTORY.safeTransferFrom(msg.sender, address(this), IGC_TOKEN_ID, amount, "");
 
         balances[msg.sender][IGC_TOKEN_ID] += amount;
 
@@ -138,13 +121,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
         uint256[] memory assetIds,
         uint256[] memory amounts
     ) external nonReentrant {
-        FACTORY.safeBatchTransferFrom(
-            msg.sender,
-            address(this),
-            assetIds,
-            amounts,
-            ""
-        );
+        FACTORY.safeBatchTransferFrom(msg.sender, address(this), assetIds, amounts, "");
 
         for (uint256 i = 0; i < assetIds.length; i++) {
             balances[msg.sender][assetIds[i]] += amounts[i];
@@ -187,10 +164,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
         uint256[] memory amounts
     ) external {
         if (assetIds.length != amounts.length) {
-            revert AssetVaultArraysLengthMismatch(
-                assetIds.length,
-                amounts.length
-            );
+            revert AssetVaultArraysLengthMismatch(assetIds.length, amounts.length);
         }
 
         for (uint256 i = 0; i < assetIds.length; i++) {
@@ -291,20 +265,13 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @param user The address of the user.
     /// @param assetId The token ID to get the balance of.
     /// @return balance The balance of the user for the token ID.
-    function balanceOf(
-        address user,
-        uint256 assetId
-    ) public view returns (uint256 balance) {
+    function balanceOf(address user, uint256 assetId) public view returns (uint256 balance) {
         return balances[user][assetId];
     }
 
     /// @notice Get the factory contract address.
     /// @return factoryAddress The address of the assets contract.
-    function getAssetFactoryAddress()
-        public
-        view
-        returns (address factoryAddress)
-    {
+    function getAssetFactoryAddress() public view returns (address factoryAddress) {
         return address(FACTORY);
     }
 
@@ -317,9 +284,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /// @notice Get the approved caller status.
     /// @param caller The address of the caller.
     /// @return approved The approved caller status.
-    function getIsApprovedCaller(
-        address caller
-    ) public view returns (bool approved) {
+    function getIsApprovedCaller(address caller) public view returns (bool approved) {
         return approvedCallers[caller];
     }
 
@@ -335,12 +300,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
         uint256 /*value*/,
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
-        return
-            bytes4(
-                keccak256(
-                    "onERC1155Received(address,address,uint256,uint256,bytes)"
-                )
-            );
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 
     /// @inheritdoc IERC1155Receiver
@@ -352,11 +312,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
         bytes calldata /*data*/
     ) external pure returns (bytes4) {
         return
-            bytes4(
-                keccak256(
-                    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
-                )
-            );
+            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 
     /////////////////////////////////////////////////////////////
@@ -364,9 +320,7 @@ contract AssetVault is IERC1155Receiver, Ownable, ReentrancyGuard {
     /////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC165
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
         return
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC165).interfaceId;

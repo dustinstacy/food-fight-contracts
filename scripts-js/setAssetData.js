@@ -21,10 +21,7 @@ async function main() {
   try {
     const filePath = `broadcast/Deploy.s.sol/${DEPLOYMENT_CHAIN_ID}/run-latest.json`;
 
-    const assetFactoryAddress = await getContractAddress(
-      filePath,
-      "AssetFactory",
-    );
+    const assetFactoryAddress = await getContractAddress(filePath, "AssetFactory");
     if (!assetFactoryAddress) {
       console.error("AssetFactory contract address not found.");
       process.exit(1);
@@ -40,11 +37,7 @@ async function main() {
     }
 
     const signer = getSigner(rpcUrl);
-    const assetFactory = getContract(
-      assetFactoryAddress,
-      signer,
-      "AssetFactory",
-    );
+    const assetFactory = getContract(assetFactoryAddress, signer, "AssetFactory");
 
     for (const asset of assetData) {
       const tx = await assetFactory.setAssetData(asset.uri, asset.price);

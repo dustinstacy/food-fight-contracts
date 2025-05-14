@@ -24,8 +24,7 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     uint256 openStatus = uint256(AssetAuction.AuctionStatus.Open);
     uint256 canceledStatus = uint256(AssetAuction.AuctionStatus.Canceled);
     uint256 endedStatus = uint256(AssetAuction.AuctionStatus.Ended);
-    uint256 reserveNotMetStatus =
-        uint256(AssetAuction.AuctionStatus.ReserveNotMet);
+    uint256 reserveNotMetStatus = uint256(AssetAuction.AuctionStatus.ReserveNotMet);
 
     ////////////////////////////////////////////////
     /// Setup Function                           ///
@@ -48,18 +47,9 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
         vault.approveCaller(address(auctionContract));
 
         // Update the starting vault balances for userA, userB, & userC
-        userAStartingVaultAssetOneBalance = vault.balanceOf(
-            userA,
-            ASSET_ONE_ID
-        );
-        userBStartingVaultAssetOneBalance = vault.balanceOf(
-            userB,
-            ASSET_ONE_ID
-        );
-        userCStartingVaultAssetOneBalance = vault.balanceOf(
-            userC,
-            ASSET_ONE_ID
-        );
+        userAStartingVaultAssetOneBalance = vault.balanceOf(userA, ASSET_ONE_ID);
+        userBStartingVaultAssetOneBalance = vault.balanceOf(userB, ASSET_ONE_ID);
+        userCStartingVaultAssetOneBalance = vault.balanceOf(userC, ASSET_ONE_ID);
         userAStartingVaultIGCBalance = vault.balanceOf(userA, IGC_TOKEN_ID);
         userBStartingVaultIGCBalance = vault.balanceOf(userB, IGC_TOKEN_ID);
         userCStartingVaultIGCBalance = vault.balanceOf(userC, IGC_TOKEN_ID);
@@ -96,11 +86,7 @@ contract AssetAuctionTestHelper is AssetVaultTestHelper {
     /// @param user The address of the user placing the bid.
     /// @param auctionId The ID of the auction.
     /// @param amount The amount of the bid.
-    function placeBidHelper(
-        address user,
-        uint256 auctionId,
-        uint256 amount
-    ) public {
+    function placeBidHelper(address user, uint256 auctionId, uint256 amount) public {
         vm.prank(user);
         auctionContract.placeBid(auctionId, amount);
     }
