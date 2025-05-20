@@ -208,7 +208,10 @@ function main() {
     "",
   );
 
-  const targetOutputPath = join(__dirname, "../../food-fight/src/data/deployedContracts.ts");
+  const targetOutputPath = join(
+    __dirname,
+    "../../food-fight/src/contracts/data/deployedContracts.ts",
+  );
 
   // Write the files
   const fileTemplate = () => `

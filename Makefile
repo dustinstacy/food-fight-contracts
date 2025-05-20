@@ -36,8 +36,6 @@ fork: setup-anvil-wallet
 deploy-and-generate-abis: deploy generate-abis 
 
 # Deploy the contracts
-# echo "Setting asset data for localhost..."; \
-# DEPLOYER_PRIVATE_KEY=$(LOCALHOST_PK) node scripts-js/setAssetData.js; \
 deploy: 
 	@echo "Running make deploy target (RPC_URL=$(RPC_URL), DEPLOY_SCRIPT=$(DEPLOY_SCRIPT))"
 	@if [ ! -f "$(DEPLOY_SCRIPT)" ]; then echo "Error: Deploy script '$(DEPLOY_SCRIPT)' not found"; exit 1; fi
